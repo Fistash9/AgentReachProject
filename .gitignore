@@ -1,1 +1,11 @@
+# Секрети
 config/gh/hosts.yml
+agent.py
+.env
+*.key
+*.pem
+
+# Службові
+__pycache__/
+*.pyc
+.DS_Store

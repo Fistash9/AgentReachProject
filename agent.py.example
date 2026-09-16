@@ -1,0 +1,47 @@
+import asyncio, json, requests
+from mcp import ClientSession, StdioServerParameters
+from mcp.client.stdio import stdio_client
+
+API_KEY = "sk-ВАШ_КЛЮЧ_ТУТ"
+
+async def main():
+    params = StdioServerParameters(command="python", args=["/data/data/com.termux/files/home/AgentReachProject/my_mcp_server.py"])
+    async with stdio_client(params) as (read, write):
+        async with ClientSession(read, write) as session:
+            await session.initialize()
+            tools = await session.list_tools()
+            tool_defs = [{"type": "function", "function": {"name": t.name, "description": t.description, "parameters": t.inputSchema}} for t in tools.tools]
+            print(f"OK Інструментів: {[t['function']['name'] for t in tool_defs]}")
+            print("Пишіть запит ('exit' для виходу):")
+            while True:
+                user_input = input("\nВи: ")
+                if user_input.lower() == 'exit':
+                    break
+                messages = [{"role": "user", "content": user_input}]
+                # Цикл: агент може викликати інструменти кілька разів підряд
+                for step in range(10):
+                    r = requests.post("https://api.deepseek.com/chat/completions",
+                        headers={"Authorization": f"Bearer {API_KEY}", "Content-Type": "application/json"},
+                        json={"model": "deepseek-chat", "messages": messages, "tools": tool_defs, "tool_choice": "auto"})
+                    data = r.json()
+                    if "choices" not in data:
+                        print(f"ERROR: {data}")
+                        break
+                    msg = data["choices"][0]["message"]
+                    if msg.get("tool_calls"):
+                        messages.append(msg)
+                        for tc in msg["tool_calls"]:
+                            try:
+                                args = json.loads(tc["function"]["arguments"])
+                            except Exception:
+                                args = {}
+                            print(f"[tool] {tc['function']['name']}({args})")
+                            res = await session.call_tool(tc["function"]["name"], arguments=args)
+                            text = "".join(c.text for c in res.content if hasattr(c, "text"))
+                            messages.append({"role": "tool", "tool_call_id": tc["id"], "content": text})
+                        continue  # ще один раунд з результатами
+                    else:
+                        print(f"\nAI: {msg['content']}")
+                        break
+
+asyncio.run(main())
