@@ -304,3 +304,48 @@ Anthropic-сумісний шар DeepSeek — тому deep-claude як обг�
 - Ctrl+C НЕ виходить з Claude Code на Termux (не реагує)
 - Треба використовувати /exit + Enter
 - Виявилено емпірично (Саша)
+
+## MCP-probe результати 2026-09-17
+TAGS: mcp-probe, health-check, schema, validation
+
+### Встановлення
+npm install -g @incultnitollc/mcp-probe — встановився без помилок (113 пакетів).
+На Termux/ARM64 бінарник `mcp-probe` не запускається напряму:
+  /usr/bin/env: bad interpreter: No such file or directory
+Причина: shebang `#!/usr/bin/env node`, а в Termux немає /usr/bin/env
+(шлях інший: /data/data/com.termux/files/usr/bin/env).
+ОБХІД: запускати напряму через node:
+  node /data/data/com.termux/files/usr/bin/mcp-probe test "<команда>"
+
+### Результати по серверах
+
+| Сервер | Tools | Схема | Виклики | Статус |
+|---|---|---|---|---|
+| agent-reach | 3/3 | 0 помилок, 0 попереджень | 3/3 callable (макс. 5428ms — status) | ✅ PASS |
+| memory | 9/9 | 0 помилок, 4 попередження | 9/9 callable | ✅ PASS (з попередженнями) |
+| delegate | 4/4 | 0 помилок, 0 попереджень | 4/4 callable (макс. 3537ms — delegate) | ✅ PASS |
+| baton | 6/6 | 0 помилок, 9 попереджень | 6/6 callable (усі <10ms) | ✅ PASS (з попередженнями) |
+| deepseek | 2 знайдено | 0 помилок, 0 попереджень | 0/2 callable | ❌ FAIL |
+| Claude Docs | — | — | — | не тестувалось (вбудований сервер claude.ai, немає окремого запускного скрипта/шляху — mcp-probe тестує лише локальні процеси) |
+| transcriptor | — | — | — | не тестувалось (не було в списку команд, хостований сервер) |
+
+### memory — попередження (не критично)
+Property "entities"/"relations"/"observations"/"deletions" missing description
+— 4 поля в JSON Schema без опису. Функціонал не порушено.
+
+### baton — попередження (не критично)
+9 полів без опису (project, status, openQuestions, note, limit тощо)
+у baton_pick_up/baton_pass/baton_log/baton_history/baton_init.
+Функціонал не порушено.
+
+### deepseek — помилка виклику tools
+FAIL deepseek і deepseek-reply: з'єднання і listing tools пройшли ОК,
+але виклик інструменту падає:
+  claude exited with code 1: ⚠ claude.ai connectors are disabled
+  because ANTHROPIC_API_KEY or another auth source is set...
+  EACCES: permission denied, mkdir '/tmp/claude-10599'
+Причина (гіпотеза, не перевірялась): сабпроцес claude, який запускає
+run-deepseek.sh, намагається створити свою scratchpad-теку в /tmp,
+куди немає прав запису в середовищі, де його спускає mcp-probe;
+плюс конфлікт ANTHROPIC_API_KEY з підключеними claude.ai-конекторами.
+Не виправлялось за завданням — лише зафіксовано.
