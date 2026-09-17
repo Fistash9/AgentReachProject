@@ -105,3 +105,25 @@ Agent Reach — персональний AI-агент у Termux (Android).
 
 ### Відкладено (в BACKLOG.md)
 - Instagram Reels, DeepSeek CLI, A2A, skills/agents, MCP-маніфест
+
+## Оновлення 2026-09-17 (делегування DeepSeek)
+
+### Додано
+- **Delegate MCP** — claude-code-deepseek-delegator (делегування на DeepSeek)
+- **Скрипт:** run-delegate.sh (читає ключ з agent.py, обхід бага #22571)
+- **Hook:** файли > 300 рядків → питає «Delegate? (y/n)»
+- **Економія:** 98% vs Opus (перевірено: 500 рядків → $0.0002 замість $0.0095)
+
+### MCP-сервери (5 підключені)
+- agent-reach (3 tools) — read, transcribe, status
+- memory (9 tools) — knowledge graph
+- transcriptor (8 tools) — транскрипція 11 платформ
+- **delegate** — делегування важких задач на DeepSeek ← новий
+- claude.ai Claude Docs (8 tools) — вбудований
+
+### Скрипти-обгортки (обидва через баг #22571)
+- run-memory.sh — для memory MCP
+- run-delegate.sh — для delegate MCP
+
+### Відкладено (в BACKLOG.md)
+- Instagram Reels, DeepSeek CLI, A2A, skills/agents, MCP-маніфест
