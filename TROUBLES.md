@@ -298,3 +298,9 @@ export DEEPSEEK_API_KEY (читається з agent.py) + PATH, потім exec
 За офіційною документацією DeepSeek, MCP-сервери не працюють через
 Anthropic-сумісний шар DeepSeek — тому deep-claude як обгортку
 відкинуто. Використовувати deepseek-mcp напряму.
+
+## Claude Code на Termux — вихід (2026-09-17)
+
+- Ctrl+C НЕ виходить з Claude Code на Termux (не реагує)
+- Треба використовувати /exit + Enter
+- Виявилено емпірично (Саша)
