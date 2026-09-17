@@ -39,6 +39,12 @@
 - chuzom-router — ТОЙ САМИЙ проєкт, що llm-routing (перебрендований).
   Ті самі конфлікти: mcp>=2.0.0 + openai/jiter + 14 hooks. ВІДКИНУТО.
 
+### Міграція my_mcp_server.py на MCP SDK 2.x
+Міграція my_mcp_server.py на MCP SDK 2.x — 20-30 рядків, 15-20 хв.
+Робити тільки коли з'явиться конкретний інструмент, що вимагає mcp 2.x.
+Before/after приклад знайдено, міграція готова під ключ.
+Деталі — TROUBLES.md, розділ «MCP SDK 2.x — дослідження (2026-09-17)».
+
 ### DeepSeek CLI у терміналі
 - **Мета:** окремий DeepSeek-чат із доступом до файлової системи
 - **Варіанти:** deepseek-termux, dsh-termux, deepseek-agent-2026

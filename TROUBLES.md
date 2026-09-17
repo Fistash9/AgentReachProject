@@ -349,3 +349,23 @@ run-deepseek.sh, намагається створити свою scratchpad-т�
 куди немає прав запису в середовищі, де його спускає mcp-probe;
 плюс конфлікт ANTHROPIC_API_KEY з підключеними claude.ai-конекторами.
 Не виправлялось за завданням — лише зафіксовано.
+
+## MCP SDK 2.x — дослідження (2026-09-17)
+TAGS: mcp, mcp 2.x, list_tools, Server, migration, lowlevel
+
+### Факти
+- Наш my_mcp_server.py використовує lowlevel Server (не FastMCP)
+- У v2 видалено декоратори @server.list_tools() / @server.call_tool()
+- Handler тепер передається через конструктор Server(on_list_tools=, on_call_tool=)
+- Tool(inputSchema=) → Tool(input_schema=) (camelCase → snake_case)
+- Автоматична валідація JSON Schema прибрана — треба робити вручну
+- stdio_server() + server.run() — не змінилось
+- Compatibility shim: НЕМАЄ
+- Оцінка міграції: 20-30 рядків з 55, 15-20 хв, ризик низький
+- Джерело: github.com/modelcontextprotocol/python-sdk, migration guide
+  (https://py.sdk.modelcontextprotocol.io/migration/)
+
+### Рішення
+Залишитися на mcp<2.0.0. Мігрувати тільки коли з'явиться конкретний
+інструмент, що вимагає mcp 2.x. Тоді — або міграція (готовий
+before/after), або ізоляція через venv/pipx.
