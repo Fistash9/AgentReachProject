@@ -5,7 +5,8 @@
 
 ## Активні (плануємо зробити)
 
-_(порожньо — всі активні задачі вирішені)_
+- **llm-cost-router-mcp** — MCP для cost-awareness (радить, яка модель дешевша, без ключів)
+- **Instagram Reels cookies** — експорт через Kiwi Browser + yt-dlp --cookies
 
 ### ✅ memory.jsonl — ВИРІШЕНО (2026-09-17)
 - **Проблема:** Claude Code не передає env-змінні в stdio-процес (баг #22571)
@@ -51,6 +52,7 @@ _(порожньо — всі активні задачі вирішені)_
 - 2026-09-17: Локальна транскрипція (yt-dlp + ffmpeg + whisper.cpp)
 - 2026-09-17: ECOSYSTEM.md — композиція агентних систем
 - 2026-09-17: RULES.md + CLAUDE.md — автозавантаження правил
+- 2026-09-17: Автоматизація делегування через UserPromptSubmit хук
 
 ### ✅ Delegate MCP — ВИРІШЕНО (2026-09-17)
 - **Що:** делегування важких задач на DeepSeek через claude-code-deepseek-delegator
