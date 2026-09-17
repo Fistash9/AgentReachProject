@@ -243,3 +243,42 @@ whisper ~/tmp/test.mp3 --model small
 - **Перевірка перед будь-яким редагуванням:** `wc -l file && grep -c "підозрілий_рядок" file` — цифри не брешуть, на відміну від відображення.
 - **Перед редагуванням — бекап:** `cp file file.bak` (врятувало цього разу).
 - **Дата:** 2026-09-17
+
+## Baton MCP — cross-agent handoff (2026-09-17)
+
+### Що це
+Zero-dependency MCP-сервер для передачі контексту між агентами
+(Claude Code, Codex, DeepSeek, будь-який MCP-клієнт).
+Репозиторій: github.com/timurabi3/baton-mcp
+Версія: 0.1.0
+
+### Як працює
+- Створює .baton/ у проєкті (baton.json, ledger.jsonl)
+- Генерує HANDOFF.md у корені — читають усі агенти
+- Створює симлінк AGENTS.md -> CLAUDE.md (універсальний стандарт)
+- 6 інструментів: baton_status, baton_pick_up, baton_pass,
+  baton_log, baton_history, baton_init
+
+### Встановлення (Termux)
+npm install -g github:timurabi3/baton-mcp
+
+### Скрипт-обгортка (обхід таймауту npx)
+~/AgentReachProject/run-baton.sh:
+  #!/data/data/com.termux/files/usr/bin/bash
+  export BATON_AGENT="claude-code"
+  exec /data/data/.../bin/node /data/data/.../node_modules/@timurabi3/baton-mcp/server.mjs
+
+### Реєстрація
+claude mcp add baton --transport stdio -- ~/AgentReachProject/run-baton.sh
+
+### Що ігнорувати в git
+- .baton/ (стан handoff)
+- HANDOFF.md (авто-генерований, змінюється часто)
+- AGENTS.md — НЕ ігнорувати (це симлінк на CLAUDE.md)
+
+### Підводні камені
+- npx напряму з GitHub НЕ працює (CONNECTION_CLOSED — таймаут)
+- Рішення: глобальна установка + скрипт-обгортка (як memory, delegate)
+- baton_init не приймає ціль — тільки створює .baton/
+  Ціль задається через baton_pass
+- Після init треба зробити baton_pass, щоб з'явився HANDOFF.md
