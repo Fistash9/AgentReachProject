@@ -369,3 +369,17 @@ TAGS: mcp, mcp 2.x, list_tools, Server, migration, lowlevel
 Залишитися на mcp<2.0.0. Мігрувати тільки коли з'явиться конкретний
 інструмент, що вимагає mcp 2.x. Тоді — або міграція (готовий
 before/after), або ізоляція через venv/pipx.
+
+## Claude Code Skills (2026-09-17)
+TAGS: skills, anthropic-skills, perevirka-dzherel, skill-creator
+
+- Вбудовані Skills доступні через префікс anthropic-skills:*
+- Перелік (назви, з поточної сесії): docs, docx, import-memory, morning,
+  pdf, perevirka-dzherel, pptx, skill-creator, xlsx, zvirka-bazy
+- Приклад: perevirka-dzherel (перевірка джерел) — виявив і виправив
+  реальну помилку (хибне сумнівання в існуванні GPT-6 Astra) в цій сесії
+- Автозавантажуються при потребі (Claude Code сам вирішує, коли викликати)
+- skill-creator схоже саме те, що треба для «чи можна створювати власні» —
+  «Create new skills, modify and improve existing skills, and measure
+  skill performance»
+- Як створювати власні — дослідити в наступній сесії (почати з skill-creator)
