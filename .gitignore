@@ -12,3 +12,7 @@ __pycache__/
 
 # MCP memory data (local only)
 memory.jsonl
+
+# Baton handoff state (local only)
+.baton/
+HANDOFF.md
