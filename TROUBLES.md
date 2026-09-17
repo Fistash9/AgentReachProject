@@ -114,3 +114,34 @@ claude                   # запуск сесії, потім /mcp
 ### Ідеї на майбутнє (НЕ робити поки що)
 - Telegram-бот для керування Claude Code (hoquem/claude-code-telegram-bridge)
 - Делегування задач на DeepSeek (deepseek-mcp, claude-code-deepseek-delegator)
+
+## Transcriptor MCP (підключено 2026-09-17)
+
+### Що це
+Хостований MCP-сервер для транскрипції відео/аудіо з 11 платформ:
+YouTube, Twitter/X, Instagram, TikTok, Twitch, Vimeo, Facebook,
+Bilibili, VK, Dailymotion тощо.
+
+### Підключення
+claude mcp add --transport http transcriptor https://transcriptor.gateway.mcpal.io/mcp
+
+### Авторизація
+1. Запустити `claude`
+2. Ввести `/mcp`
+3. Обрати `transcriptor` → Enter → `Authenticate`
+4. Пройти OAuth у браузері (на Termux може не відкритись — копіювати URL вручну)
+
+### Використання
+Попросіть Claude Code: "Use transcriptor to get transcript of <URL>"
+Для конкретної мови: додати "in English" або "with lang=en"
+
+### Підводні камені
+- За замовчуванням може повернути НЕ ту мову (наприклад, німецьку
+  офіційну доріжку замість англійської). Вказуйте мову явно.
+- Хостований сервіс — запити йдуть через чужий сервер. Тільки для
+  публічних відео.
+- Після `claude mcp add` потрібен ПЕРЕЗАПУСК Claude Code, щоб
+  сервер з'явився в `/mcp` (у поточній сесії він не підтягується).
+
+### URL gateway
+https://transcriptor.gateway.mcpal.io/mcp
