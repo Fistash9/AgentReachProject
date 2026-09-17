@@ -145,3 +145,53 @@ claude mcp add --transport http transcriptor https://transcriptor.gateway.mcpal.
 
 ### URL gateway
 https://transcriptor.gateway.mcpal.io/mcp
+
+## Локальна транскрипція аудіо/відео (налаштовано 2026-09-17)
+
+### Що це
+Повний офлайн-цикл: URL → аудіо → текст. Без хмарних сервісів.
+
+### Компоненти
+- **yt-dlp** — завантаження відео/аудіо (вже був у Termux)
+- **ffmpeg** — конвертація форматів (pkg install ffmpeg)
+- **termux-whisper** — обгортка над whisper.cpp
+- **Моделі Whisper** — ggml-base.bin (~142 МБ), ggml-small.bin (~465 МБ)
+
+### Встановлення termux-whisper
+curl -sL https://raw.githubusercontent.com/itsmuaaz/termux-whisper/main/install.sh | bash
+pkg install ncurses-utils -y
+
+### Моделі — де лежать
+~/termux-whisper/whisper.cpp/models/ggml-{base,small}.bin
+
+### Як завантажити модель (якщо треба)
+cd ~/termux-whisper/whisper.cpp && bash ./models/download-ggml-model.sh small
+
+⚠️ Пряме завантаження з hf-mirror.com і github.com/releases часто
+обривається. Офіційний скрипт download-ggml-model.sh працює надійно.
+
+### Використання (приклад)
+mkdir -p ~/tmp && cd ~/tmp
+yt-dlp -x --audio-format mp3 --download-sections "*0-30" -o "test.%(ext)s" "<URL>"
+whisper ~/tmp/test.mp3 --model small
+
+### Результат
+~/tmp/test_TRANSCRIPT.txt (або .srt, .vtt — залежно від прапорців)
+
+### Підводні камені
+- /tmp у Termux недоступний для запису → використовувати ~/tmp
+- У меню Actions після транскрипції НЕ тиснути 1, 2, 3 — можуть
+  зависнути (Open/Clipboard/Share). Тільки 4 = вихід.
+- Модель base на музиці плутає слова. Для мовлення краще small.
+- Whisper — для МОВЛЕННЯ, не для пісень. На співі помиляється
+  навіть large.
+- DNS у Termux іноді відвалюється: тоді
+  echo 'nameserver 8.8.8.8' > $PREFIX/etc/resolv.conf
+  echo 'nameserver 1.1.1.1' >> $PREFIX/etc/resolv.conf
+
+### Порівняння моделей (RAM / розмір / якість)
+- tiny:   ~1 ГБ  / 75 МБ  / базова
+- base:   ~1 ГБ  / 142 МБ / хороша
+- small:  ~2 ГБ  / 465 МБ / краща  ← використовуємо
+- medium: ~5 ГБ  / 1.5 ГБ / висока (повільно на телефоні)
+- large:  ~10 ГБ / 3 ГБ   / найкраща (не для мобільного)
