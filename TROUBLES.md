@@ -195,3 +195,43 @@ whisper ~/tmp/test.mp3 --model small
 - small:  ~2 ГБ  / 465 МБ / краща  ← використовуємо
 - medium: ~5 ГБ  / 1.5 ГБ / висока (повільно на телефоні)
 - large:  ~10 ГБ / 3 ГБ   / найкраща (не для мобільного)
+
+## Claude Code MCP — підводні камені (2026-09-17)
+
+### Синтаксис `claude mcp add`
+- Назва сервера йде ПЕРЕД опціями:
+  `claude mcp add NAME --transport stdio -e KEY=value -- command args`
+- `--env` НЕ працює — тільки `-e`
+- Якщо `-e` поставити перед назвою — парсер з'їдає назву як значення
+
+### Node-сервери
+- Claude Code має мінімальний PATH → симвлінки не знаходяться
+- Треба АБСОЛЮТНІ шляхи:
+  `/data/data/.../bin/node /data/data/.../node_modules/.../dist/index.js`
+- Симлінк `mcp-server-memory` не працює → `ENOENT: posix_spawn`
+
+### Баг: env-змінні не передаються
+- Claude Code (issue #22571) НЕ передає env з конфігу в stdio-процес
+- Наслідок: `MEMORY_FILE_PATH` ігнорується, файл створюється в папці пакета
+- Обхід: скрипт-обгортка, який сам ставить змінну і запускає сервер
+
+### Несумісний MCP
+- `maxylev/modelcontextprotocol` — stateless MCP 2026-07-28, без `initialize`
+- Claude Code для stdio очікує `initialize` → `-32601: initialize`
+- `MCP_PROTOCOL_NEGOTIATION=auto` не допомагає, якщо сервер не має initialize
+
+### server-memory (офіційний)
+- Файл пам'яті: `memory.jsonl` (НЕ `memory.json`!)
+- Читає `MEMORY_FILE_PATH`, якщо абсолютний шлях
+- Але Claude Code його не передає (див. баг вище)
+
+### CLAUDE.md (автозавантаження)
+- Claude Code автоматично читає `CLAUDE.md` з кореня проєкту
+- Перевірка: команда `/context` → секція `Memory files`
+- Симлінк краще робити ВІДНОСНИМ (`RULES.md`, не абсолютний шлях)
+- Git зберігає симлінк з `create mode 120000`
+
+### termux-whisper — меню Actions
+- Після транскрипції НЕ тиснути 1, 2, 3 — можуть зависнути
+- Тільки 4 (Main Menu / Exit)
+- Результат читати через `cat ~/tmp/*_TRANSCRIPT.txt`
