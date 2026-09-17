@@ -154,3 +154,27 @@ Agent Reach — персональний AI-агент у Termux (Android).
 - run-memory.sh
 - run-delegate.sh
 - run-baton.sh
+
+## Оновлення 2026-09-17 (deepseek — під-сесія на DeepSeek)
+
+### Додано
+- **deepseek MCP** — 7-й MCP-сервер, під-сесія Claude Code на DeepSeek
+  (для розмов/рутини, окремо від delegate)
+- **Скрипт:** run-deepseek.sh (4-та обгортка, читає ключ з agent.py)
+- **Відкинуто:** deep-claude — MCP-сервери несумісні з
+  DeepSeek Anthropic-сумісним шаром (офіційна документація DeepSeek)
+
+### MCP-сервери (7 підключені)
+- agent-reach (3 tools)
+- memory (9 tools)
+- transcriptor (8 tools)
+- delegate — делегування на DeepSeek (економія 98%)
+- baton — cross-agent handoff
+- **deepseek** — сесія-чат на DeepSeek ← новий
+- claude.ai Claude Docs (8 tools)
+
+### Скрипти-обгортки (усі через баг #22571)
+- run-memory.sh
+- run-delegate.sh
+- run-baton.sh
+- run-deepseek.sh
