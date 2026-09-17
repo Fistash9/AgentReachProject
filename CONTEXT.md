@@ -127,3 +127,30 @@ Agent Reach — персональний AI-агент у Termux (Android).
 
 ### Відкладено (в BACKLOG.md)
 - Instagram Reels, DeepSeek CLI, A2A, skills/agents, MCP-маніфест
+
+## Оновлення 2026-09-17 (Baton — cross-agent handoff)
+
+### Додано
+- **Baton MCP** — zero-dependency, передача контексту між агентами
+- **Скрипт:** run-baton.sh (обхід таймауту npx)
+- **Файли:** .baton/ (стан), HANDOFF.md (авто-генерований), AGENTS.md -> CLAUDE.md
+- **6 інструментів:** baton_status, baton_pick_up, baton_pass,
+  baton_log, baton_history, baton_init
+
+### MCP-сервери (6 підключені)
+- agent-reach (3 tools)
+- memory (9 tools)
+- transcriptor (8 tools)
+- delegate — делегування на DeepSeek (економія 98%)
+- **baton** — cross-agent handoff ← новий
+- claude.ai Claude Docs (8 tools)
+
+### Правила Baton (у RULES.md)
+- На старті сесії — baton_pick_up
+- Перед завершенням — baton_pass
+- .baton/ і HANDOFF.md — у .gitignore
+
+### Скрипти-обгортки (усі через баг #22571)
+- run-memory.sh
+- run-delegate.sh
+- run-baton.sh
