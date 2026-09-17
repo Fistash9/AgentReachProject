@@ -6,7 +6,6 @@
 ## Активні (плануємо зробити)
 
 - **llm-cost-router-mcp** — MCP для cost-awareness (радить, яка модель дешевша, без ключів)
-- **Instagram Reels cookies** — експорт через Kiwi Browser + yt-dlp --cookies
 - **SERVER.md** — доповнити розділом про tools (обірвано після залежностей)
 - **HELP.txt** — оновити (не згадує delegate, baton, deepseek, Ctrl+B ?)
 - **RULES.md** — додати правило: «Для задач Claude Code — давати повний
@@ -17,6 +16,8 @@
   Другим кроком, після таймер-хука.
 - **task-progress-bar** — ASCII-прогрес-бар з ETA. Потребує структурованого
   task list. Третім кроком.
+- **Дослідити вбудовані Skills Claude Code (anthropic-skills:*)** — які ще є,
+  як їх використовувати, чи можна створювати власні.
 
 ### ✅ memory.jsonl — ВИРІШЕНО (2026-09-17)
 - **Проблема:** Claude Code не передає env-змінні в stdio-процес (баг #22571)
@@ -25,10 +26,13 @@
 - **Рішення:** скрипт run-memory.sh (export MEMORY_FILE_PATH + exec node)
 - **Статус:** ✅ вирішено через скрипт-обгортку
 
-### Instagram Reels — транскрипція
-- **Проблема:** Instagram вимагає автентифікації, публічний доступ заблоковано
-- **Рішення:** експорт cookies через Kiwi Browser + yt-dlp --cookies
-- **Статус:** відкладено
+### ✅ Instagram Reels — транскрипція — ЧАСТКОВО ВИРІШЕНО (2026-09-17)
+- **Гіпотеза (хибна):** Instagram вимагає автентифікації, публічний доступ заблоковано
+- **Факт:** для ПУБЛІЧНИХ Reels transcriptor MCP працює без cookies —
+  метадані (get_video_info) і кадри (get_video_frame) отримано напряму
+- **Не перевірено:** приватні акаунти/reels — cookies (Kiwi Browser + yt-dlp
+  --cookies) можуть знадобитись саме для них, окремо не тестувалось
+- **Статус:** ✅ вирішено для публічних Reels
 
 ## Дослідити (можливо, колись)
 
@@ -79,6 +83,11 @@ Before/after приклад знайдено, міграція готова пі
 - 2026-09-17: mcp-probe перевірка всіх 7 MCP-серверів (5 PASS, 2 вбудовані)
 - 2026-09-17: Fix deepseek MCP — TMPDIR (коміт 12d4329)
 - 2026-09-17: session-timer.sh — доданo EMA-прогноз тривалості кроку (α=0.3)
+- 2026-09-17: transcriptor працює з ПУБЛІЧНИМИ Instagram Reels без cookies
+  (метадані + кадри отримано). Раніша гіпотеза про потребу cookies — хибна
+  для публічних відео.
+- 2026-09-17: Виявлено вбудований Skill anthropic-skills:perevirka-dzherel
+  (перевірка джерел) — Claude Code використав автоматично.
 
 ### ✅ Delegate MCP — ВИРІШЕНО (2026-09-17)
 - **Що:** делегування важких задач на DeepSeek через claude-code-deepseek-delegator
