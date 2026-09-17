@@ -78,6 +78,7 @@ Before/after приклад знайдено, міграція готова пі
 - 2026-09-17: Автоматизація делегування через UserPromptSubmit хук
 - 2026-09-17: mcp-probe перевірка всіх 7 MCP-серверів (5 PASS, 2 вбудовані)
 - 2026-09-17: Fix deepseek MCP — TMPDIR (коміт 12d4329)
+- 2026-09-17: session-timer.sh — доданo EMA-прогноз тривалості кроку (α=0.3)
 
 ### ✅ Delegate MCP — ВИРІШЕНО (2026-09-17)
 - **Що:** делегування важких задач на DeepSeek через claude-code-deepseek-delegator
