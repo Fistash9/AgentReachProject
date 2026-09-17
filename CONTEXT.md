@@ -84,3 +84,24 @@ Agent Reach — персональний AI-агент у Termux (Android).
 4. Сумісну версію MCP-протоколу
 
 Деталі — в ECOSYSTEM.md.
+
+## Оновлення 2026-09-17 (memory MCP + BACKLOG)
+
+### Додано
+- **memory MCP** — knowledge graph пам'ять (9 інструментів)
+- **Запуск:** через `run-memory.sh` (обгортка, обходить баг Claude Code #22571)
+- **Файл пам'яті:** `memory.jsonl` у папці проєкту (у .gitignore)
+- **BACKLOG.md** — список відкладених задач
+
+### MCP-сервери (4 підключені)
+- agent-reach (3 tools) — read, transcribe, status
+- memory (9 tools) — knowledge graph
+- transcriptor (8 tools) — транскрипція 11 платформ
+- claude.ai Claude Docs (8 tools) — вбудований
+
+### Правила активовані
+- CLAUDE.md → RULES.md (симлінк, автозавантаження)
+- Перевірка через /context → Memory files
+
+### Відкладено (в BACKLOG.md)
+- Instagram Reels, DeepSeek CLI, A2A, skills/agents, MCP-маніфест
