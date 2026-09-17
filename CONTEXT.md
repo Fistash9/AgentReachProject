@@ -178,3 +178,12 @@ Agent Reach — персональний AI-агент у Termux (Android).
 - run-delegate.sh
 - run-baton.sh
 - run-deepseek.sh
+
+## Навігація
+- README.md — карта документації та Quick Start
+- RULES.md — правила роботи
+- TROUBLES.md — підводні камені
+- BACKLOG.md — відкладені задачі
+- ECOSYSTEM.md — концепції композиції агентів
+- SERVER.md — опис MCP-сервера
+- HANDOFF.md — стан передачі контексту (Baton)
