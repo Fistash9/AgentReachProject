@@ -9,3 +9,6 @@ agent.py
 __pycache__/
 *.pyc
 .DS_Store
+
+# MCP memory data (local only)
+memory.jsonl
