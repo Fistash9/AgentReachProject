@@ -282,3 +282,19 @@ claude mcp add baton --transport stdio -- ~/AgentReachProject/run-baton.sh
 - baton_init не приймає ціль — тільки створює .baton/
   Ціль задається через baton_pass
 - Після init треба зробити baton_pass, щоб з'явився HANDOFF.md
+
+## deepseek-mcp — під-сесія на DeepSeek (2026-09-17)
+TAGS: deepseek, deepseek-mcp, run-deepseek.sh, deep-claude
+
+### Встановлення
+npm install -g deepseek-mcp
+
+### Скрипт-обгортка run-deepseek.sh
+export DEEPSEEK_API_KEY (читається з agent.py) + PATH, потім exec
+запускає deepseek-mcp сервер (та сама схема обходу бага #22571,
+що й у run-memory.sh / run-delegate.sh / run-baton.sh).
+
+### Факт: deep-claude несумісний з MCP
+За офіційною документацією DeepSeek, MCP-сервери не працюють через
+Anthropic-сумісний шар DeepSeek — тому deep-claude як обгортку
+відкинуто. Використовувати deepseek-mcp напряму.
