@@ -187,3 +187,13 @@ Agent Reach — персональний AI-агент у Termux (Android).
 - ECOSYSTEM.md — концепції композиції агентів
 - SERVER.md — опис MCP-сервера
 - HANDOFF.md — стан передачі контексту (Baton)
+
+## Оновлення 2026-09-17 (після deepseek)
+
+- Fix deepseek TMPDIR (коміт 12d4329)
+- mcp-probe перевірка всіх 7 MCP-серверів (5 PASS, 2 вбудовані)
+- Відхилення llm-routing і chuzom-router (конфлікт mcp>=2.0.0)
+- Рішення: залишитись на mcp<2.0.0, міграція готова під ключ
+- session-timer.sh з EMA-прогнозом (α=0.3)
+- Instagram Reels — вирішено для публічних (без cookies)
+- Виявлено вбудовані Skills (perevirka-dzherel, skill-creator)
