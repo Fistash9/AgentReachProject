@@ -7,6 +7,10 @@
 
 - **llm-cost-router-mcp** — MCP для cost-awareness (радить, яка модель дешевша, без ключів)
 - **Instagram Reels cookies** — експорт через Kiwi Browser + yt-dlp --cookies
+- **SERVER.md** — доповнити розділом про tools (обірвано після залежностей)
+- **HELP.txt** — оновити (не згадує delegate, baton, deepseek, Ctrl+B ?)
+- **RULES.md** — додати правило: «Для задач Claude Code — давати повний
+  промпт з межами, не покрокові інструкції, якщо задача безпечна»
 
 ### ✅ memory.jsonl — ВИРІШЕНО (2026-09-17)
 - **Проблема:** Claude Code не передає env-змінні в stdio-процес (баг #22571)
@@ -53,6 +57,8 @@
 - 2026-09-17: ECOSYSTEM.md — композиція агентних систем
 - 2026-09-17: RULES.md + CLAUDE.md — автозавантаження правил
 - 2026-09-17: Автоматизація делегування через UserPromptSubmit хук
+- 2026-09-17: mcp-probe перевірка всіх 7 MCP-серверів (5 PASS, 2 вбудовані)
+- 2026-09-17: Fix deepseek MCP — TMPDIR (коміт 12d4329)
 
 ### ✅ Delegate MCP — ВИРІШЕНО (2026-09-17)
 - **Що:** делегування важких задач на DeepSeek через claude-code-deepseek-delegator
