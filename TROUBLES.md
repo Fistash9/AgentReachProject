@@ -423,3 +423,21 @@ TAGS: router, AGENTS.md, RULES.md, /cost, /usage, /context, /mcp
 - Наслідок: довелось перевіряти через npm (404 Not Found)
 - Рішення: впроваджено трирівневу систему знань (Sourced/Unverified/
   Hallucinated) з позначкою [unverified]
+
+## Вигадані пакети (Hallucinated), перевірено 2026-09-18
+TAGS: npm, 404, hallucinated, velocity-mcp, task-progress-bar
+
+Перевірено `npm view` — усі три дають 404 Not Found, пакетів не існує:
+- **velocity-mcp** — фігурував у BACKLOG "Активні" як MCP для прогнозу
+  часу. Насправді не існує на npm. Прибрано з BACKLOG.
+- **task-progress-bar** — фігурував у BACKLOG "Активні" як ASCII-
+  прогрес-бар з ETA. Насправді не існує на npm. Прибрано з BACKLOG.
+- **task-progress-bar-claude** — згадувався раніше як приклад
+  вигаданого пакета. Не існує на npm. У BACKLOG "Активні" ніколи
+  не фігурував як окремий пункт.
+
+Контроль: `@modelcontextprotocol/server-memory` (офіційний пакет
+Anthropic) перевірено паралельно — існує, версія 2026.8.31,
+maintainers включають адреси @anthropic.com. Підтверджує, що метод
+перевірки (`npm view`) працює коректно і різниця "існує/не існує"
+не є хибним негативом.
