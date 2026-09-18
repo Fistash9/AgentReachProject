@@ -8,6 +8,21 @@
 - **Дослідити вбудовані Skills Claude Code (anthropic-skills:*)** — які ще є,
   як їх використовувати, чи можна створювати власні.
 
+### pkgtruth — автоматична перевірка пакетів
+- **Мета:** MCP-сервер для верифікації пакетів перед встановленням
+- **Проблема:** галюцинації пакетів (19.7% рекомендацій LLM — вигадані,
+  USENIX Security 2025, "We Have a Package for You!", Spracklen et al.
+  — перевірено 2026-09-18, usenix.org/system/files/usenixsecurity25-spracklen.pdf)
+- **Рішення:** pkgtruth (вердикти SAFE/CAUTION/DANGER/HALLUCINATED,
+  github.com/hxckya/pkgtruth, npm v0.2.2), slopsquash (npm v1.0.1,
+  github.com/slopsquash/slopsquash), package-guard-mcp (npm v1.4.0,
+  github.com/mlawsonking/MCP), package-verify-mcp (npm v0.1.0,
+  github.com/Anicodeth/package-verify-mcp) — усі 4 перевірено на
+  npm, мають GitHub-репо (перевірено 2026-09-18)
+- **Статус:** дослідити (не встановлювати зараз)
+- **Деталі:** трирівнева система знань уже в RULES.md — pkgtruth її
+  автоматизує
+
 ### ✅ memory.jsonl — ВИРІШЕНО (2026-09-17)
 - **Проблема:** Claude Code не передає env-змінні в stdio-процес (баг #22571)
 - **Наслідок:** `memory.jsonl` створюється в папці пакета, а не в проєкті
