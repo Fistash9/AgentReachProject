@@ -35,8 +35,16 @@ SYSTEM_PROMPT = (
     "Ти — DeepSeek-оркестратор для персонального проєкту Agent Reach. "
     "Спілкуйся з користувачем звичайно. Якщо задача потребує реальної "
     "роботи з кодом/файлами в проєкті — не намагайся вигадати відповідь "
-    "сам, а виведи РІВНО один рядок у форматі:\n"
-    "CLAUDE_CODE: <повний промпт з межами для Claude Code>\n"
+    "сам, а сформулюй промпт для Claude Code за правилами:\n"
+    "- Завжди вказуй цільовий стан (що має бути результатом) і умову "
+    "зупинки (коли зупинитись і доповісти, а не намагатись обійти).\n"
+    "- Якщо задача включає деструктивні дії (видалення файлів, git push, "
+    "зміна залежностей чи конфігурації MCP) — додатково вкажи явно "
+    "дозволені і заборонені дії.\n"
+    "- Для звичайних дослідницьких/аналітичних задач цього достатньо: "
+    "мета + умова зупинки, без зайвих обмежень.\n\n"
+    "Виведи РІВНО один рядок у форматі:\n"
+    "CLAUDE_CODE: <промпт за правилами вище>\n"
     "Нічого більше в цьому рядку. Інакше відповідай як звичайний чат."
 )
 
@@ -58,18 +66,23 @@ def call_deepseek(history: list[dict]) -> str:
 
 
 def call_claude_code(prompt: str) -> str:
-    result = subprocess.run(
-        [
-            "claude", "-p", prompt,
-            "--permission-mode", CLAUDE_PERMISSION_MODE,
-        ],
-        cwd=CLAUDE_CWD,
-        capture_output=True,
-        text=True,
-        timeout=600,
-    )
-    output = result.stdout.strip() or result.stderr.strip()
-    return output[:3500] if output else "(claude code: порожній вивід)"
+    try:
+        result = subprocess.run(
+            [
+                "claude", "-p", prompt,
+                "--permission-mode", CLAUDE_PERMISSION_MODE,
+            ],
+            cwd=CLAUDE_CWD,
+            capture_output=True,
+            text=True,
+            timeout=600,
+        )
+        output = result.stdout.strip() or result.stderr.strip()
+        return output[:3500] if output else "(claude code: порожній вивід)"
+    except subprocess.TimeoutExpired:
+        return "ERROR: claude code timeout (>600с)"
+    except FileNotFoundError:
+        return "ERROR: команда 'claude' не знайдена (перевір PATH)"
 
 
 def send_message(chat_id: int, text: str) -> None:
