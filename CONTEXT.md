@@ -31,6 +31,24 @@ Agent Reach — персональний AI-агент у Termux (Android).
 - **Інструменти MCP (agent-reach):** read (сторінки через r.jina.ai), transcribe, status
 - **MCP (transcriptor):** хостований, транскрипція YouTube/TikTok/X/Instagram (11 платформ). URL: https://transcriptor.gateway.mcpal.io/mcp
 
+## Архітектура (оновлення 2026-09-18)
+Знімок вище — стан на 2026-09-16, лишено без змін для історії.
+Актуальний стан:
+- **MCP-сервери (7 підключено):** agent-reach (3 tools), memory
+  (9 tools, knowledge graph), transcriptor (8 tools, хостований,
+  11 платформ), delegate (делегування на DeepSeek, ~98% економія
+  vs Opus), baton (cross-agent handoff), deepseek (під-сесія на
+  DeepSeek), claude.ai Claude Docs (8 tools, вбудований)
+- **Python `mcp`:** встановлено 1.30.0, пінований `<2.0.0` (latest
+  на pip зараз 2.2.0 — перевірено 2026-09-18, див. TROUBLES.md)
+- **Скрипти-обгортки (усі через баг Claude Code #22571):**
+  run-memory.sh, run-delegate.sh, run-baton.sh, run-deepseek.sh
+- **Перший власний Skill:** session-close (закриття сесії,
+  checkpoint, baton_pass)
+- **Система верифікації:** RULES.md — "Рівні знань" (Sourced/
+  Unverified/Hallucinated) + правило "Перед рекомендацією
+  пакета/URL" + "Журнал vs знімок стану"
+
 ## Принципи роботи
 - Все робимо **покроково**: одна дія — один результат — перевірка
 - Складні задачі — розбиваємо на етапи
@@ -59,6 +77,14 @@ Agent Reach — персональний AI-агент у Termux (Android).
 Транскрипція аудіо/відео з різних джерел — БАЗОВО ПРАЦЮЄ через
 джерел (YouTube, TikTok, X, подкасти тощо) — і додавати нові джерела
 без переписування логіки.
+
+## Поточний фокус (оновлення 2026-09-18)
+Гігієна документації та дисципліна верифікації: перевірка тверджень
+перед записом у BACKLOG/TROUBLES (перевірка пакетів/URL, рівні знань
+Sourced/Unverified/Hallucinated), розрізнення "журнал vs знімок стану"
+у файлах проєкту, дослідження автоматизації рутинних процесів
+(git-цикл, baton_pass). Транскрипція (YouTube/Instagram публічні) —
+базово працює, TikTok/X і приватні Instagram-акаунти не тестовано.
 
 ## Відкриті питання / ідеї на майбутнє
 - Екосистема агентів: делегуючий агент розподіляє задачі між іншими
