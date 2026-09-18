@@ -38,7 +38,8 @@
 
 ## Запис знань
 - Технічні знахідки → TROUBLES.md
-- Правила та формат роботи → RULES.md (він же CLAUDE.md)
+- Правила та формат роботи → RULES.md (реальний файл; симлінки
+  AGENTS.md → CLAUDE.md → RULES.md — усі три імені ведуть сюди)
 - Відкладене → BACKLOG.md
 - Стан проєкту → CONTEXT.md
 - Концепції → ECOSYSTEM.md
