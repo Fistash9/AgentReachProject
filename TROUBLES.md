@@ -407,3 +407,12 @@ TAGS: skills, security, perevirka-dzherel, zvirka-bazy, skill-creator, deepseek
 
 Загальний висновок: прихованого ексфільтру, eval/exec, shell-ін'єкцій
 не виявлено. Skills безпечні для використання.
+
+## Router-паттерн і /cost (2026-09-18)
+TAGS: router, AGENTS.md, RULES.md, /cost, /usage, /context, /mcp
+
+- Router (AGENTS.md як окремий файл) НЕ підходить для малих
+  проєктів (RULES.md < 200 рядків) — правила перестають
+  завантажуватись. Рішення: один файл (навігація + правила).
+- /cost — UI-команда Claude Code, AI не може викликати.
+  Тільки користувач вручну. Аналогічно: /usage, /context, /mcp.

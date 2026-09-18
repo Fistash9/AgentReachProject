@@ -89,6 +89,11 @@ Before/after приклад знайдено, міграція готова пі
 - **Ідеї:** search, save, list_feeds
 - **Статус:** не визначено
 
+### Freebuff (2026-09-18)
+- **Що:** github.com/CodebuffAI/freebuff
+- **Статус:** чекати PR #1377 (ARM Linux fix). Або @nyxur/freebuff
+  (Termux-форк).
+
 ## Завершено (для історії)
 - 2026-09-17: Локальна транскрипція (yt-dlp + ffmpeg + whisper.cpp)
 - 2026-09-17: ECOSYSTEM.md — композиція агентних систем
@@ -102,6 +107,9 @@ Before/after приклад знайдено, міграція готова пі
   для публічних відео.
 - 2026-09-17: Виявлено вбудований Skill anthropic-skills:perevirka-dzherel
   (перевірка джерел) — Claude Code використав автоматично.
+- 2026-09-18: session-close Skill (перший власний)
+- 2026-09-18: Skills security audit (perevirka-dzherel,
+  zvirka-bazy, skill-creator)
 
 ### ✅ Delegate MCP — ВИРІШЕНО (2026-09-17)
 - **Що:** делегування важких задач на DeepSeek через claude-code-deepseek-delegator

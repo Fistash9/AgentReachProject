@@ -197,3 +197,9 @@ Agent Reach — персональний AI-агент у Termux (Android).
 - session-timer.sh з EMA-прогнозом (α=0.3)
 - Instagram Reels — вирішено для публічних (без cookies)
 - Виявлено вбудовані Skills (perevirka-dzherel, skill-creator)
+
+## Оновлення 2026-09-18
+
+- session-close Skill створено (перший власний Skill,
+  `.claude/skills/session-close/`)
+- Skills security audit: 3 скіли перевірено (2 низький, 1 середній)
