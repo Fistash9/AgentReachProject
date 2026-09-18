@@ -383,3 +383,27 @@ TAGS: skills, anthropic-skills, perevirka-dzherel, skill-creator
   «Create new skills, modify and improve existing skills, and measure
   skill performance»
 - Як створювати власні — дослідити в наступній сесії (почати з skill-creator)
+
+## Перевірка вбудованих Skills (2026-09-18)
+TAGS: skills, security, perevirka-dzherel, zvirka-bazy, skill-creator, deepseek
+
+Три Skills перевірено на безпеку (read-only, через DeepSeek):
+
+1. perevirka-dzherel — низький ризик
+   - Тільки SKILL.md (102 рядки), без скриптів
+   - Мережа: немає прямих викликів (текстові рекомендації)
+   - MCP: не згадується
+
+2. zvirka-bazy — низький ризик
+   - Тільки SKILL.md (100 рядків), без скриптів
+   - MCP: memory_list, project_info, project_search
+   - Ризик низький — сам скіл нічого не виконує
+
+3. skill-creator — середній ризик
+   - 8 Python-скриптів (subprocess, browser, файлова система)
+   - Мережа: через зовнішній Claude CLI (subprocess), не прямий HTTP
+   - Небезпечні примітиви (eval/exec/os.system/shutil.rmtree) — НЕ знайдено
+   - Ризик середній через потужність (очікувано для skill-creator)
+
+Загальний висновок: прихованого ексфільтру, eval/exec, shell-ін'єкцій
+не виявлено. Skills безпечні для використання.
