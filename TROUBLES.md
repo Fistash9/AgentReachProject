@@ -466,3 +466,37 @@ TAGS: perevirka-dzherel, skill, автозавантаження, тест, mcp-
 ### Наслідок для системи
 - Не покладатись на автозавантаження perevirka-dzherel
 - Правило в RULES.md — основна лінія захисту
+
+## Три "роутери" — не плутати (2026-09-18)
+TAGS: router, llm-routing, chuzom-router, llm-cost-router-mcp, AGENTS.md
+
+- **Модельний роутер**: llm-routing, chuzom-router — routing між
+  LLM-провайдерами. Відкинуто (конфлікт mcp>=2.0.0).
+- **Cost-роутер**: llm-cost-router-mcp — тільки радить ціни, не
+  виконує. Unverified.
+- **Контекст-роутер**: AGENTS.md як окремий файл — навігація по
+  файлах. Відкочено (правила перестають завантажуватись).
+
+## Python pip mcp vs npm @modelcontextprotocol/sdk (2026-09-18)
+TAGS: mcp, pip, npm, @modelcontextprotocol/sdk, екосистеми
+
+- Це РІЗНІ екосистеми, не конфліктують.
+- agent-reach (Python) використовує pip mcp 1.30.0 — вимагає <2.0.0.
+- baton/delegate/deepseek (Node.js) використовують npm
+  @modelcontextprotocol/sdk ^1.0.0.
+- Встановлення npm-пакета НЕ чіпає pip-оточення.
+
+## UI-only команди Claude Code (2026-09-18)
+TAGS: /cost, /usage, /context, /mcp, /skills, /exit, UI-only
+
+- AI НЕ може викликати: /cost, /usage, /context, /mcp, /skills, /exit
+- Тільки користувач вручну
+- /skills додано до переліку (раніше не було)
+
+## Інструменти трекінгу витрат — розглянуто і відкинуто (2026-09-18)
+TAGS: ccusage, ccost, tokenwise, cost-guardian, meter-ai, claude-burn
+
+- ccusage, ccost, tokenwise, cost-guardian, meter-ai, claude-burn
+- Вбудованого /cost достатньо (показує вартість сесії, моделі,
+  prompt cache, ліміти)
+- Не встановлювати без нової причини
