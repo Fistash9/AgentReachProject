@@ -6,12 +6,10 @@
 ## Активні (плануємо зробити)
 
 - **llm-cost-router-mcp** — MCP для cost-awareness (радить, яка модель дешевша, без ключів)
-- **SERVER.md** — доповнити розділом про tools (обірвано після залежностей)
-- **HELP.txt** — оновити (не згадує delegate, baton, deepseek, Ctrl+B ?)
 - **RULES.md** — додати правило: «Для задач Claude Code — давати повний
   промпт з межами, не покрокові інструкції, якщо задача безпечна»
-- **claude-code-session-timer-hook** — простий Python-хук, показує час кожного
-  кроку. Мінімальний ризик, не конфліктує з classify-task.sh.
+  (НЕ виконано — комміт 867e244 додав інше правило, про перевірку
+  пакетів/URL, а не це)
 - **velocity-mcp** — MCP для прогнозу часу (навчається на історії задач).
   Другим кроком, після таймер-хука.
 - **task-progress-bar** — ASCII-прогрес-бар з ETA. Потребує структурованого
@@ -110,6 +108,8 @@ Before/after приклад знайдено, міграція готова пі
 - 2026-09-18: session-close Skill (перший власний)
 - 2026-09-18: Skills security audit (perevirka-dzherel,
   zvirka-bazy, skill-creator)
+- 2026-09-18: SERVER.md доповнено розділом Tools (read/transcribe/status)
+- 2026-09-18: HELP.txt оновлено (delegate, baton, deepseek)
 
 ### ✅ Delegate MCP — ВИРІШЕНО (2026-09-17)
 - **Що:** делегування важких задач на DeepSeek через claude-code-deepseek-delegator
