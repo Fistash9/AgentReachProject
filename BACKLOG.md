@@ -36,6 +36,20 @@
 
 ## Дослідити (можливо, колись)
 
+### chrome-bridge-mcp — доступ Claude Code до Chrome (2026-09-18)
+- **Мета:** дати Claude Code (Termux) доступ до залогіненого Chrome
+  на комп'ютері для читання claude.ai чатів і налаштувань
+- **Чому не офіційне Claude in Chrome:** розширення завжди підключається
+  до десктопного Claude.app, ігнорує Claude Code; не призначене для
+  експорту історії
+- **Рішення:** chrome-bridge-mcp (github.com/frsorrentino/chrome-bridge)
+- **Умови:** Node.js 18+, Chrome 135+
+- **План:**
+  1. Встановити на КОМП'ЮТЕРІ (не в Termux — ARM64 ризик)
+  2. Увімкнути розширення в chrome://extensions (Developer mode)
+  3. Підключити до Claude Code в Termux через HTTP + IP комп'ютера
+- **Статус:** відкладено — зробимо пізніше
+
 ### claude-code-llm-router (llm-routing) — СКАСОВАНО (2026-09-17)
 - **Проблема:** вимагає `mcp>=2.0.0`, що зламає agent-reach (жорстко пінований на `mcp<2.0.0`)
 - **Обхідний шлях:** `pipx install` (ізольований venv, не чіпає глобальний mcp) — окрема задача
