@@ -59,6 +59,8 @@ Agent Reach — персональний AI-агент у Termux (Android).
   без виконання) — див. ECOSYSTEM.md, розділ про ризики
 - **Другий власний Skill:** unlazy (anti-laziness, acceptance gates,
   встановлено project-scoped через `.claude/settings.local.json`)
+- **MCP-сервери (8 підключено):** + pkgtruth (верифікація пакетів
+  проти галюцинацій, wrapper run-pkgtruth.sh через баг shebang)
 
 ## Принципи роботи
 - Все робимо **покроково**: одна дія — один результат — перевірка

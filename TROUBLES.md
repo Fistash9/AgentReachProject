@@ -656,3 +656,27 @@ TAGS: toil, shelfware, audit, unlazy, memory MCP, на око
    Stop-хук до markdown-роботи, чи взагалі варто для non-code задач),
    не 2-хвилинна дія. Наступний крок: спробувати `--bind` на
    наступній реальній кодовій задачі (не документації), а не зараз
+
+## pkgtruth MCP — встановлено, той самий баг shebang (2026-09-19)
+TAGS: pkgtruth, mcp, shebang, /usr/bin/env, wrapper
+
+### Симптом
+`npm install -g pkgtruth` пройшов, але прямий запуск падав:
+`/usr/bin/env: bad interpreter: No such file or directory`
+
+### Причина
+Той самий відомий баг, що й у mcp-probe (TROUBLES.md, "MCP-probe
+результати"): shebang `#!/usr/bin/env node`, а в Termux немає
+`/usr/bin/env` за стандартним шляхом.
+
+### Рішення
+Обгортка `run-pkgtruth.sh`, запускає напряму через
+`/data/data/com.termux/files/usr/bin/node`, зареєстровано:
+`claude mcp add pkgtruth --transport stdio -- run-pkgtruth.sh`
+
+### Перевірено
+- `pkgtruth check velocity-mcp` → HALLUCINATED (той самий 404, що
+  ми знайшли вручну в аудиті 2026-09-18)
+- `pkgtruth check requests` → SAFE
+- Має і `pkgtruth hook` — PreToolUse hook, що блокує install вигаданих
+  пакетів автоматично (не підключено ще — окреме рішення)
