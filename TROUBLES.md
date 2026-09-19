@@ -696,3 +696,30 @@ TAGS: pkgtruth, mcp, shebang, /usr/bin/env, wrapper
 - `npm install velocity-mcp` → deny, exit 2, точна причина
   (HALLUCINATED + пропозиція реальних альтернатив)
 - `npm install requests` → пропущено мовчки, exit 0
+
+## baton-reminder-hook — нагадування про застарілий baton_pass (2026-09-19)
+TAGS: baton-reminder-hook, git push, ledger.jsonl, нагадування
+
+### Проблема
+`baton_pass` вимагає LLM-синтезу (не детерміноване завдання) — не
+можна автоматизувати повністю, як classify-task.sh/pkgtruth/
+troubles-grep. Але сам ТРИГЕР "час нагадати" — детермінований:
+кількість комітів від останнього pass.
+
+### Прецедент (перевірено 2026-09-19)
+`Tamircohen28/tamirs-superpowers` — реальний репозиторій, має
+"handoff-reminder" хук, той самий концепт (SessionEnd, не PreToolUse).
+Дослідження також підказало: `git push` — природний момент "робота
+відвантажена", кращий тригер, ніж довільний таймер.
+
+### Рішення
+`.claude/hooks/baton-reminder-hook.py` — PreToolUse на `git push`,
+читає `.baton/ledger.jsonl`, знаходить останній `event: pass`,
+рахує `git log --since=<ts>`. Поріг: 5 комітів. Тільки інформує
+(additionalContext), не блокує push.
+
+### Перевірено (4 сценарії)
+- `git push` при 2 комітах (< порогу) → мовчить
+- `git status` (не push) → мовчить завжди
+- Підставний старий ledger (81 коміт) → спрацював, правильне число
+- `commits_since()` окремо звірено з реальним `git log`
