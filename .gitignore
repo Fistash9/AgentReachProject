@@ -22,3 +22,6 @@ HANDOFF.md
 .unlazy/
 .unlazy-hook-state.json
 .claude/settings.local.json
+
+# Trash — recoverable deletions, local only (TRASH.md log is committed)
+.trash/
