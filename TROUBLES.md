@@ -678,5 +678,14 @@ TAGS: pkgtruth, mcp, shebang, /usr/bin/env, wrapper
 - `pkgtruth check velocity-mcp` → HALLUCINATED (той самий 404, що
   ми знайшли вручну в аудиті 2026-09-18)
 - `pkgtruth check requests` → SAFE
-- Має і `pkgtruth hook` — PreToolUse hook, що блокує install вигаданих
-  пакетів автоматично (не підключено ще — окреме рішення)
+
+### PreToolUse hook підключено (2026-09-19)
+`.claude/settings.local.json` (project-scoped, поза git — зроблено
+`.bak` перед правкою за правилом "Бекап поза git"). Виклик напряму
+через node, НЕ через `npx -y pkgtruth hook` з офіційного README —
+`npx` має відомий баг таймауту в цьому Termux (див. запис про baton).
+
+Перевірено:
+- `npm install velocity-mcp` → deny, exit 2, точна причина
+  (HALLUCINATED + пропозиція реальних альтернатив)
+- `npm install requests` → пропущено мовчки, exit 0
