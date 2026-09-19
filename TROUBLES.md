@@ -37,7 +37,7 @@ TAGS: cryptography, PyModule_Type, _rust.abi3.so, dlopen
 
 ---
 ## #05 — agent-reach rss / read не існують
-TAGS: agent-reach, rss, read, команда, CLI
+TAGS: agent-reach, rss, read, invalid-choice, CLI
 СИМПТОМ: error: argument command: invalid choice: 'rss'
 ПРИЧИНА: у CLI agent-reach немає команд rss і read
 РЕАЛЬНІ КОМАНДИ: setup, install, configure, doctor, uninstall, skill, format, transcribe, check-update, watch, version
