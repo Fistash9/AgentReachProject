@@ -5,8 +5,6 @@
 
 ## Активні (плануємо зробити)
 
-- **Дослідити вбудовані Skills Claude Code (anthropic-skills:*)** — які ще є,
-  як їх використовувати, чи можна створювати власні.
 - **Instagram Reels — приватні акаунти не перевірено.** Для ПУБЛІЧНИХ
   Reels transcriptor MCP уже працює без cookies (див. Завершено).
   Приватні акаунти/reels — cookies (Kiwi Browser + yt-dlp --cookies)
@@ -185,6 +183,16 @@ Before/after приклад знайдено, міграція готова пі
   не покрокові інструкції, якщо задача безпечна»
 - 2026-09-18: deepseek — тест на складній задачі пройдено (~112 сек,
   11/11 розділів RULES.md, деталі в TROUBLES.md)
+- 2026-09-18: Дослідити вбудовані Skills Claude Code — закрито мовчки
+  (звірка 2026-09-19): session-close і unlazy створено/встановлено,
+  кілька Skills перевірено (perevirka-dzherel, zvirka-bazy,
+  skill-creator), власні Skills можна створювати — підтверджено
+- 2026-09-18: telegram_deepseek_bot.py — MVP Telegram↔DeepSeek
+  оркестратор побудовано й доопрацьовано (гнучкий SYSTEM_PROMPT,
+  виправлено crash на subprocess timeout). Деталі — ECOSYSTEM.md
+- 2026-09-18: Unlazy Skill встановлено (project-scoped, без
+  --global) — anti-laziness / acceptance gates для майбутніх
+  кодових задач
 
 ### ✅ memory.jsonl — ВИРІШЕНО (2026-09-17)
 - **Проблема:** Claude Code не передає env-змінні в stdio-процес (баг #22571)

@@ -49,6 +49,17 @@ Agent Reach — персональний AI-агент у Termux (Android).
   Unverified/Hallucinated) + правило "Перед рекомендацією
   пакета/URL" + "Журнал vs знімок стану"
 
+## Архітектура (оновлення 2026-09-19)
+Знімки вище — стани на 2026-09-16 і 2026-09-18, лишено без змін.
+Додано пізніше того самого дня (2026-09-18), не потрапило в
+попередній знімок:
+- **telegram_deepseek_bot.py** — MVP Telegram↔DeepSeek оркестратор,
+  делегує кодові задачі Claude Code через `claude -p`. Секрети в
+  `.env` (gitignored). Дефолт `CLAUDE_PERMISSION_MODE=plan` (безпечно,
+  без виконання) — див. ECOSYSTEM.md, розділ про ризики
+- **Другий власний Skill:** unlazy (anti-laziness, acceptance gates,
+  встановлено project-scoped через `.claude/settings.local.json`)
+
 ## Принципи роботи
 - Все робимо **покроково**: одна дія — один результат — перевірка
 - Складні задачі — розбиваємо на етапи
