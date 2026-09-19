@@ -16,3 +16,8 @@ memory.jsonl
 # Baton handoff state (local only)
 .baton/
 HANDOFF.md
+
+# Unlazy local coordination state (local only)
+.unlazy/
+.unlazy-hook-state.json
+.claude/settings.local.json
