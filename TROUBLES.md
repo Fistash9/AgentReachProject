@@ -89,6 +89,7 @@ TAGS: git, API-ключ, agent.py, .gitignore, секрет
 
 
 ## Claude Code + MCP (підключено 2026-09-16)
+TAGS: claude code, mcp, agent-reach, підключення, mcp add
 
 ### Встановлення
 curl -fsSL https://raw.githubusercontent.com/bd-loser/claude-code-termux/main/install.sh | bash
@@ -116,6 +117,7 @@ claude                   # запуск сесії, потім /mcp
 - Делегування задач на DeepSeek (deepseek-mcp, claude-code-deepseek-delegator)
 
 ## Transcriptor MCP (підключено 2026-09-17)
+TAGS: transcriptor, mcp, youtube, tiktok, instagram, twitter, транскрипція
 
 ### Що це
 Хостований MCP-сервер для транскрипції відео/аудіо з 11 платформ:
@@ -147,6 +149,7 @@ claude mcp add --transport http transcriptor https://transcriptor.gateway.mcpal.
 https://transcriptor.gateway.mcpal.io/mcp
 
 ## Локальна транскрипція аудіо/відео (налаштовано 2026-09-17)
+TAGS: yt-dlp, ffmpeg, whisper, whisper.cpp, транскрипція, локальна
 
 ### Що це
 Повний офлайн-цикл: URL → аудіо → текст. Без хмарних сервісів.
@@ -197,6 +200,7 @@ whisper ~/tmp/test.mp3 --model small
 - large:  ~10 ГБ / 3 ГБ   / найкраща (не для мобільного)
 
 ## Claude Code MCP — підводні камені (2026-09-17)
+TAGS: claude mcp add, env, memory, path, node, initialize
 
 ### Синтаксис `claude mcp add`
 - Назва сервера йде ПЕРЕД опціями:
@@ -245,6 +249,7 @@ whisper ~/tmp/test.mp3 --model small
 - **Дата:** 2026-09-17
 
 ## Baton MCP — cross-agent handoff (2026-09-17)
+TAGS: baton, npx, handoff, timeout, agents
 
 ### Що це
 Zero-dependency MCP-сервер для передачі контексту між агентами
@@ -300,6 +305,7 @@ Anthropic-сумісний шар DeepSeek — тому deep-claude як обг�
 відкинуто. Використовувати deepseek-mcp напряму.
 
 ## Claude Code на Termux — вихід (2026-09-17)
+TAGS: exit, termux, ctrl+c
 
 - Ctrl+C НЕ виходить з Claude Code на Termux (не реагує)
 - Треба використовувати /exit + Enter
@@ -418,6 +424,7 @@ TAGS: router, AGENTS.md, RULES.md, /cost, /usage, /context, /mcp
   Тільки користувач вручну. Аналогічно: /usage, /context, /mcp.
 
 ## Урок: неверифіковані твердження (2026-09-18)
+TAGS: chuzom-router, verification, unverified, backlog, npm
 - Твердження "chuzom-router = llm-routing" потрапило в BACKLOG
   як факт, хоча було припущенням AI (джерело невідоме)
 - Наслідок: довелось перевіряти через npm (404 Not Found)
