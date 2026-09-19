@@ -223,6 +223,16 @@ Before/after приклад знайдено, міграція готова пі
   #!/usr/bin/env, той самий баг, що й у mcp-probe). Перевірено:
   коректно розпізнав velocity-mcp як HALLUCINATED (наш власний
   давніший 404-кейс) і реальний пакет як SAFE
+  - **Відновлено 2026-09-19 (втрачено при попередньому редагуванні
+    без підтвердження):** проблема, яку pkgtruth вирішує —
+    галюцинації пакетів (19.7% рекомендацій LLM — вигадані, USENIX
+    Security 2025, "We Have a Package for You!", Spracklen et al.,
+    usenix.org/system/files/usenixsecurity25-spracklen.pdf).
+    Досліджені альтернативи, які НЕ встановлено (не порівнювались
+    напряму з pkgtruth, просто інші кандидати з того самого пошуку):
+    slopsquash (npm v1.0.1, github.com/slopsquash/slopsquash),
+    package-guard-mcp (npm v1.4.0, github.com/mlawsonking/MCP),
+    package-verify-mcp (npm v0.1.0, github.com/Anicodeth/package-verify-mcp)
 
 ### ✅ memory.jsonl — ВИРІШЕНО (2026-09-17)
 - **Проблема:** Claude Code не передає env-змінні в stdio-процес (баг #22571)
