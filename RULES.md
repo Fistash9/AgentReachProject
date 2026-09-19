@@ -48,6 +48,14 @@
   або позначати [unverified].
 - Твердження про власний код — не потребують веб-верифікації.
 
+## Бекап поза git
+- Файли в .gitignore (.env, agent.py, settings.local.json, HANDOFF.md,
+  .baton/) НЕ мають git-історії — git checkout/revert їх не врятує.
+- Перед зміною такого файлу скриптом/хуком — робити .bak-копію перед
+  перезаписом (як Unlazy робить для settings.local.json).
+- Для файлів під git (BACKLOG.md, TROUBLES.md, CONTEXT.md, RULES.md) —
+  git і є бекап, додатковий .bak не потрібен.
+
 ## Checkpoint
 - Оновлювати CONTEXT.md ДО стиснення контексту (60-70% заповнення).
 - Після кожної сесії — записувати рецепти в TROUBLES.md.
