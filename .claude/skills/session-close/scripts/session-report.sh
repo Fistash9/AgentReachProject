@@ -18,11 +18,13 @@ fi
 echo
 echo "=== BACKLOG.md: зміни ==="
 BASE_COMMIT=""
+FALLBACK=0
 if [ -n "$SINCE_TS" ]; then
   BASE_COMMIT="$(git log --before="$SINCE_TS" -1 --format=%H -- . || true)"
 fi
 if [ -z "$BASE_COMMIT" ]; then
   BASE_COMMIT="$(git rev-list --max-parents=0 HEAD | tail -1)"
+  FALLBACK=1
   echo "(увага: точку відліку baton не знайдено, порівнюю з першим комітом репо)"
 fi
 BACKLOG_DIFF="$(git diff "$BASE_COMMIT" -- BACKLOG.md)"
@@ -60,7 +62,12 @@ fi
 echo
 echo "=== КОМІТИ З ОСТАННЬОГО BATON PICK-UP ==="
 if [ -n "$BASE_COMMIT" ]; then
-  LOG="$(git log "$BASE_COMMIT"..HEAD --format='- %s')"
+  if [ "$FALLBACK" -eq 1 ]; then
+    echo "(увага: фолбек — це НЕ коміти сесії, а історія від першого коміту; показано останні 20)"
+    LOG="$(git log "$BASE_COMMIT"..HEAD -n 20 --format='- %s')"
+  else
+    LOG="$(git log "$BASE_COMMIT"..HEAD --format='- %s')"
+  fi
   if [ -z "$LOG" ]; then
     echo "(нових комітів немає)"
   else
