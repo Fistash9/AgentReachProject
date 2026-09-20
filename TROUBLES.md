@@ -965,3 +965,61 @@ issue не сказано. Змінна `CLAUDE_CODE_DISABLE_SEARCH_SHIMS=1`
 ### Урок (доповнення)
 Код shim треба читати ДО запису його шляху в конфіг, а не після. Після
 знахідки на одному інструменті (`grep`) перевіряти споріднені (`rg`).
+
+## grep/find: обхід через `unset -f` у shell-snapshot (2026-09-20)
+TAGS: grep, find, shell, termux, claude-code, snapshot, workaround
+
+**Статус запису вище (879–967) змінився:** обидва спробувані фікси через
+змінні не спрацювали, знайдено справжнє джерело shim і тимчасовий обхід.
+Оригінальний запис не змінювався.
+
+**Що не спрацювало (перевірено в новій сесії 2026-09-20):**
+- `CLAUDE_CODE_DISABLE_SEARCH_SHIMS=1` виставлена (`printenv` → `1`), але
+  функції `grep`/`find` у snapshot усе одно згенеровані. Змінну Claude
+  Code для цих обгорток, схоже, не враховує [unverified: код перевірки в
+  бінарнику не читався]. Звідки змінна взялась у середовищі — у цій
+  сесії не перевіряв.
+- `CLAUDE_CODE_EXECPATH` у Bash-інструменті досі
+  `/data/data/com.termux/files/usr/glibc/lib/ld-linux-aarch64.so.1`. Це
+  збігається з вироком із запису вище: Claude Code перезаписує змінну сам,
+  фікс через `env` не діє.
+
+**Де насправді shim (Sourced, файли прочитано):**
+- НЕ в профілях: `~/.bashrc`, `usr/etc/bash.bashrc`, `usr/etc/profile`,
+  `usr/etc/glibc-runner.bashrc`, `usr/etc/profile.d/*` — жодного збігу з
+  `_cc_bin`, `ARGV0=ugrep|bfs`, `DISABLE_SEARCH_SHIMS`. `~/.zshrc`,
+  `~/.zshenv`, `~/.profile`, `~/.bash_profile` не існують.
+- У автозгенерованому snapshot:
+  `~/.claude/shell-snapshots/snapshot-bash-<мітка часу>-<id>.sh`
+  (тоді: `snapshot-bash-1789905035789-a8ctpa.sh`, створений о 14:50).
+  Рядок 3 `unalias -a`; рядки 96–125 `function find`/`function grep`; `rg`
+  з рядка ~83; `pkill` з рядка ~128. Усі беруть
+  `_cc_bin="${CLAUDE_CODE_EXECPATH}"` і запускають його як
+  `exec -a ugrep|bfs "$_cc_bin" -G|-S ...`.
+
+**Тимчасовий обхід (працює в поточній сесії):**
+1. Копія: `cp -p <snapshot> <snapshot>.bak` (`cmp` — файли ідентичні).
+2. У кінець snapshot додано: `unset -f grep find rg pkill`.
+3. У НАСТУПНИХ Bash-викликах (не в тому самому, де правили файл):
+   `echo abc | grep -c b` → `1`, код 0;
+   `find . -maxdepth 1 -name '*.md'` → 12 файлів, код 0;
+   `type grep` → `/data/data/com.termux/files/usr/bin/grep`; `type find`
+   → hashed `/data/data/com.termux/files/usr/bin/find`. Помилки ld.so
+   немає. `rg` після обходу не перевірявся.
+Відкат: скопіювати `<snapshot>.bak` назад на місце snapshot.
+
+**НЕ перевірено (наступний крок):** чи переживе обхід нову сесію / перезапуск
+Termux. Ім'я snapshot містить мітку часу, тож нова сесія, схоже, створить
+свіжий файл без рядка `unset` [unverified]. Тест у новій сесії:
+1. `echo abc | grep -c b` → `1` означає, що snapshot не відновлюється (обхід
+   тримається); `-G: error while loading shared libraries` (код 127) означає
+   обхід тимчасовий.
+2. Якщо 127 — обхід у snapshot доведеться повторювати вручну щосесії, або
+   переходити до правки лаунчера `~/.local/bin/claude` (Варіант 3, не
+   пробувався). Обхід без правок: `command grep` / `command find` / `git grep`.
+
+### Урок
+Перш ніж боротися зі змінною середовища, знайти, ХТО створює функцію:
+`type -a <cmd>` показав тіло, а префікс `_cc_` вказав на Claude Code, не на
+профілі. Пошук у файлах профілю (нуль збігів) заощадив би спробу правити
+`.bashrc`.
