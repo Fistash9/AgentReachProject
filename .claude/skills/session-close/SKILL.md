@@ -46,6 +46,13 @@ bash /data/data/com.termux/files/home/AgentReachProject/.claude/skills/session-c
 так і напиши в звіті ("USER_PROFILE.md: без застосувань цієї сесії"),
 не мовчи про це.
 
+## Крок 3.6 — Порахувати DeepSeek
+
+Порахуй за цю сесію: N — скільки разів викликано `mcp__delegate__delegate`
+або `mcp__deepseek__deepseek`; M — скільки разів тригер із розділу
+"DeepSeek" у RULES.md був, а ти зробив сам (з причиною одним реченням).
+Виведи в звіті рядок "DeepSeek: N викликів, M відмов". Нуль не приховуй.
+
 ## Крок 4 — Скласти baton_pass
 
 Виклич `mcp__baton__baton_pass`. Це не одне речення, а структура — заповнюй поля змістовно, а не "see git log":
@@ -68,6 +75,7 @@ bash /data/data/com.termux/files/home/AgentReachProject/.claude/skills/session-c
 **BACKLOG.md:** <короткий підсумок diff або "без змін">
 **CONTEXT.md:** <"свіжий" | "⚠️ рекомендовано оновити — N комітів після останнього запису, торкались: ...">
 **Baton:** передано (task: "...", status: ...)
+**DeepSeek:** N викликів, M відмов
 **Далі (з BACKLOG):** <next steps>
 ```
 
