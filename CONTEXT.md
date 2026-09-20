@@ -242,3 +242,40 @@ Sourced/Unverified/Hallucinated), розрізнення "журнал vs зні
 - session-close Skill створено (перший власний Skill,
   `.claude/skills/session-close/`)
 - Skills security audit: 3 скіли перевірено (2 низький, 1 середній)
+
+## Оновлення 2026-09-20
+
+Checkpoint: у файлі бракувало записів про 17 комітів (14eb3f8..040421f)
+після останнього оновлення (0b71688, pkgtruth як 8-й MCP).
+
+### Хуки (project-scoped, `.claude/settings.local.json`, gitignored)
+Усі три — PreToolUse на Bash:
+- **pkgtruth hook** — блокує інстал неіснуючих пакетів (14eb3f8)
+- **troubles-grep-hook.py** — автоматизує правило "grep по
+  TROUBLES.md перед дією" (d7b9b24)
+- **baton-reminder-hook.py** — нагадує про baton_pass, якщо
+  git push зроблено при застарілому baton (7ec9fa7)
+
+### Нові файли
+- **TRASH.md** — журнал видалень, записується ДО rm (2397883)
+- **USER_PROFILE.md** — портрет користувача з реальних цитат
+  транскрипту, прогнози позначені як гіпотези (2a3c69e, перебудовано
+  4f637c0); перевірка підв'язана до session-close Skill (5cfea29)
+
+### Нові правила в RULES.md
+- Premortem перед нетривіальною дією (74401c4)
+- Перевірка потрібна і перед "не варто", не тільки перед "варто"
+  (f818ff9)
+- Правила видалення файлів і .trash/ (2397883)
+
+### BACKLOG / TROUBLES
+- BACKLOG: A2A-апгрейд для telegram_deepseek_bot.py (421f430),
+  tscribe (rvben/tscribe) як [unverified] кандидат (040421f),
+  відновлено втрачений запис про pkgtruth (50876f8)
+- TROUBLES: аудит транскрипту на повторювані/втрачені проблеми
+  (99f1aa8), розслідування "tscribe" у baton next-полях (4ed6df4)
+
+### Поточний фокус (оновлення 2026-09-20)
+Перетворення написаних правил на автоматичні механізми (хуки,
+skill-кроки) там, де правило виявилось "записаним, але не
+практикованим".
