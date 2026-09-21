@@ -517,3 +517,18 @@ Before/after приклад знайдено, міграція готова пі
   compare_models, estimate_monthly_cost, list_models), реальна
   корисність незалежно не підтверджена
 - Статус: чекає верифікації (репо/авторства) перед встановленням
+
+## Аналізатор винесено в reference-analyzer/ (2026-09-21, не закомічено)
+
+- Статус змінився щодо записів вище про `script-agent/ANALYZER.md`,
+  `script-agent/tools/transcript_stats.py`, `script-agent/analyses/…` і
+  `script-agent/profiles/…`: усе це переїхало через `git mv` у
+  `reference-analyzer/` (ANALYZER.md, tools/) і
+  `reference-analyzer/niches/stories/` (analysis/, profile/).
+  `script-agent/AGENT.md` лишився на місці й не змінювався.
+- Причина: користувач вимагає, щоб аналізатор був незалежним від проєкту
+  сценариста й для кожної ніші створював власну папку (sources, analysis,
+  profile, compare). Правила додано в ANALYZER.md, частина 10.
+- Ще не зроблено: допрацювання ANALYZER.md під фінальні відповіді на 11
+  питань (замість статусу «потребує рішення»), місце в тексті для доказів,
+  виміри жанру історій. Чекають затвердження користувача після перевірки.
