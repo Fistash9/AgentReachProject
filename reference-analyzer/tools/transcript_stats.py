@@ -8,7 +8,9 @@ FILE — .vtt, .srt або звичайний текст. Виводить JSON 
 --duration  тривалість відео в секундах (для перевірки щільності мовлення;
             якщо не задано й файл VTT/SRT, береться кінець останньої репліки)
 --marker    регулярний вираз початку блоку (наприклад, "Number [A-Z][a-z]+\\."),
-            щоб порахувати слова у вступі й довжину блоків
+            щоб порахувати слова у вступі й довжину блоків; для VTT/SRT
+            додає ще й тайм-коди (intro_time, block_times) за реальним
+            часом рядків субтитрів, не лише кількістю слів
 
 Числа з цього скрипту — обчислені, а не оцінені на око.
 Скрипт не оцінює якість і не перевіряє факти.
@@ -36,17 +38,28 @@ def to_seconds(h, m, s, ms):
     return int(h or 0) * 3600 + int(m) * 60 + int(s) + int(ms) / 1000
 
 
+def fmt_hms(sec):
+    """Секунди -> 'M:SS' або 'H:MM:SS'. None -> None."""
+    if sec is None:
+        return None
+    sec = round(sec)
+    h, rem = divmod(sec, 3600)
+    m, s = divmod(rem, 60)
+    return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
+
+
 def read_text(path):
-    """Повертає (текст, кінець останньої репліки в секундах або None)."""
+    """Повертає (рядки, тайм-код початку кожного рядка або None, кінець останньої репліки в секундах або None)."""
     with open(path, encoding="utf-8", errors="replace") as f:
         raw = f.read()
     if not TIMING.search(raw):
-        return raw, None
-    lines, last_end, prev = [], None, ""
+        return [raw], [None], None
+    lines, times, last_end, prev, pending_start = [], [], None, "", None
     for line in raw.splitlines():
         m = TIMING.search(line)
         if m:
             g = m.groups()
+            pending_start = to_seconds(g[0], g[1], g[2], g[3])
             last_end = to_seconds(g[4], g[5], g[6], g[7])
             continue
         s = TAG.sub("", line).strip()
@@ -59,8 +72,9 @@ def read_text(path):
             lines[-1] = s
         else:
             lines.append(s)
+            times.append(pending_start)
         prev = s
-    return " ".join(lines), last_end
+    return lines, times, last_end
 
 
 def sentences_of(text):
@@ -100,12 +114,27 @@ def main():
     ap.add_argument("--marker")
     args = ap.parse_args()
 
-    text, last_end = read_text(args.file)
+    lines, times, last_end = read_text(args.file)
+    text = " ".join(lines)
     text = re.sub(r"\s+", " ", text).strip()
     words = words_of(text)
     sents = sentences_of(text)
     lens = [len(words_of(s)) for s in sents] or [0]
     duration = args.duration or last_end
+
+    cumulative_words = [0]
+    for line in lines:
+        cumulative_words.append(cumulative_words[-1] + len(words_of(line)))
+
+    def word_to_time(word_idx):
+        """Наближений тайм-код (сек) для позиції word_idx у `words`, за часом рядка-джерела."""
+        if not times or times[0] is None:
+            return None
+        idx = max(0, min(word_idx, cumulative_words[-1]))
+        for i in range(len(lines) - 1, -1, -1):
+            if cumulative_words[i] <= idx:
+                return times[i]
+        return times[0]
 
     out = {
         "chars": len(text),
@@ -144,6 +173,18 @@ def main():
                 "max": max(blocks),
                 "last_block_includes_outro": True,
             }
+            mark_word_idxs = [len(words_of(text[:m])) for m in marks]
+            intro_end_t = word_to_time(mark_word_idxs[0])
+            if intro_end_t is not None:
+                out["intro_time"] = {"start_hms": fmt_hms(times[0]), "end_hms": fmt_hms(intro_end_t)}
+                bounds = list(zip(mark_word_idxs, mark_word_idxs[1:] + [len(words)]))
+                out["block_times"] = [
+                    {
+                        "start_hms": fmt_hms(word_to_time(a)),
+                        "end_hms": fmt_hms(word_to_time(b) if b < len(words) else last_end),
+                    }
+                    for a, b in bounds
+                ]
     json.dump(out, sys.stdout, ensure_ascii=False, indent=2)
     print()
 
