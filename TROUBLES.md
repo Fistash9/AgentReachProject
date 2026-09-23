@@ -304,6 +304,33 @@ export DEEPSEEK_API_KEY (читається з agent.py) + PATH, потім exec
 Anthropic-сумісний шар DeepSeek — тому deep-claude як обгортку
 відкинуто. Використовувати deepseek-mcp напряму.
 
+### Статус змінився (2026-09-23): факт вище перекручує джерело
+Звірено напряму з https://api-docs.deepseek.com/guides/anthropic_api
+(розділ "Anthropic API Compatibility Details", curl 200):
+- `mcp_servers` — Ignored; `mcp_tool_use` / `mcp_tool_result` — Not
+  Supported. Це СЕРВЕРНИЙ MCP-конектор (сервери в тілі запиту).
+- `tools` (name, input_schema, description) і `tool_use` — Fully
+  Supported. Саме так Claude Code передає інструменти ЛОКАЛЬНИХ
+  MCP-серверів.
+- Фрази "MCP-сервери не працюють" на сторінці немає.
+
+Живий тест: `claude -p` зі змінними DeepSeek (ті самі, що в
+deepseek-mcp/dist/env.js) викликав `mcp__agent-reach__status` і
+повернув реальний вивід, exit 0. Тобто локальні MCP у Claude Code на
+DeepSeek працюють. Чому саме deep-claude тоді не запрацював — не
+перевірено (його самого не тестували). Правило в RULES.md про
+deep-claude поки не змінено — окреме рішення користувача.
+
+На цій основі створено `claude-deepseek.sh` (інтерактивний Claude Code
+на DeepSeek, пункт 7 у menu.sh). Попередження
+`[claude-code:unrecognized_model]` лишається навіть на 2.1.280 з
+CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1, але роботі не
+заважає.
+
+Граблі тесту: `claude -p --allowedTools X "prompt"` — прапорець
+`--allowedTools` варіадичний і з'їдає prompt ("Input must be provided").
+Писати `--allowedTools=X` і/або передавати prompt через stdin.
+
 ## Claude Code на Termux — вихід (2026-09-17)
 TAGS: exit, termux, ctrl+c
 
@@ -1692,3 +1719,24 @@ Bash-детектор у `request-brief-reminder-hook.py`. Знахідки:
 пам'яті як `verify-external-critique-before-accepting`). І ще раз
 підтверджено: живе спостереження користувача за реальними даними
 знаходить те, що я не шукав цілеспрямовано (третій раз за сесію).
+
+## watch-deepseek: живе стеження за кроками під-сесії deepseek (2026-09-23)
+TAGS: deepseek, watch-deepseek, jsonl, tail, menu.sh
+
+Кожна під-сесія deepseek-mcp пише свій журнал по кроках у
+`~/.claude/projects/-data-data-com-termux-files-home-AgentReachProject/<session_id>.jsonl`
+(та сама папка, що й основна сесія). Скрипт `tools/watch-deepseek.py`
+(пункт 6 у menu.sh) показує з нього виклики інструментів і текст у
+реальному часі; працює безперервно, Ctrl+C — вихід.
+
+Перша версія (одноразова команда в чаті) зламалась двічі:
+1. Хук `delegate-prompt-improver` запускає окрему сесію на Haiku РАНІШЕ
+   за deepseek і в ту саму папку — команда "перший новий файл"
+   вхопила її. Виправлено: брати лише журнали з `"model":"deepseek`.
+2. Багаторядковий `python3 -c '...'`, вставлений з чату в Termux,
+   втратив переноси/відступи → SyntaxError. Виправлено: окремий файл,
+   запуск однією короткою командою.
+
+Урок: мій тест відтворював лише появу ОДНОГО файлу і запуск із bash-
+файлу — не реальні умови (хук-сесія поруч, вставка в термінал).
+Перевірено живим запуском користувача: вивід збігся з журналом.
