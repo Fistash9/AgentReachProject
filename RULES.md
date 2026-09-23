@@ -80,6 +80,9 @@
   а не видаляти напряму.
 - Для очевидних артефактів власної щойно зробленої помилки — прямий
   запис у TRASH.md достатній, `.trash/` не обов'язковий.
+- Виняток: власні тимчасові файли сесії в scratchpad і системних tmp
+  (/data/data/com.termux/files/usr/tmp/, /tmp/) — без запису в TRASH.md
+  (так само їх пропускає хук trash-md-guard).
 
 ## Бекап поза git
 - Файли в .gitignore (.env, agent.py, settings.local.json, HANDOFF.md,
