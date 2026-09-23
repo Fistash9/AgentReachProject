@@ -11,6 +11,13 @@ PreToolUse hook на mcp__delegate__delegate / mcp__deepseek__deepseek(-reply):
 agent-хук: той відзначений у документації як "experimental and may
 change", механізм updatedInput для нього не задокументований).
 
+КРИТИЧНО: підпроцес запускається з `--tools ""` — без цього він мав
+ПОВНИЙ доступ до всіх MCP-інструментів проєкту (включно з deepseek/
+delegate) і міг сам, непомітно, викликати їх замість того, щоб
+просто переписати текст. Знайдено 2026-09-23 через живі log-записи
+з невідомими session_id (модель "default"), яких сама сесія не
+викликала.
+
 Не блокує — якщо покращення не вдалось (порожній вивід, помилка,
 таймаут), пропускає оригінальний prompt без змін (fail-open).
 """
@@ -59,7 +66,7 @@ def main():
 
     try:
         result = subprocess.run(
-            ["claude", "-p", instruction, "--model", IMPROVER_MODEL],
+            ["claude", "-p", instruction, "--model", IMPROVER_MODEL, "--tools", ""],
             capture_output=True, text=True, timeout=TIMEOUT,
         )
     except (OSError, subprocess.SubprocessError, subprocess.TimeoutExpired):
