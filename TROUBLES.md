@@ -1808,3 +1808,47 @@ last_assistant_message). Інші знахідки deepseek (ianymu/claude-verif
 before-stop — репо існує; cc-safe-setup, @theasanai/skeptic) — не
 відкривав, [unverified].
 Рішення, чи ставити такий хук, — не прийнято (питання користувачу).
+
+## Готові рішення «перевірити заяви агента»: groundtruth, provenly, claude-integrity-gate (2026-09-23)
+TAGS: hooks, Stop, groundtruth, provenly, claude-integrity-gate, isitdone, verification, satisficing
+
+Задача: агент у звітах УКРАЇНСЬКОЮ називає числа не з виводу (E1),
+"працює/перевірено" без запуску (E3), "неможливо" без пошуку (E5).
+Пошук: 5 викликів deepseek flash (GitHub, форуми, Anthropic, збірки,
+arXiv) + мої перевірки (GitHub API, npm view, curl, arXiv API, клон і
+тести в scratchpad). Жоден пакет НЕ встановлювався.
+
+- **groundtruth** (vnmoorthy, MIT, 7⭐): безпечний (у рантаймі без мережі
+  й exec), тести 153/153, розбір журналу працює на реальному журналі
+  2.1.280. Але лише англійські шаблони (0 кирилиці) і лише "done" при
+  зміні коду: українська заява й "Done. All tests pass" без запису файлу
+  НЕ блокуються (перевірено запуском).
+- **provenly** (HeisenbergI8, npm 0.2.1, MIT): claim-check.mjs — правильне
+  поле `last_assistant_message` (:213), `stop_hook_active` (:196), maxBlocks=2
+  (:202), `stripQuoted` (:54-59); тести claim-check 32/32. Лише англ.
+  "tests pass/green" без запуску; числа з виводом не звіряє; потребує
+  власного ledger (PostToolUse record-activity). Весь harness 775 КБ,
+  запускає git і команди з конфігу.
+- **claude-integrity-gate** (danolez1, npm 1.1.0, MIT): Stop-хук читає
+  `assistant_response || content` (:21) — таких полів у Stop немає
+  (офіційна дока: 0 збігів; поле — `last_assistant_message`) → завжди
+  виходить на :22-23; до того ж plain stdout Stop-хука йде в debug log
+  (hooks.md:810). Фактично НЕ працює. Цінне — текст 33 правил
+  (SessionStart): "No citation = no sentence" тощо.
+- Інше: isitdone (1⭐, запускає тести проєкту на "done"; стаття автора:
+  69% заяв "done" хибні — заголовок перевірено), attest (0⭐),
+  claude-verify-before-stop (0⭐), cc-safe-setup детектор (6⭐, лише
+  попередження). Anthropic "Reduce hallucinations": "verify each claim by
+  finding a supporting quote… If it can't find a quote, it must retract
+  the claim" (перевірено). arXiv 2603.10060 (Tool Receipts), 2609.14758
+  (Fabrication After Tool Failure) — існують (arXiv API), зміст — з
+  переказу deepseek [unverified]. Тредів Reddit/HN пошук не дав.
+
+Висновок: готового рішення для E1/E3/E5 українською немає; поєднання —
+каркас provenly (decide, maxBlocks, stripQuoted) + розбір журналу
+groundtruth + наші українські шаблони і звірка чисел + пропуск
+під-сесій deepseek (за моделлю в журналі). Далі — прототип і тест на
+історії в scratchpad до будь-яких змін у проєкті.
+
+Урок: перший висновок "нічого готового немає" зроблено до відкриття
+двох найближчих кандидатів — той самий satisficing; користувач спіймав.
