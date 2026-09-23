@@ -130,6 +130,10 @@
 - Для розмов/рутини — викликати інструмент deepseek (під-сесія на DeepSeek).
 - Важкі задачі — delegate автоматично за змістовим тригером (розділ нижче).
 - Не використовувати deep-claude — ламає MCP (несумісний з DeepSeek Anthropic-шаром).
+  Примітка (2026-09-23): пояснення спростовано — документація DeepSeek
+  не підтримує лише серверний `mcp_servers`, а локальні MCP у Claude
+  Code на DeepSeek працюють (тест пройшов). Див. TROUBLES.md "Статус
+  змінився (2026-09-23)". Для Claude Code на DeepSeek — claude-deepseek.sh.
 - Для дослідницьких/пошукових задач через deepseek — одразу передавати
   `permission_mode: "bypassPermissions"` (headless-підпроцес без TTY
   інакше не може отримати дозвіл на WebSearch/WebFetch).

@@ -19,6 +19,17 @@
 - **Встановити grill-me і claude-setup (запит користувача, 2026-09-23).**
   - grill-me — назва зі слів користувача; що це і чий — ще НЕ шукали
     [unverified].
+    - Пошук зроблено (2026-09-23, deepseek + звірка GitHub API/raw):
+      це СКІЛ, що допитує користувача про ідею/план до чітких рішень.
+      Оригінал — `mattpocock/skills` → `skills/productivity/grill-me/`
+      (MIT, оновл. 2026-09-18): лише за `/grill-me`
+      (disable-model-invocation), делегує в сусідній скіл `grilling` —
+      ставити обидва; файлів не пише. Спосіб установки ще не дивились.
+      Альтернатива — `RobMitt/grill-me-skill` (676 ⭐, без ліцензії,
+      оновл. 2026-04-11): авто-тригер на "grill me", копіювати в
+      `~/.claude/skills/grill-me/`. Копії TimothyVang/paveg — не
+      перевірені. DeepSeek помилково позначив зв'язок із Matt Pocock
+      як [unverified].
   - claude-setup — під цією назвою кілька сторонніх проєктів (жоден не
     Anthropic): плагін `HOPLAtools/claude-setup` (через `/plugin
     marketplace add`, вміст ще не читали) і npm `claude-setup` v2.0.3
