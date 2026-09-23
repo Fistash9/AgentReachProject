@@ -3,7 +3,8 @@
 
 Запуск: python3 ~/AgentReachProject/tools/check-links.py
 Код виходу 0 — усе ціле, 1 — є проблеми (перелік у виводі).
-Викликається в session-close (крок 2.5) перед baton_pass.
+Викликається в session-close (крок 2.5) перед baton_pass. Група 11 —
+карта README.md (кожен .md у корені і tools/).
 
 Лише читає: файли, git, settings. Хуки запускає на нейтральному вході
 (ls / правка TROUBLES.md) і перевіряє, що вони не падають і не блокують;
@@ -125,6 +126,15 @@ def main():
         chk(os.path.exists(fp), f"menu.sh: {p} не існує")
         if fp.endswith(".sh"):
             chk(os.access(fp, os.X_OK), f"menu.sh: {p} не виконуваний")
+
+    # 11. карта README.md: кожен .md у корені (не симлінк) і tools/ мають
+    #     бути в ній посиланням [назва] — інакше нова сесія про них не знає
+    readme = read("README.md")
+    for f in sorted(glob.glob("*.md")):
+        if f == "README.md" or os.path.islink(f):
+            continue
+        chk(f"[{f}]" in readme, f"README.md: у карті немає [{f}]")
+    chk("[tools/]" in readme, "README.md: у карті немає [tools/]")
 
     print(f"check-links: OK перевірок {ok}, проблем {len(bad)}")
     for b in bad:

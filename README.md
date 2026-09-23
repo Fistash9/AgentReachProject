@@ -28,6 +28,8 @@ agent
 | [ECOSYSTEM.md](./ECOSYSTEM.md) | Концепції композиції агентів |
 | [SERVER.md](./SERVER.md) | Опис MCP-сервера |
 | [HANDOFF.md](./HANDOFF.md) | Стан передачі контексту (Baton) |
+| [TRASH.md](./TRASH.md) | Журнал видалень (запис ДО rm) |
+| [USER_PROFILE.md](./USER_PROFILE.md) | Портрет користувача |
 | [tools/](./tools/) | check-links.py, claimcheck/, watch-deepseek.py — перевірки й стеження |
 
 ## Tech Stack
