@@ -30,6 +30,15 @@
       `~/.claude/skills/grill-me/`. Копії TimothyVang/paveg — не
       перевірені. DeepSeek помилково позначив зв'язок із Matt Pocock
       як [unverified].
+    - Статус змінився (2026-09-23): спосіб установки подивились (README
+      mattpocock/skills). Лише весь набір: плагін
+      `/plugin install mattpocock-skills` (є в офіційному маркетплейсі
+      anthropics/claude-plugins-official, 25 скілів, хуків немає) або
+      `npx skills@latest add mattpocock/skills` (vercel-labs `skills`,
+      можна вибрати окремі скіли). Після — `/setup-matt-pocock-skills`.
+      4 автоматичні скіли конфліктують з нашими файлами — ECOSYSTEM.md
+      "Порівняння: скіли Matt Pocock vs наша система". Рішення: брати
+      вибірково; ще не встановлено.
   - claude-setup — під цією назвою кілька сторонніх проєктів (жоден не
     Anthropic): плагін `HOPLAtools/claude-setup` (через `/plugin
     marketplace add`, вміст ще не читали) і npm `claude-setup` v2.0.3

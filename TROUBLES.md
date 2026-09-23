@@ -1884,3 +1884,22 @@ E1 число з іменником, якого нема окремим токе
 як ЗВІТ у session-close (крок 2.6) — без додаткових ходів, без
 спрацювань у під-сесіях deepseek, без затримки. E5-хук — BACKLOG
 (потрібні нові відкладені сесії). Плюс правило в RULES.md.
+
+## Дрібні факти сесії 2026-09-23, що жили лише в чаті
+TAGS: claude-code-termux, VERSION DRIFT, update, jsonl, transcript, deepseek, prompt
+
+- **Claude Code 2.1.280 і VERSION DRIFT.** Після `claude-code-termux
+  install 2.1.280` `doctor` пише "VERSION DRIFT: package=2.1.273
+  binary=2.1.280 -> run: … claude-code-termux update". НЕ виконувати:
+  за `--help` `update` = "Re-download to match the installed npm package
+  version", тобто відкотить бінарник до 2.1.273. Для `install <версія>`
+  розбіжність очікувана. Відкат за потреби: `claude-code-termux install
+  2.1.273`.
+- **Журнал сесії (.jsonl) не обрізає виводи інструментів** — перевірено
+  на 154 виводах цієї сесії, найбільший 28 603 символи, кінці збігаються
+  з оригіналами, маркерів обрізання 0. Понад ~29 тис. символів — не
+  перевірено. Важливо для tools/claimcheck.
+- **Під-сесії deepseek називають себе «Claude Code»** (підхоплюють
+  правила й пам'ять проєкту: "Говорить Claude Code (головна сесія)").
+  У промпт для deepseek додавати «Не називай себе Claude Code», а їхні
+  самозвіти про роль не сприймати як факт.
