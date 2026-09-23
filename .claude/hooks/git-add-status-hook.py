@@ -2,8 +2,8 @@
 """
 PreToolUse hook на Bash: перед git add ЗАВЖДИ показує git status
 (правило RULES.md "Перед git add — завжди git status") і БЛОКУЄ
-команду, якщо вона явно називає agent.py (ключ, RULES.md "Не
-комітити agent.py!"; прецедент — TROUBLES.md #11, ключ уже раз
+команду, якщо вона явно називає agent.py (ключ, RULES.md розділ "Git": "agent.py містить ключ і живе
+поза git"; прецедент — TROUBLES.md #11, ключ уже раз
 потрапив у git до того, як файл додали в .gitignore).
 
 Звичайний git add НЕ блокується — лише показує статус як контекст.
@@ -112,7 +112,7 @@ def main():
                 "permissionDecision": "deny",
                 "permissionDecisionReason": (
                     "Заблоковано: команда явно згадує agent.py. RULES.md "
-                    "забороняє комітити agent.py (ключ) — прецедент "
+                    "(розділ Git): agent.py містить ключ і живе поза git — прецедент "
                     "TROUBLES.md #11, ключ уже раз потрапив у git. Якщо це "
                     "помилка — прибери agent.py з команди."
                 ),
