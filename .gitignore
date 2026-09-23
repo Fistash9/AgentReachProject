@@ -25,3 +25,6 @@ HANDOFF.md
 
 # Trash — recoverable deletions, local only (TRASH.md log is committed)
 .trash/
+
+# Delegate/deepseek call outcome log — local operational data, not history
+.claude/logs/
