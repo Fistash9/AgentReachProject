@@ -15,13 +15,15 @@ scratchpad_dir поточної сесії або системних tmp-кат�
 import sys
 import json
 import re
+import shlex
 import os
 import time
 
 TRASH_PATH = "/data/data/com.termux/files/home/AgentReachProject/TRASH.md"
 FRESH_SECONDS = 300  # 5 хвилин
 
-RM_RE = re.compile(r"(?:^|[;&|\n]|\bsudo\s+)\s*(rm|rmdir)\b")
+HEREDOC_START_RE = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?")
+SEPARATORS = {";", "&&", "||", "&", "|", "(", ")", "\n"}
 
 SAFE_PREFIXES = (
     "/data/data/com.termux/files/usr/tmp/",
@@ -29,12 +31,65 @@ SAFE_PREFIXES = (
 )
 
 
-def targets_are_safe(command, scratchpad_dir):
+def strip_heredocs(command):
+    """Прибирає тіло heredoc (між <<'EOF' і рядком EOF), щоб текст
+    усередині (напр. commit-повідомлення, де згадується 'rm -rf' як
+    опис) не тригерив паттерн команди нижче."""
+    lines = command.split("\n")
+    out = []
+    i = 0
+    while i < len(lines):
+        line = lines[i]
+        out.append(line)
+        m = HEREDOC_START_RE.search(line)
+        if m:
+            delim = m.group(1)
+            i += 1
+            while i < len(lines) and lines[i].strip() != delim:
+                i += 1
+            i += 1
+            continue
+        i += 1
+    return "\n".join(out)
+
+
+def rm_arg_tokens(command):
+    """Повертає список аргументів РЕАЛЬНОГО виклику rm/rmdir (як
+    окремої команди на початку сегмента), або None, якщо такого
+    виклику немає. Токенізація через shlex (поважає лапки), тому
+    текст на кшталт 'echo "rm -rf agent.py"' НЕ розпізнається як
+    виклик — вміст лапок стає одним токеном-аргументом echo."""
+    try:
+        lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
+        lexer.whitespace_split = True
+        tokens = list(lexer)
+    except ValueError:
+        return None
+
+    at_start = True
+    i = 0
+    while i < len(tokens):
+        tok = tokens[i]
+        if tok in SEPARATORS:
+            at_start = True
+            i += 1
+            continue
+        if at_start:
+            j = i
+            if tokens[j] == "sudo":
+                j += 1
+            if j < len(tokens) and tokens[j] in ("rm", "rmdir"):
+                return tokens[j + 1:]
+        at_start = False
+        i += 1
+    return None
+
+
+def targets_are_safe(args, scratchpad_dir):
     prefixes = list(SAFE_PREFIXES)
     if scratchpad_dir:
         prefixes.append(scratchpad_dir)
-    tokens = command.split()
-    paths = [t for t in tokens if "/" in t and not t.startswith("-")]
+    paths = [t for t in args if "/" in t and not t.startswith("-")]
     if not paths:
         return False  # немає явного шляху — не ризикуємо, перевіряємо TRASH.md
     return all(any(p.startswith(prefix) for prefix in prefixes) for p in paths)
@@ -46,12 +101,16 @@ def main():
     except (json.JSONDecodeError, ValueError):
         return
 
-    command = data.get("tool_input", {}).get("command", "")
-    if not command or not RM_RE.search(command):
+    raw_command = data.get("tool_input", {}).get("command", "")
+    if not raw_command:
+        return
+    command = strip_heredocs(raw_command)
+    args = rm_arg_tokens(command)
+    if args is None:
         return
 
     scratchpad_dir = data.get("scratchpad_dir", "")
-    if targets_are_safe(command, scratchpad_dir):
+    if targets_are_safe(args, scratchpad_dir):
         return
 
     try:
