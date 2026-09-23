@@ -19,7 +19,7 @@ from datetime import datetime, timezone
 
 LOG_PATH = "/data/data/com.termux/files/home/AgentReachProject/.claude/logs/delegate-calls.jsonl"
 ERROR_RE = re.compile(r'\b(error|failed|exception)\b|"exit_code"\s*:\s*[1-9]', re.IGNORECASE)
-BACKGROUND_RE = re.compile(r"moved to background", re.IGNORECASE)
+BACKGROUND_RE = re.compile(r"moved to (?:the )?background", re.IGNORECASE)
 
 
 def as_text(value):
