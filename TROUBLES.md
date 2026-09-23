@@ -1740,3 +1740,23 @@ TAGS: deepseek, watch-deepseek, jsonl, tail, menu.sh
 Урок: мій тест відтворював лише появу ОДНОГО файлу і запуск із bash-
 файлу — не реальні умови (хук-сесія поруч, вставка в термінал).
 Перевірено живим запуском користувача: вивід збігся з журналом.
+
+## rules-why-guard: блок правок RULES.md без запису «чому» (2026-09-23)
+TAGS: hooks, rules-why-guard, RULES.md, RULES-WHY.md, live-fire
+
+Хук `.claude/hooks/rules-why-guard-hook.py` (PreToolUse на Bash і
+Edit|Write|MultiEdit|NotebookEdit) блокує правку RULES.md / CLAUDE.md /
+AGENTS.md, якщо RULES-WHY.md не оновлювався 5 хв. Pipe-тести 18/18
+(8 deny, 8 без реакції — grep/sed -n/cp з RULES.md/heredoc-текст/лапки,
+2 дозволи з git log у контексті). Межа: запис із python/node-скрипта
+не видно з рядка команди.
+
+Граблі live-тесту:
+1. `touch -d ... RULES-WHY.md && sed -i ... RULES.md` в ОДНОМУ Bash-
+   виклику не тестує блок: PreToolUse-хук виконується ДО команди, коли
+   touch ще не відбувся. Робити два окремі виклики.
+2. Edit з неіснуючим old_string не доходить до хука — Claude Code
+   валідує old_string раніше ("String to replace not found"). Edit-гілку
+   живо не перевірити без реальної правки; перевірено pipe-тестом.
+Живо підтверджено: Bash-гілка (no-op `sed -i` на RULES.md заблоковано з
+переліком розділів RULES-WHY.md) і шлях дозволу (git log у контексті).
