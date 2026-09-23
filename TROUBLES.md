@@ -1903,3 +1903,30 @@ TAGS: claude-code-termux, VERSION DRIFT, update, jsonl, transcript, deepseek, pr
   правила й пам'ять проєкту: "Говорить Claude Code (головна сесія)").
   У промпт для deepseek додавати «Не називай себе Claude Code», а їхні
   самозвіти про роль не сприймати як факт.
+
+## Перевірка здогадок сесії 2026-09-23 (документація й код)
+TAGS: skills, synced, zvirka-bazy, plugins, skillOverrides, claude-code-termux, update
+
+- ✅ **`claude-code-termux update` відкочує бінарник** — тепер за кодом, не
+  лише за --help: `cmd_update` бере `want="$(pkg_version)"` (версія
+  npm-пакета 2.1.273), `rm -f "$BIN_DEST"`, `cmd_install "$want"`.
+- ✅ **Синхронізовані скіли (`~/.claude/skills/synced/`, anthropic-skills:*)
+  правити локально марно** — дока skills.md: "If you or Claude edit a file
+  under ~/.claude/skills/synced/, the change isn't saved to your claude.ai
+  account, and a later sync can overwrite or remove it. To change a synced
+  skill, update it on claude.ai". Перевіряє зміни ~кожні 10 хв. Отже
+  zvirka-bazy можна змінити лише в налаштуваннях claude.ai.
+  Під-сесії deepseek (ANTHROPIC_AUTH_TOKEN) скіли не синхронізують (дока).
+- ✅ **Скіли плагіна мають простір імен** (`/plugin-name:skill`, дока
+  plugins.md) — конфлікту з вбудованим `/code-review` у плагіна Matt
+  Pocock немає.
+- ✅ **Плагін можна ставити лише в проєкт**: scope user / project (пише
+  `.claude/settings.json`, для всіх) / local (лише для себе в цьому репо);
+  `claude plugin install X --scope project`.
+- ⚠️ **Вимкнути ОКРЕМИЙ скіл плагіна** — дока (skills.md "Remove a
+  skill"): для plugin skill — лише вимкнути/видалити весь плагін.
+  `skillOverrides` (`"off"`, `"user-invocable-only"`) описано для
+  скілів загалом; чи діє на скіли плагіна — прямо не сказано, НЕ
+  перевірено.
+- ❓ Панель «Memories recalled… [Good] [Bad]» — у docs/en/memory.md не
+  описана; що робить оцінка — невідомо.
