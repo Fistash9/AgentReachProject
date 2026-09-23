@@ -54,11 +54,12 @@ def strip_heredocs(command):
 
 
 def rm_arg_tokens(command):
-    """Повертає список аргументів РЕАЛЬНОГО виклику rm/rmdir (як
-    окремої команди на початку сегмента), або None, якщо такого
-    виклику немає. Токенізація через shlex (поважає лапки), тому
-    текст на кшталт 'echo "rm -rf agent.py"' НЕ розпізнається як
-    виклик — вміст лапок стає одним токеном-аргументом echo."""
+    """Повертає ОБ'ЄДНАНИЙ список аргументів УСІХ реальних викликів
+    rm/rmdir у команді (кожен окремо обмежений наступним роздільником
+    ;/&&/||/|/\\n, не хапає токени сусідніх команд), або None, якщо
+    жодного такого виклику немає. Токенізація через shlex (поважає
+    лапки), тому текст на кшталт 'echo "rm -rf agent.py"' НЕ
+    розпізнається як виклик."""
     try:
         lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
         lexer.whitespace_split = True
@@ -66,6 +67,8 @@ def rm_arg_tokens(command):
     except ValueError:
         return None
 
+    found = False
+    combined_args = []
     at_start = True
     i = 0
     while i < len(tokens):
@@ -79,10 +82,17 @@ def rm_arg_tokens(command):
             if tokens[j] == "sudo":
                 j += 1
             if j < len(tokens) and tokens[j] in ("rm", "rmdir"):
-                return tokens[j + 1:]
+                found = True
+                k = j + 1
+                while k < len(tokens) and tokens[k] not in SEPARATORS:
+                    combined_args.append(tokens[k])
+                    k += 1
+                i = k
+                at_start = True
+                continue
         at_start = False
         i += 1
-    return None
+    return combined_args if found else None
 
 
 def targets_are_safe(args, scratchpad_dir):

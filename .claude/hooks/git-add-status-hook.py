@@ -45,12 +45,13 @@ def strip_heredocs(command):
 
 
 def git_add_arg_tokens(command):
-    """Повертає список аргументів РЕАЛЬНОГО виклику 'git add' (як
-    окремої команди на початку сегмента), або None, якщо такого
-    виклику немає. Токенізація через shlex (poважає лапки), тому
-    'echo "git add agent.py"' НЕ розпізнається як виклик — весь
-    вміст лапок стає одним токеном-аргументом echo, не окремими
-    словами git/add/agent.py."""
+    """Повертає ОБ'ЄДНАНИЙ список аргументів УСІХ реальних викликів
+    'git add' у команді (кожен окремо обмежений наступним
+    роздільником ;/&&/||/|/\\n, не хапає токени сусідніх команд), або
+    None, якщо жодного такого виклику немає. Токенізація через shlex
+    (поважає лапки), тому 'echo "git add agent.py"' НЕ розпізнається
+    як виклик — весь вміст лапок стає одним токеном-аргументом echo,
+    не окремими словами git/add/agent.py."""
     try:
         lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
         lexer.whitespace_split = True
@@ -58,6 +59,8 @@ def git_add_arg_tokens(command):
     except ValueError:
         return None  # незбалансовані лапки — не наш формат, пропускаємо
 
+    found = False
+    combined_args = []
     at_start = True
     i = 0
     while i < len(tokens):
@@ -75,10 +78,17 @@ def git_add_arg_tokens(command):
                 if j < len(tokens) and tokens[j] == "-C":
                     j += 2
                 if j < len(tokens) and tokens[j] == "add":
-                    return tokens[j + 1:]
+                    found = True
+                    k = j + 1
+                    while k < len(tokens) and tokens[k] not in SEPARATORS:
+                        combined_args.append(tokens[k])
+                        k += 1
+                    i = k
+                    at_start = True
+                    continue
         at_start = False
         i += 1
-    return None
+    return combined_args if found else None
 
 
 def main():
