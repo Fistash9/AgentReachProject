@@ -1784,3 +1784,27 @@ git worktree: 3 закладені розриви (шлях, переймено�
 Чому зроблено: за один день 4 рази помилку в моїх звітах (число,
 "вже є", "працює", "2 місця" замість 9) знаходила лише перевірка на
 прохання користувача. Розірвані зв'язки тепер ловить код.
+
+## Хук, що перевіряє ВІДПОВІДЬ агента, — МОЖЛИВИЙ (2026-09-23)
+TAGS: hooks, Stop, last_assistant_message, prompt-hook, satisficing, groundtruth
+
+Я сказав користувачу, що хук для перевірки моїх повідомлень "зробити не
+можна — хуки бачать команди", без жодного пошуку. Хибно (satisficing).
+Звірено з офіційною докою https://code.claude.com/docs/en/hooks.md (curl):
+- Stop hooks отримують `last_assistant_message` — "the text content of
+  Claude's final response"; `transcript_path` може відставати.
+- Stop повертає top-level `decision: "block"` + `reason` → Claude
+  продовжує хід; `stop_hook_active` — захист від циклу; "Claude Code
+  overrides the hook and ends the turn after 8 consecutive blocks".
+- Stop підтримує всі 5 типів хуків, зокрема `prompt` (LLM оцінює й
+  повертає рішення) і `agent` ("experimental and may change").
+- У проєкті вже стоїть Stop-хук (unlazy stop-hook.mjs) — контрприклад
+  був під носом.
+Prior art (перевірено GitHub API/raw): vnmoorthy/groundtruth — MIT,
+7 ⭐, оновл. 2026-07-20, "A Stop hook for Claude Code that physically
+refuses to let the agent end a turn on a completion claim unless the
+same turn contains verification". Читає transcript (дока радить
+last_assistant_message). Інші знахідки deepseek (ianymu/claude-verify-
+before-stop — репо існує; cc-safe-setup, @theasanai/skeptic) — не
+відкривав, [unverified].
+Рішення, чи ставити такий хук, — не прийнято (питання користувачу).
