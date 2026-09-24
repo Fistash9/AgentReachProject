@@ -2350,3 +2350,11 @@ DeepSeek-верифікатора ($0.0033):
   на сторінках не підтверджено, [unverified].
 Найдешевше без ліміту claude.ai — deepseek-flash (вихід $0.6/M поза
 піком, $1.2/M у пік).
+- Статус змінився (того ж дня, вибір користувача): переписувач тепер
+  deepseek-flash прямим HTTP до https://api.deepseek.com/anthropic/v1/messages
+  з `thinking: disabled`, ключ з agent.py (d8c356c). Замір на вході N-E2:
+  in 134 + cache_read 1277, out 948, thinking-блоків 0; ~$0.0006
+  поза піком / ~$0.0012 у пік; 4 с. Ліміт claude.ai не витрачається.
+  Спостереження: DeepSeek буквально виконує чек-лист META_INSTRUCTIONS
+  («3-8 викликів WebSearch/WebFetch») навіть для промпту «лише надані
+  файли». Opus у тому ж місці дописав заборону. Не виправлено.
