@@ -28,3 +28,6 @@ HANDOFF.md
 
 # Delegate/deepseek call outcome log — local operational data, not history
 .claude/logs/
+
+# Експорти сесій (повний чат + thinking) — локальні, не історія проєкту
+session-exports/
