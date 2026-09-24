@@ -477,3 +477,52 @@ wait-what, diagnosing-bugs, teach — [чи можна вимкнути окре
 ### Статус
 Реалізовано: правило RULES.md + tools/claimcheck (звіт). Не зроблено:
 M2, вузький E5-хук (BACKLOG).
+
+## Концепція: дерева задач і агентів, генератор + верифікатор (2026-09-24)
+
+Мета: чи варто працювати деревами (задач, агентів) і як ловити помилки
+оркестратора до показу користувачу. Джерела знайшов DeepSeek; усі
+цитати нижче звірено curl на сторінках (кожну знайдено дослівно).
+
+### Дерево задач (план → підзадачі)
+- Допомагає: кілька файлів, неясний підхід, залежні кроки. ADaPT — до
+  +28.3% (дробить лише коли виконавець упав, arxiv 2311.05772).
+- Зайве: «If you could describe the diff in one sentence, skip the plan»;
+  «Newer models track multi-step work without a written todo list»
+  (code.claude.com/docs/en/best-practices, …/agent-sdk/todo-tracking).
+- Шкодить: «tasks where single-agent performance already exceeds 45%
+  accuracy experience negative returns from additional agents» (про
+  АГЕНТІВ, не про дроблення); послідовні задачі −50.3% / −70.0%
+  (arxiv 2512.08296).
+
+### Дерево агентів (оркестратор → субагенти)
+- Claude Code: субагенти до 3 шарів за замовчуванням
+  (`CLAUDE_CODE_MAX_SUBAGENT_SPAWN_DEPTH`, `1` вимикає).
+- Anthropic research: +90.2%, але «15× more tokens than chats», і «token
+  usage by itself explains 80% of the variance»; «most coding tasks
+  involve fewer truly parallelizable tasks than research».
+- MAST: 41–86.7% провалів на 7 open-source MAS (arxiv 2503.13657).
+- Cognition: «writes stay single-threaded».
+- Для нас: 1 шар (DeepSeek-субагент), read-only, запис одним потоком,
+  центральна звірка — безпечно й узгоджено з джерелами; «найкращий» не
+  доведено. Глибших дерев не будувати.
+
+### Генератор + верифікатор
+- Anthropic evaluator-optimizer: коли є «clear evaluation criteria».
+- Claude Code: «A fresh context improves code review»; «the agent doing
+  the work isn't the one grading it»; «Give Claude something that
+  produces a pass or fail»; ризик — «A reviewer prompted to find gaps
+  will usually report some».
+- Cognition: найкраще, коли агенти «do not share any context
+  beforehand»; слабка модель не впоралась («SWE 1.5 was not good
+  enough»).
+- ICLR 2025 (arxiv 2402.08115): «significant performance collapse with
+  self-critique» — самокритика шкодить, зовнішній верифікатор допомагає.
+- Готові: winrey/claude-code-toolkit review-loop (лише код, 3★),
+  Farfield-Dev/deep-review (окремий API-ключ, $5–25) — не наш клас;
+  `/goal` — умова зупинки, не правильність.
+
+### Висновок і статус
+4 помилки сесії 2026-09-24 — один клас: твердження/план не звірено з
+джерелом, що лежало поруч. План інструмента «звір-перед-показом» із
+бектестом — BACKLOG.md «Активні». Не реалізовано.
