@@ -2094,3 +2094,68 @@ TAGS: session-export, thinking, snapshot, README
 зроблено на середині; сесія потім виросла до 55 блоків, і README з
 «Повний експорт» став неправдою. Урок: робити експорт ПІСЛЯ завершення
 роботи, або в README писати «знімок станом на <час>».
+
+---
+## Повідомлення auto mode про плату за класифікатор у DeepSeek-сесіях (2026-09-24)
+TAGS: auto mode, класифікатор, claude-deepseek.sh, deepseek, білінг, безпека
+
+СИМПТОМ: у сесії через claude-deepseek.sh (пункт 7 меню) Claude Code
+показав: «We're changing auto mode to no longer charge for classifier
+requests in Claude Code. However, this session isn't eligible because
+your requests go through api.deepseek.com…». Повідомлення притримує
+перевірювану дію до Enter (Esc — скасувати).
+
+ЩО ЦЕ (sourced: code.claude.com/docs/en/auto-mode-classifier-billing і
+/permission-modes): з v2.1.278 Claude Code в auto mode просить сервер
+Anthropic перевіряти дії в межах звичайних запитів моделі і не бере за
+це плату. Якщо шлюз не пропускає поля `safeguards`/`safeguard_results`,
+Claude Code переходить на власні запити класифікатора, оплачувані як
+раніше, і показує повідомлення. Серверні перевірки за замовчуванням —
+для Enterprise, акаунтів Claude API, хмарних платформ і будь-якої сесії
+з `ANTHROPIC_BASE_URL` на шлюз; «Pro, Max, and Team plans never show the
+notice».
+
+ЧОМУ У НАС: claude-deepseek.sh:15 ставить `ANTHROPIC_BASE_URL` на
+api.deepseek.com. DeepSeek не пересилає запити в Anthropic, а відповідає
+своїми моделями, тож «попросити шлюз» нема кого.
+
+ХТО ПЕРЕВІРЯЄ ДІЇ: класифікатор за замовчуванням — Claude Sonnet 5
+(permission-modes, «Cost and latency»). DeepSeek перенаправляє
+`claude-sonnet*` і невідомі назви на `deepseek-flash`
+(api-docs.deepseek.com/guides/anthropic_api, «Anthropic Model Mapping»);
+якщо ж Claude Code бере Sonnet з `ANTHROPIC_DEFAULT_SONNET_MODEL` — це
+`deepseek-v4-pro` (claude-deepseek.sh:18). Котра з двох — не встановлено
+[unverified]; у будь-якому разі модель DeepSeek, не Claude. Відповідь
+класифікатора, що не розбирається, блокує дію (permission-modes), тож
+ризик — лише хибне «дозволити».
+
+ДОКАЗ (журнал 97851678, 2026-09-24 05:03–07:35 UTC): моделі відповідей —
+лише deepseek-v4-pro і deepseek-v4-flash; permissionMode auto 78,
+default 1; 05:04 — `serverClassifierRequest` (спроба серверної
+перевірки); 06:26 і 07:33 — `classifierMetaLines` біля обох git push.
+У ~/.claude.json є `autoModeClassifierBillingNoticeAcknowledgedAt`.
+
+ВАРТІСТЬ: кожна перевірка — окремий запит до DeepSeek з CLAUDE.md
+(RULES.md + ~/.claude/CLAUDE.md = 19 323 байти), повідомленнями
+користувача й викликами інструментів без результатів. Перевіряються
+переважно shell-команди й мережеві дії (у 97851678: Bash 55,
+WebSearch 6, WebFetch 1; read-only частину класифікатор пропускає).
+Окремих записів про запити класифікатора в журналі немає — точна сума
+лише в кабінеті DeepSeek (Usage).
+
+ПРЯМА СЕСІЯ (Anthropic, акаунт Pro — `organizationType: claude_pro`):
+повідомлення не з'являється, класифікатор — модель Claude.
+
+ВАРІАНТИ (рішення НЕ ухвалено):
+- лишити як є: після Enter повідомлення з назвою шлюзу не з'являється
+  24 години на цій машині;
+- `export CLAUDE_CODE_AUTO_MODE_SERVER=0` у claude-deepseek.sh:
+  повідомлення зникає, оплата й класифікатор ті самі; змінна тимчасова
+  («may be removed in a later release»);
+- чи користуватись auto mode у DeepSeek-сесіях — BACKLOG.md, пункт
+  claude-anthropic.sh.
+
+ГРАБЛІ: минула сесія (на DeepSeek, 05:34) і перша відповідь цієї сесії
+пояснили повідомлення неточно: «безкоштовно, якщо через Anthropic»
+(для Pro — ні) і «виправити може тільки DeepSeek» (не може). Обидві
+неточності зникли після читання сторінки за посиланням з повідомлення.
