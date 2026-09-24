@@ -22,11 +22,19 @@ delegate) і міг сам, непомітно, викликати їх замі
 таймаут), пропускає оригінальний prompt без змін (fail-open).
 """
 import os
+import re
 import sys
 import json
-import subprocess
+import urllib.request
 
-IMPROVER_MODEL = "claude-opus-5-5"  # було "haiku"; змінено на прохання користувача 2026-09-24
+# 2026-09-24 (вибір користувача): переписує DeepSeek flash прямим HTTP-викликом
+# Anthropic-ендпоінта DeepSeek, а не `claude -p` на Claude. Причина: на Haiku
+# ~$0.048, на Opus ~$0.26 з ліміту claude.ai за виклик (журнали сесій хука),
+# тоді як сам делегований виклик коштує ~$0.003. Історія: haiku → claude-opus-5-5
+# → deepseek-flash. Мислення вимкнено (`thinking: disabled`, TROUBLES.md).
+IMPROVER_MODEL = "deepseek-flash"
+DEEPSEEK_URL = "https://api.deepseek.com/anthropic/v1/messages"
+AGENT_PY = os.path.expanduser("~/AgentReachProject/agent.py")  # ключ, як у run-deepseek.sh
 TIMEOUT = 45
 SYSTEM_PROMPT = "Ти переписуєш промпти для делегованих AI-викликів. Виводь лише текст промпту, без пояснень."
 
@@ -53,6 +61,32 @@ META_INSTRUCTIONS = """Ти переписуєш промт для делего�
 Виведи ЛИШЕ покращений промт."""
 
 
+def call_deepseek(instruction):
+    """Один запит до DeepSeek; повертає текст або "" (будь-яка помилка → fail-open)."""
+    try:
+        m = re.search(r"sk-[a-zA-Z0-9]+", open(AGENT_PY, encoding="utf-8").read())
+        if not m:
+            return ""
+        body = json.dumps({
+            "model": IMPROVER_MODEL,
+            "max_tokens": 8192,
+            "system": SYSTEM_PROMPT,
+            "thinking": {"type": "disabled"},
+            "messages": [{"role": "user", "content": instruction}],
+        }).encode("utf-8")
+        req = urllib.request.Request(DEEPSEEK_URL, data=body, headers={
+            "content-type": "application/json",
+            "x-api-key": m.group(0),
+            "anthropic-version": "2023-06-01",
+        })
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            data = json.load(resp)
+        return "".join(b.get("text", "") for b in data.get("content", [])
+                       if b.get("type") == "text").strip()
+    except Exception:
+        return ""
+
+
 def main():
     try:
         data = json.load(sys.stdin)
@@ -66,25 +100,8 @@ def main():
 
     instruction = META_INSTRUCTIONS.format(prompt=original_prompt)
 
-    # Легкий запуск (2026-09-24): з порожньої теки, без налаштувань/скілів/MCP
-    # і з коротким системним промптом — інакше claude -p тягнув увесь старт
-    # проєкту (~47k токенів на виклик). Замір: контекст 22 389 → 474 токени.
-    # --bare не підходить: він вимагає ANTHROPIC_API_KEY, а в нас OAuth.
-    empty_dir = os.path.join(os.environ.get("TMPDIR", "/data/data/com.termux/files/usr/tmp"),
-                             "delegate-prompt-improver")
-    os.makedirs(empty_dir, exist_ok=True)
-    try:
-        result = subprocess.run(
-            ["claude", "-p", instruction, "--model", IMPROVER_MODEL, "--tools", "",
-             "--setting-sources", "", "--disable-slash-commands", "--strict-mcp-config",
-             "--system-prompt", SYSTEM_PROMPT],
-            capture_output=True, text=True, timeout=TIMEOUT, cwd=empty_dir,
-        )
-    except (OSError, subprocess.SubprocessError, subprocess.TimeoutExpired):
-        return
-
-    improved = result.stdout.strip()
-    if result.returncode != 0 or not improved:
+    improved = call_deepseek(instruction)
+    if not improved:
         return  # fail-open: не вдалось покращити — пропускаємо оригінал
 
     new_input = dict(tool_input)
