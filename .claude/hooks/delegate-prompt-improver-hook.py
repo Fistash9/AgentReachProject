@@ -25,7 +25,7 @@ import sys
 import json
 import subprocess
 
-IMPROVER_MODEL = "haiku"
+IMPROVER_MODEL = "claude-opus-5-5"  # було "haiku"; змінено на прохання користувача 2026-09-24
 TIMEOUT = 45
 
 META_INSTRUCTIONS = """Ти переписуєш промт для делегованого AI-виклику (DeepSeek). Твій єдиний вивід — новий текст промту, БЕЗ жодних пояснень, преамбул чи лапок навколо.
