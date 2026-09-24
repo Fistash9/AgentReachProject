@@ -1,0 +1,5 @@
+$ npm view claude-mem name version license repository.url
+name = 'claude-mem'
+version = '13.25.3'
+license = 'Apache-2.0'
+repository.url = 'git+https://github.com/thedotmack/claude-mem.git'

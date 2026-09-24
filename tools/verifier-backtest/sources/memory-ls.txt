@@ -1,0 +1,22 @@
+$ ls -la ~/.claude/projects/-data-data-com-termux-files-home-AgentReachProject/memory/
+total 108
+drwx------.  2 u0_a599 u0_a599  3452 Sep 24 16:54 .
+drwx------. 12 u0_a599 u0_a599 24576 Sep 24 19:30 ..
+-rw-------.  1 u0_a599 u0_a599  1843 Sep 23 22:28 always-show-who-is-speaking.md
+-rw-------.  1 u0_a599 u0_a599  4955 Sep 23 19:35 always-state-understanding-first.md
+-rw-------.  1 u0_a599 u0_a599  2190 Sep 20 10:50 ask-questions-one-at-a-time-plainly.md
+-rw-------.  1 u0_a599 u0_a599  1672 Sep 23 23:45 changes-must-be-revertable.md
+-rw-------.  1 u0_a599 u0_a599  1471 Sep 24 09:26 commit-trailer-convention.md
+-rw-------.  1 u0_a599 u0_a599  4563 Sep 23 21:55 confirm-before-lossy-edits.md
+-rw-------.  1 u0_a599 u0_a599  1954 Sep 24 14:48 cost-discipline-sessions.md
+-rw-------.  1 u0_a599 u0_a599  1552 Sep 24 16:54 do-not-call-yourself-claude-code.md
+-rw-------.  1 u0_a599 u0_a599  1614 Sep 19 12:12 dont-attribute-blocking-to-user.md
+-rw-------.  1 u0_a599 u0_a599  1937 Sep 20 09:37 follow-or-explain-tool-routing-rules.md
+-rw-------.  1 u0_a599 u0_a599  2309 Sep 24 16:14 learn-tool-design-before-changing-usage.md
+-rw-------.  1 u0_a599 u0_a599  2473 Sep 23 19:06 live-parallel-observability-for-flaky-bugs.md
+-rw-------.  1 u0_a599 u0_a599  2098 Sep 23 19:10 live-test-must-match-real-invocation.md
+-rw-------.  1 u0_a599 u0_a599  2012 Sep 20 10:31 research-must-end-with-goal-conclusion-next-step.md
+-rw-------.  1 u0_a599 u0_a599  1829 Sep 23 22:28 script-agent-prompt-is-frozen.md
+-rw-------.  1 u0_a599 u0_a599  2810 Sep 23 22:38 self-check-report-before-sending.md
+-rw-------.  1 u0_a599 u0_a599  3162 Sep 21 14:03 stop-on-conflicting-data-and-validate-assumptions.md
+-rw-------.  1 u0_a599 u0_a599  2250 Sep 20 11:01 verify-external-critique-before-accepting.md
