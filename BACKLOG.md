@@ -81,6 +81,33 @@
     (AbdoKnbGit) — генерує/перезаписує CLAUDE.md, .mcp.json, хуки,
     settings.json. Перед установкою: уточнити, який саме, прочитати код,
     перевірити, що не перетре наші 6 хуків і правила.
+  - Статус змінився (2026-09-24): користувач уточнив — мав на увазі
+    плагін, що **знаходить слабкі місця в налаштованій системі й
+    покращує їх** (аудитор), а не генератор конфігів.
+    - `HOPLAtools/claude-setup` — README прочитано: НЕ аудитор, а повний
+      робочий процес (plan → execute → validate, `/hopla:*`); є
+      `/hopla:system-review` (план vs факт у ЇХНЬОМУ циклі); CLI з
+      `--force` пише глобальний `~/.claude/CLAUDE.md`; 0 ⭐, MIT.
+    - npm `claude-setup` (AbdoKnbGit) — код v2.0.3 прочитано (npm pack):
+      `init` генерує CLAUDE.md/.mcp.json/settings.json/skills/commands,
+      пише `.claude/hooks/track-tokens.cjs` і Stop-хук у
+      `.claude/settings.json`, `.claude/commands/stack-*.md`, агент
+      `marketplace-fetcher.md` («Always overwrite»). Є `doctor [--fix]` —
+      але це перевірка ФОРМАТУ (OS-формат MCP, `npx -y`, назви подій
+      хуків, env-змінні, застарілі шляхи в скілах), дивиться лише
+      `./CLAUDE.md`, `./.mcp.json`, `./.claude/settings.json`. У нас хуки
+      в `settings.local.json`, `.mcp.json` нема — doctor нашої системи
+      майже не побачить. `--test-hooks` ЗАПУСКАЄ команди хуків
+      (spawnSync bash -c). Висновок: не те, що шукали.
+    - Кандидати-аудитори (знайшов DeepSeek; існування, ліцензія, ⭐,
+      дата — звірено GitHub API; що вміють — зі слів DeepSeek, README
+      не читав, не запускав): `sam-illingworth/audit-setup` (команда
+      `/audit-setup`, 18 ⭐, MIT, звіт Adopt/Improve/Remove/Security з
+      диффами) — найближчий до опису; `pdugan20/claudelint` (плагін+npm
+      лінтер, 12 ⭐, оновл. 2026-09-23); `odere-pro/claude-calibration`
+      (1 ⭐, `/calibration-audit` лише читає); `aliksir/neko-harness-doctor`
+      (1 ⭐, без LLM, фікси лише пропонує); `kosk-t/harness-audit` (0 ⭐).
+      Наступний крок: прочитати код audit-setup, потім read-only прогін.
 
 - **E5-хук: «неможливо/не існує» без пошуку (2026-09-23).** Тест на
   історії (TROUBLES.md "claimcheck: тест на історії") — E5 точний (2/2,
@@ -231,6 +258,26 @@ Fable — з usage credits), субагенти на дешевших модел
 - **Чому цікаво:** обидва автоматичні (не треба самому пам'ятати
   покликати перевірку) — на відміну від ручного zvirka-bazy
 - Статус: дослідити, не встановлено
+- Статус змінився (2026-09-24): досліджено через DeepSeek під задачу
+  «зменшити стартове навантаження»; ключове звірено мною (npm view,
+  GitHub API, README, pip index).
+  - claude-mem (94 592 ⭐, npm 13.25.3, ліцензія Apache-2.0 — DeepSeek
+    помилково написав AGPL): SQLite + SessionStart-хук ВПРИСКУЄ на старті
+    хронологію спостережень (за docs-дзеркалом, [unverified] офіційно) —
+    проти мети; engines bun>=1.1.31 (bun у Termux нема); стискання через
+    зовнішню LLM — дані назовні.
+  - claude-code-auto-memory: лише ПИШЕ в CLAUDE.md між маркерами
+    AUTO-MANAGED — роздуває найбільший стартовий файл.
+  - basic-memory (MCP, пошук на вимогу — правильна форма): потребує uv;
+    `pip index versions onnxruntime` → «No matching distribution» на
+    Termux — не ставиться у заявленому вигляді.
+  - @agynio/cmr-memory 1.0.2: LLM-запит перед КОЖНИМ tool-викликом,
+    потрібен ключ Anthropic API, пише в CLAUDE.md.
+  - Висновок: жоден не знімає біль краще за наявне (файли + навігація +
+    читання на вимогу). Користь — у задачі «Зменшити те, що вантажиться
+    на старті»: поміряти, прибрати зайве з шару «завжди». Кандидат від
+    DeepSeek: 35 схем MCP-інструментів, із них memory MCP (9) не
+    використовується за правилом — [не поміряно].
 
 ### Jules (Google) — асинхронний coding-агент (2026-09-18)
 - **Що:** клонує GitHub-репозиторій у хмарну VM, пише план, вносить
