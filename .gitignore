@@ -31,3 +31,12 @@ HANDOFF.md
 
 # Експорти сесій (повний чат + thinking) — локальні, не історія проєкту
 session-exports/
+
+# Копії чужих текстів для бектесту верифікатора — не публікувати (репо публічне);
+# як скачати заново — tools/verifier-backtest/sources/README.md
+tools/verifier-backtest/sources/anthropic-multi-agent.txt
+tools/verifier-backtest/sources/arxiv-2512.08296-abs.txt
+tools/verifier-backtest/sources/arxiv-2512.08296.txt
+tools/verifier-backtest/sources/baton-server.mjs.txt
+tools/verifier-backtest/sources/baton-PROTOCOL.md
+tools/verifier-backtest/sources/freellmapi-README.md
