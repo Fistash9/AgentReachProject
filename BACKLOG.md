@@ -19,18 +19,15 @@
   випадає і аналізується чужа сесія (звіт кроку 2.6 стає невалідним).
   Має визначати основну за іншою ознакою або голосно казати «не знайшов».
   Деталі — TROUBLES.md.
-- **claude-anthropic.sh (Opus 5.5 vs Opus 5) — обговорити й створити.**
-  Дзеркало `claude-deepseek.sh`, яке скидає DeepSeek-енв і ставить
-  `claude-opus-5-5`; авторизація — наявний claude.ai OAuth (не ключ).
-  Обговорення поставлено користувачем на паузу.
-  - Аргумент з auto mode (2026-09-24): у DeepSeek-сесіях дії в auto mode
-    перевіряє на безпеку модель DeepSeek (замість Claude Sonnet 5 —
-    deepseek-flash або deepseek-v4-pro), у прямих сесіях — модель Claude.
-    Питання до обговорення: чи користуватись auto mode у DeepSeek-сесіях
-    і де робити ризиковані дії (push, видалення). Безкоштовні серверні
-    перевірки з повідомлення нам не світять: на Pro вони за замовчуванням
-    не вмикаються, DeepSeek їх не підтримує. Деталі — TROUBLES.md
-    «Повідомлення auto mode про плату за класифікатор».
+- **Auto mode у DeepSeek-сесіях — чи користуватись (2026-09-24).** У
+  DeepSeek-сесіях дії в auto mode перевіряє на безпеку модель DeepSeek
+  (замість Claude Sonnet 5 — deepseek-flash або deepseek-v4-pro), у
+  прямих сесіях — модель Claude. Питання до обговорення: чи користуватись
+  auto mode у DeepSeek-сесіях і де робити ризиковані дії (push,
+  видалення). Безкоштовні серверні перевірки з повідомлення нам не
+  світять: на Pro вони за замовчуванням не вмикаються, DeepSeek їх не
+  підтримує. Деталі — TROUBLES.md «Повідомлення auto mode про плату за
+  класифікатор».
 
 - **Instagram Reels — приватні акаунти не перевірено.** Для ПУБЛІЧНИХ
   Reels transcriptor MCP уже працює без cookies (див. Завершено).
@@ -547,6 +544,13 @@ Before/after приклад знайдено, міграція готова пі
     slopsquash (npm v1.0.1, github.com/slopsquash/slopsquash),
     package-guard-mcp (npm v1.4.0, github.com/mlawsonking/MCP),
     package-verify-mcp (npm v0.1.0, github.com/Anicodeth/package-verify-mcp)
+- 2026-09-24: claude-anthropic.sh — НЕ потрібен, пункт закрито (рішення
+  користувача). Пункт 3 у menu.sh (`exec claude`) уже запускає Claude
+  Code напряму на Anthropic; змінні DeepSeek не просочуються
+  (claude-deepseek.sh запускається через exec, у профілі shell їх
+  немає); типова модель — Opus 5.5 (обрана через /model 2026-09-24),
+  на Pro працює. Fable на Pro — лише платно (usage credits); разова
+  акція $100 закінчилась 17.09.2026 (довідка Anthropic).
 
 ### ✅ memory.jsonl — ВИРІШЕНО (2026-09-17)
 - **Проблема:** Claude Code не передає env-змінні в stdio-процес (баг #22571)
