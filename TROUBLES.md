@@ -2159,3 +2159,45 @@ WebSearch 6, WebFetch 1; read-only частину класифікатор пр�
 пояснили повідомлення неточно: «безкоштовно, якщо через Anthropic»
 (для Pro — ні) і «виправити може тільки DeepSeek» (не може). Обидві
 неточності зникли після читання сторінки за посиланням з повідомлення.
+
+---
+## Вимкнути мислення DeepSeek через Claude Code НЕ вдається — перевірено наскрізно (2026-09-24)
+TAGS: deepseek, thinking, MAX_THINKING_TOKENS, CLAUDE_CODE_DISABLE_THINKING, claude-deepseek.sh, тест, хук, статус змінився
+
+СТАТУС ЗМІНИВСЯ щодо запису «Мислення DeepSeek: обов'язкове в контексті…»
+(розділ «ЯК ВИМКНУТИ»): там змінні знайдено в бінарнику й окремо
+перевірено, що DeepSeek приймає `thinking: disabled`, але ланцюжок
+«Claude Code → DeepSeek» наскрізно не перевірявся. Тепер перевірено — не
+працює.
+
+ТЕСТ (реальний запуск скрипта, не відтворення): `<ЗМІННА>
+claude-deepseek.sh -p "Відповідай одним словом: яка столиця Франції?"
+--output-format stream-json --verbose --max-turns 2`; мислення рахувалось
+за журналом сесії.
+- Контроль: сесія 97851678 (звичайні налаштування) — блок thinking у 109
+  з 109 відповідей.
+- MAX_THINKING_TOKENS=0 (сесія 50ecfa53): 2 блоки thinking (4 721 і 157
+  симв.), out 1 188 токенів на відповідь «Париж».
+- CLAUDE_CODE_DISABLE_THINKING=1 (сесія 58b2f2fa): 1 блок thinking
+  (3 802 симв.), out 907.
+
+ЧОМУ (sourced): code.claude.com/docs/en/model-config, «Extended thinking»:
+MAX_THINKING_TOKENS=0 вимикає мислення на Anthropic API; «On third-party
+providers, Claude Code omits the thinking parameter instead, and
+adaptive-reasoning models may still think». У DeepSeek «Thinking mode is
+enabled by default» (api-docs.deepseek.com/guides/thinking_mode) — вимикає
+лише поле запиту `{"thinking": {"type": "disabled"}}`; назви моделі чи
+іншого перемикача без мислення на сторінках thinking_mode і anthropic_api
+не знайдено.
+
+НАСЛІДОК: штатного способу вимкнути мислення в DeepSeek-сесіях Claude
+Code немає. Лишається лише посередник між Claude Code і DeepSeek, що
+додає це поле в кожен запит (не будувався, не перевірено). effort=low за
+пілотами майже не зменшує мислення (low≈high за вихідними токенами).
+
+ПОБІЧНО (хук): у тесті з MAX_THINKING_TOKENS=0 майже все мислення (4 721
+симв.) пішло на підказку UserPromptSubmit-хука «Цей запит простий.
+Делегуй його на DeepSeek»: модель DeepSeek спробувала делегувати питання
+самій собі (виклик mcp__deepseek__deepseek, відхилений у -p) і лише потім
+відповіла. Доказ до BACKLOG «Розбіжність хуків із правилом
+автоделегування».
