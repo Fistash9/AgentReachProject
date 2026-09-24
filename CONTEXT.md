@@ -365,3 +365,44 @@ delegate-prompt-improver, delegate-outcome-logger, request-brief-reminder
 Жити з новими правилами й звітом claimcheck кілька сесій і дивитися,
 чи рідше треба питати «перевір ще раз». Відкрито: E5-хук (потрібні
 дані), вартість pro/flash, grill-me/claude-setup, AI-атрибуція в комітах.
+
+## Оновлення 2026-09-24
+
+### Ціни DeepSeek vs Claude (запит користувача, sourced)
+- **DeepSeek** (офіційний прайс, off-peak, cache miss; сторінка 19.09.2026):
+  flash $0.15 вхід / $0.60 вихід; pro $0.66 / $1.98. Peak = 2× off-peak.
+  Легасі-ім'я `deepseek-v4-flash` — retired, канонічне тепер `deepseek-flash`.
+- **Claude** (first-party, скіл claude-api): Haiku 4.5 $1/$5, Sonnet 5
+  $2/$10, Opus 5.5 $4/$20, Opus 5 $5/$25, Fable 5.1 $10/$50.
+- **Порівняння**: flash у ~7–42× дешевша за Claude, pro у ~1.5–13×.
+
+### Знайдено застаріле
+- Таблиця цін у delegate-пакеті — промо (pro $0.435/$0.87), скінчився
+  31.05.2026. Тому «економія 98%» у футері трохи завищена (для flash
+  проти baseline opus-4.8 грубо правдива: ~97% вхід / ~97.6% вихід).
+- Глобальний `~/.claude/CLAUDE.md`, блок «Delegate heavy work», писав
+  write→pro, reason→pro — виправлено вручну 2026-09-24 (тепер flash).
+
+### Роутинг делегування (вирішено 2026-09-24)
+- `~/.claude/delegator.json`: read/write/reason → `deepseek-v4-flash`
+  (було write/reason → pro). Бекап `delegator.json.bak-2026-09-24`;
+  відкат = `cp` назад. Рішення користувача: лишаємо flash скрізь,
+  pro — лише за явним override. Доки узгоджено (глобальний CLAUDE.md
+  виправлено вручну, BACKLOG/TROUBLES оновлено).
+- Окремо (інша тема): «важка робота → Claude Opus 5.5» — лаунчер
+  `claude-anthropic.sh` поставлено на паузу («спершу обговорити»).
+
+### Доступ до Anthropic
+- Користувач має claude.ai OAuth-акаунт (`oauthAccount: True`), НЕ
+  API-ключ. Сесія йде через `ANTHROPIC_BASE_URL=api.deepseek.com`
+  (паттерн claude-deepseek.sh: ключ з agent.py → ANTHROPIC_AUTH_TOKEN).
+- Підготовлено (не створено) `claude-anthropic.sh` — дзеркало, скидає
+  DeepSeek-енв, ставить `claude-opus-5-5`, авторизація через наявний
+  claude.ai-логін. Застереження: Opus 5.5 — «launching», доступ залежить
+  від плану; стабільна альтернатива `claude-opus-5`.
+
+### Поточний фокус (оновлення 2026-09-24)
+Роутинг вирішено (flash скрізь) і доки узгоджено. Лишається: обговорити
+й створити `claude-anthropic.sh` (Opus 5.5 vs Opus 5); таблиця цін
+усередині delegate-пакета лишається застарілою — правити node_modules
+не варто (див. TROUBLES.md).
