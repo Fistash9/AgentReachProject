@@ -401,6 +401,20 @@ delegate-prompt-improver, delegate-outcome-logger, request-brief-reminder
   claude.ai-логін. Застереження: Opus 5.5 — «launching», доступ залежить
   від плану; стабільна альтернатива `claude-opus-5`.
 
+### Мислення DeepSeek (друга половина сесії)
+З'ясовано причину швидкого з'їдання контексту: при наявності `tools`
+(Claude Code завжди шле 67 схем) DeepSeek вимагає повертати
+`reasoning_content` з усіх ходів і склеює його в контекст — інакше 400.
+У «вартості пересилання»: thinking 32.3%, фіксований вантаж
+(systemPrompt+tools+CLAUDE.md) 42.9%; гроші при цьому малі (~$1.2/день,
+96% токенів — cache_read за $0.003–0.022/1M).
+Вимкнути технічно можна: `CLAUDE_CODE_DISABLE_THINKING` /
+`MAX_THINKING_TOKENS=0` (є в нативному бінарнику Claude Code) + DeepSeek
+приймає `thinking:disabled` (перевірено живим тестом). Пілоти (12 простих
++ 15 реальних задач): мислення коштує ~3× вихідних токенів, надійної
+різниці в точності немає; prior art — DART/RADAR/RouteLLM/FrugalGPT.
+Рішення про важіль НЕ ухвалено. Деталі й граблі — TROUBLES.md (2026-09-24).
+
 ### Поточний фокус (оновлення 2026-09-24)
 Роутинг вирішено (flash скрізь) і доки узгоджено. Лишається: обговорити
 й створити `claude-anthropic.sh` (Opus 5.5 vs Opus 5); таблиця цін
