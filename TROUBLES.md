@@ -1949,3 +1949,33 @@ TAGS: session-close, check-links, claimcheck, deepseek, 2.1.280
   малі (1 пошук / 1-2 файли), тож це не доказ, що збій виправлено.
 - Граблі: `session-report.sh | grep -v "^[+-]"` ховає розділ комітів
   (рядки комітів починаються з "- ") — фільтр був мій, не скрипта.
+
+---
+## Дефолт делегування — flash скрізь; застаріла таблиця цін пакета (2026-09-24)
+TAGS: delegate, deepseek-v4-flash, deepseek-v4-pro, pricing, managed-block, CLAUDE.md
+
+ЩО ЗРОБЛЕНО: `~/.claude/delegator.json` — read/write/reason переведено на
+`deepseek-v4-flash` (було write/reason → pro). Бекап:
+`~/.claude/delegator.json.bak-2026-09-24`. Відкат: `cp` бекапу назад.
+Рішення користувача: flash скрізь, pro — лише за явним override.
+
+ЦІНИ (офіційні, api-docs.deepseek.com/quick_start/pricing; сторінка
+оновлена 2026-09-19; off-peak, cache miss): flash $0.15/$0.60,
+pro $0.66/$1.98. Peak = 2× off-peak (будні 01:00-04:00 і 06:00-10:00 UTC).
+
+ГРАБЛІ 1: таблиця цін УСЕРЕДИНІ delegate-пакета застаріла — показує
+промо-тариф (pro $0.435/$0.87, flash $0.14/$0.28), знижка закінчилась
+2026-05-31. Тому рядок «економія N%» у футері delegate трохи завищений
+(для flash проти baseline opus-4.8 грубо правдивий: ~97% вхід / ~97.6%
+вихід). НЕ правити `node_modules` — `npm install` перетре; фіксувати тут.
+
+ГРАБЛІ 2: глобальний `~/.claude/CLAUDE.md` має керований блок
+«Delegate heavy work» з маркером `(managed block, do not edit by hand)`.
+Він писав write/reason→pro; виправлено вручну на flash 2026-09-24.
+Відкат правки: замінити `deepseek-v4-flash` назад на `deepseek-v4-pro`
+у рядках write/reason. Ризик: якщо колись запустити `npx
+claude-code-deepseek-delegator init`, блок може перегенеруватись і
+перетерти ручну правку — тоді перевірити й повторити.
+
+ЩЕ: легасі-id `deepseek-v4-flash` — retired, канонічне ім'я тепер
+`deepseek-flash` (обслуговується DeepSeek-V4.1-Flash, білінг той самий).
