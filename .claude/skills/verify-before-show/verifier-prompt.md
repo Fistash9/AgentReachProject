@@ -1,6 +1,6 @@
 # Промпт верифікатора v2
 
-Джерело: tools/verifier-backtest/cases-v2.md (коміт 1ce24bf), бектест —
+Джерело: tools/verifier-backtest/cases-v2.md (коміт c236ebb), бектест —
 results-v2.md. Не міняти без нового бектесту на нових кейсах.
 Підставити {claim} і {context}; усе між лініями ``` — поле prompt.
 

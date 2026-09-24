@@ -67,7 +67,7 @@ description: Independent check of the orchestrator's own load-bearing claims aga
 ## Межі й відомі слабкості
 
 - Хук `delegate-prompt-improver` (PreToolUse) переписує кожен промпт
-  до delegate. З 2026-09-24 це робить Opus 5.5 (коміт 0f4d40f), до
+  до delegate. З 2026-09-24 це робить Opus 5.5 (коміт b044a4d), до
   того — Haiku. DeepSeek отримує переписаний текст. На Haiku був 1 збій
   із 17 прогонів: модель викинула твердження.
 - Кожен виклик коштує ~$0.001–0.007 DeepSeek плюс виклик Opus у хуку,
