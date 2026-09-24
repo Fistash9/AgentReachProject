@@ -175,6 +175,21 @@
 
 ## Дослідити (можливо, колись)
 
+### «Resets — Reset for free» у claude.ai Usage (2026-09-24)
+Запит користувача: «ще така штука є, потрібно подивитись потім»
+(скриншот Settings → Usage, 24.09 19:48). На сторінці:
+- картка «Resets — Get extra wiggle room to explore Opus 5.5. Expires
+  Oct 22.» з кнопкою «Reset for free»;
+- «Current session 37% used, resets 8:30 PM»;
+- «This week 39% used, resets Tuesday 10:00 PM»;
+- попередження «At this pace you'll run out Sunday evening, before
+  Tuesday's reset»;
+- «Claude Code 100% / Chats 0%» тижневого використання;
+- Usage credits $0, вимкнено.
+Що саме скидає кнопка (сесію? тиждень?), чи вона разова і чи варто
+приберегти її до неділі — [unverified], з'ясувати в довідці Anthropic.
+Кнопку поки не натискати. Пов'язано з пам'яттю cost-discipline-sessions.
+
 ### FreeLLMAPI — безкоштовні моделі за одним endpoint (2026-09-24)
 Запит користувача: «корисний інструмент, перевірити потім». Джерело:
 Instagram reel zhilnikov_it (DdoplgRt7Q4, 23.09.2026). Звук розшифровано
