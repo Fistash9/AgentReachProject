@@ -2271,3 +2271,27 @@ TAGS: deepseek, verifier, review, deepseek-reply
 
 ОБМЕЖЕННЯ: сесія, яка не бачила джерела іншої половини, пише «не можу
 оцінити» — це коректно, не вимагати більшого.
+
+---
+## Верифікатор: хук improver переписує промпт; збій ≠ «НІ» (2026-09-24)
+TAGS: verifier, delegate, hooks, improver, backtest
+
+ПРОБЛЕМА: `.claude/hooks/delegate-prompt-improver-hook.py` (PreToolUse)
+переписує КОЖЕН `prompt` до `mcp__delegate__delegate` через `claude -p`.
+DeepSeek отримує не той текст, що записано у файлі промпту. На Haiku
+з 17 прогонів бектесту 1 зламався: модель зробила з запиту шаблон
+«ТВЕРДЖЕННЯ: [користувач наведе]» і викинула саме твердження.
+
+РЕЦЕПТ:
+- заглушки у відповіді делегата («[користувач наведе]», «твердження не
+  надано») — це збій, а не вердикт. Один повтор;
+- перевірити хук без реального виклику: подати JSON
+  `{"tool_name":"mcp__delegate__delegate","tool_input":{"prompt":…}}`
+  на stdin хука й подивитись `updatedInput.prompt`;
+- яка модель відповіла:
+  `claude -p "ok" --model X --tools "" --output-format json` → `modelUsage`.
+
+СТАН: модель хука змінено на claude-opus-5-5 (0f4d40f). Симуляція на
+вході, що зламався: exit 0, 17 с при таймауті 45 с, твердження
+збережено. Бектест — tools/verifier-backtest/ (раунд 1: 2 з 4; раунд 2,
+промпт v2: 4 з 4, 0 хибних тривог). Скіл — verify-before-show.
