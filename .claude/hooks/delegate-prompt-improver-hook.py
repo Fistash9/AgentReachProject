@@ -21,12 +21,14 @@ delegate) і міг сам, непомітно, викликати їх замі
 Не блокує — якщо покращення не вдалось (порожній вивід, помилка,
 таймаут), пропускає оригінальний prompt без змін (fail-open).
 """
+import os
 import sys
 import json
 import subprocess
 
 IMPROVER_MODEL = "claude-opus-5-5"  # було "haiku"; змінено на прохання користувача 2026-09-24
 TIMEOUT = 45
+SYSTEM_PROMPT = "Ти переписуєш промпти для делегованих AI-викликів. Виводь лише текст промпту, без пояснень."
 
 META_INSTRUCTIONS = """Ти переписуєш промт для делегованого AI-виклику (DeepSeek). Твій єдиний вивід — новий текст промту, БЕЗ жодних пояснень, преамбул чи лапок навколо.
 
@@ -64,10 +66,19 @@ def main():
 
     instruction = META_INSTRUCTIONS.format(prompt=original_prompt)
 
+    # Легкий запуск (2026-09-24): з порожньої теки, без налаштувань/скілів/MCP
+    # і з коротким системним промптом — інакше claude -p тягнув увесь старт
+    # проєкту (~47k токенів на виклик). Замір: контекст 22 389 → 474 токени.
+    # --bare не підходить: він вимагає ANTHROPIC_API_KEY, а в нас OAuth.
+    empty_dir = os.path.join(os.environ.get("TMPDIR", "/data/data/com.termux/files/usr/tmp"),
+                             "delegate-prompt-improver")
+    os.makedirs(empty_dir, exist_ok=True)
     try:
         result = subprocess.run(
-            ["claude", "-p", instruction, "--model", IMPROVER_MODEL, "--tools", ""],
-            capture_output=True, text=True, timeout=TIMEOUT,
+            ["claude", "-p", instruction, "--model", IMPROVER_MODEL, "--tools", "",
+             "--setting-sources", "", "--disable-slash-commands", "--strict-mcp-config",
+             "--system-prompt", SYSTEM_PROMPT],
+            capture_output=True, text=True, timeout=TIMEOUT, cwd=empty_dir,
         )
     except (OSError, subprocess.SubprocessError, subprocess.TimeoutExpired):
         return
