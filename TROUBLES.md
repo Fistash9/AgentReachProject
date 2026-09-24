@@ -2224,3 +2224,32 @@ type=assistant, дедуп за message.id, сума usage.{input_tokens,
 cache_read_input_tokens, cache_creation_input_tokens, output_tokens};
 прирости контексту — різниця input+cache_read+cache_write між сусідніми
 запитами.
+
+---
+## Стартове навантаження сесії: як поміряти і що в ньому (2026-09-24)
+TAGS: контекст, старт, baton, пам'ять, mcp, jsonl
+
+ВИМІРЯНО (сесія 0d7a2852, Opus 5.5, журнал usage): перший запит —
+48 681 ток. (cache_read 23 037 — спільна частина: системний промпт,
+описи інструментів; cache_creation 25 642 — частина цієї сесії:
+CLAUDE.md, пам'ять, список скілів). Після baton_pick_up — 65 324
+(стрибок +16 089; вивід baton 31 251 симв.).
+
+ЯК: $CLAUDE_CODE_SESSION_ID → ~/.claude/projects/<проєкт>/<id>.jsonl;
+перший assistant-запис — usage.input_tokens + cache_read + cache_creation
+= старт; стрибок між сусідніми запитами = ціна кроку. Коефіцієнт для
+укр. тексту з цього виміру: ≈2 симв./ток. (оцінка, не токенізатор).
+
+ФАКТИ:
+- MCP-інструменти в цій збірці ВІДКЛАДЕНІ: на старті лише назви,
+  схеми вантажаться через ToolSearch. Твердження DeepSeek «35 схем MCP
+  на старті» — хибне для цієї сесії.
+- Під-сесія deepseek без пункту «не питай підтвердження розуміння»
+  (шаблон вище, 2026-09-23) зупиняється з питанням «чи правильно
+  зрозумів?» — промпт без цього пункту = зайвий виклик deepseek-reply.
+- Практики Anthropic (цитати звірено curl): progress-файл + git history
+  (anthropic.com/engineering/effective-harnesses-for-long-running-agents);
+  progressive disclosure (…/effective-context-engineering-for-ai-agents);
+  «target under 200 lines per CLAUDE.md file», деталі — в тематичні
+  файли, правила зі скоупом за шляхом (code.claude.com/docs/en/memory);
+  «Persistent rules belong in CLAUDE.md» (…/agent-sdk/agent-loop).
