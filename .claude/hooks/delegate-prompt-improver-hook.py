@@ -61,6 +61,29 @@ META_INSTRUCTIONS = """Ти переписуєш промт для делего�
 Виведи ЛИШЕ покращений промт."""
 
 
+NO_IMPROVE_MARKER = "[no-improve]"
+MIN_WORDS_STRUCTURED = 120
+MIN_STRUCTURE_CUES = 2
+STRUCTURE_CUES = [  # різні ознаки структури; рахуємо, скільки з них є
+    r"\bмета\b|\bgoal\b",
+    r"формат|\bformat\b",
+    r"\bкрок|\bsteps?\b",
+    r"джерел|\bsources?\b",
+    r"бюджет|\bbudget\b",
+    r"\bмеж[іа]\b|обмежен|boundar",
+    r"вердикт|verdict|умова зупинки|stop condition",
+]
+
+
+def is_structured(prompt):
+    """Довгий (≥120 слів) і з ≥2 різними ознаками структури — не переписувати."""
+    if len(prompt.split()) < MIN_WORDS_STRUCTURED:
+        return False
+    low = prompt.lower()
+    cues = sum(1 for p in STRUCTURE_CUES if re.search(p, low))
+    return cues >= MIN_STRUCTURE_CUES
+
+
 def call_deepseek(instruction):
     """Один запит до DeepSeek; повертає текст або "" (будь-яка помилка → fail-open)."""
     try:
@@ -96,6 +119,26 @@ def main():
     tool_input = data.get("tool_input", {})
     original_prompt = tool_input.get("prompt", "")
     if not original_prompt or not original_prompt.strip():
+        return
+
+    # 1) Позначка «не чіпати» на початку промпту: прибрати її й пропустити решту
+    #    дослівно (делегат отримує рівно той текст, що написано, — напр.
+    #    заморожений промпт verify-before-show).
+    stripped = original_prompt.lstrip()
+    if stripped.startswith(NO_IMPROVE_MARKER):
+        new_input = dict(tool_input)
+        new_input["prompt"] = stripped[len(NO_IMPROVE_MARKER):].lstrip()
+        print(json.dumps({
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "updatedInput": new_input,
+            }
+        }))
+        return
+
+    # 2) «Рідко втручатися» (принцип severity1/claude-code-prompt-improver):
+    #    довгий структурований промпт уже чіткий — пропускаємо без змін.
+    if is_structured(original_prompt):
         return
 
     instruction = META_INSTRUCTIONS.format(prompt=original_prompt)

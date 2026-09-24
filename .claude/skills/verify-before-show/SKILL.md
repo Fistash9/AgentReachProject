@@ -38,6 +38,9 @@ description: Independent check of the orchestrator's own load-bearing claims aga
 - `prompt`: дослівно блок із `verifier-prompt.md` цієї теки, де
   підставлено `{claim}` і `{context}`. Очікуваний вердикт не
   передавай.
+- Перед блоком постав рядок `[no-improve]` (перший рядок `prompt`).
+  Хук `delegate-prompt-improver` прибирає цей рядок і передає
+  DeepSeek промпт дослівно, без переписування (з 2026-09-24).
 
 Промпт не міняти «під випадок». Будь-яка зміна вимагає нового
 бектесту на нових кейсах (як раунд 2).
