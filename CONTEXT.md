@@ -441,3 +441,16 @@ delegate-prompt-improver, delegate-outcome-logger, request-brief-reminder
 1) Аудит проєкту — перший пункт BACKLOG «Активні», у новій сесії.
 2) Обрати спосіб скорочення baton (3 варіанти в BACKLOG).
 Попередній «Поточний фокус» вище — застарів (див. «Статус змінився»).
+
+## Оновлення 2026-09-25 (сесії 24–25.09)
+- Верифікатор: скіл `verify-before-show` + рядок у RULES.md; бектести —
+  `tools/verifier-backtest/` (DeepSeek v1 2/4 → v2 4/4; NVIDIA gpt-oss
+  4/4; 0 хибних тривог).
+- Хук-переписувач: з ~$0.26/виклик (Opus) до ~$0.0006 (DeepSeek) або $0
+  (NVIDIA); `[no-improve]`, «рідко втручатися», журнал
+  `.claude/logs/improver.log`.
+- Провайдер: `tools/provider-switch.py` (menu.sh п.8), активний NVIDIA
+  gpt-oss-20b; під-сесії `deepseek` — на DeepSeek. Умови й можливості
+  NVIDIA — ECOSYSTEM.md.
+- Актуальний фокус — у baton (`next`) і BACKLOG «Активні» (окремий
+  «Поточний фокус» тут не дублюю; лад у CONTEXT.md — задача в BACKLOG).

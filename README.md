@@ -31,6 +31,10 @@ agent
 | [TRASH.md](./TRASH.md) | Журнал видалень (запис ДО rm) |
 | [USER_PROFILE.md](./USER_PROFILE.md) | Портрет користувача |
 | [tools/](./tools/) | check-links.py, claimcheck/, watch-deepseek.py — перевірки й стеження |
+| [tools/provider-switch.py](./tools/provider-switch.py) | Перемикач провайдера delegate і хука: DeepSeek ↔ NVIDIA gpt-oss (menu.sh п.8) |
+| [tools/nvidia-live.py](./tools/nvidia-live.py) | Живий прогін моделей NVIDIA в консолі (меню моделей і кейсів) |
+| [tools/verifier-backtest/](./tools/verifier-backtest/) | Бектести верифікатора: кейси, результати (DeepSeek і NVIDIA) |
+| [.claude/skills/verify-before-show/](./.claude/skills/verify-before-show/) | Скіл: звірка тверджень з джерелом до показу (промпт v2) |
 
 ## Tech Stack
 
