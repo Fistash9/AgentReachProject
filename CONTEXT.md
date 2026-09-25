@@ -454,3 +454,16 @@ delegate-prompt-improver, delegate-outcome-logger, request-brief-reminder
   NVIDIA — ECOSYSTEM.md.
 - Актуальний фокус — у baton (`next`) і BACKLOG «Активні» (окремий
   «Поточний фокус» тут не дублюю; лад у CONTEXT.md — задача в BACKLOG).
+
+## Оновлення 2026-09-25 (третя сесія: безкоштовний DeepSeek для delegate)
+- Статус змінився: провайдер delegate — BazaarLink, безкоштовний DeepSeek V4
+  Flash (`deepseek/deepseek-v4-flash-0731free:free`), перевірено живим
+  викликом ($0). NVIDIA — запасний: генерація зависала, а Node рве з'єднання
+  на ~39 с (TROUBLES.md). Рядок «активний NVIDIA gpt-oss-20b» вище застарів.
+- delegate 3.0.1 (фікс кирилиці підтверджено живим викликом).
+- Хук-переписувач — лише для агента `deepseek` (.claude/settings.local.json).
+- Freebuff працює в Termux (linux-arm64 + grun) — безкоштовний агент;
+  програма поки в $PREFIX/tmp.
+- Готові виконавці й маршрутизатори — ECOSYSTEM.md; provider-switch.py
+  ще не знає bazaarlink (BACKLOG).
+- Фокус — у baton (`next`) і BACKLOG «Активні».
