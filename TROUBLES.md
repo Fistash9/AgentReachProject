@@ -2544,3 +2544,12 @@ TAGS: deepseek, free, delegate, bazaarlink, provider
 - Увага: tools/provider-switch.py не знає bazaarlink — його `nvidia` запише
   поточний конфіг (BazaarLink) у delegator.deepseek.json поверх збереженого.
   Хук-переписувач (лише для агента deepseek) досі бере .provider=nvidia.
+- Статус змінився (2026-09-25, пізніше): Freebuff перенесено в ~/freebuff
+  (freebuff + tree-sitter.wasm, sha256 програми 10b5902e…); команда
+  `freebuff` = $PREFIX/bin/freebuff (sh-обгортка `exec grun ~/freebuff/freebuff "$@"`),
+  перевірено `freebuff --version` → 0.0.196. Вхід в акаунт зберігся.
+- Хук trash-md-guard визнає виняток для tmp лише за БУКВАЛЬНИМ шляхом
+  `/data/data/com.termux/files/usr/tmp/...`: з `$T/...` (змінна) чи після `cd`
+  блокує. Для прибирання власних tmp-файлів — писати шлях повністю.
+- `.gitignore` мав `*.bak`, але `*.bak-<дата>` під нього не підпадає →
+  додано `.claude/*.bak-*` (9ba2e1f).
