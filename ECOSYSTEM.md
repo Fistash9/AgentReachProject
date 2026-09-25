@@ -526,3 +526,78 @@ M2, вузький E5-хук (BACKLOG).
 4 помилки сесії 2026-09-24 — один клас: твердження/план не звірено з
 джерелом, що лежало поруч. План інструмента «звір-перед-показом» із
 бектестом — BACKLOG.md «Активні». Не реалізовано.
+
+---
+## NVIDIA API (build.nvidia.com) — можливості й умови (дослідження 2026-09-25)
+
+Мета: чи годиться NVIDIA як безкоштовний провайдер замість DeepSeek і
+як використати його на повну. Метод: першоджерела NVIDIA (умови, FAQ,
+відповіді співробітників на форумі) + живі виклики з нашим ключем;
+вторинні джерела — лише як покажчики на першоджерела.
+
+### Умови (sourced)
+- **NVIDIA API Trial Terms of Service** (PDF на assets.ngc.nvidia.com,
+  файл від 23.09.2026, усередині «v. September 19, 2025», 9 стор.):
+  - 1.2: «limited trial purposes only and without use… in production»;
+  - 2.x: «NVIDIA will store User Content for thirty (30) days»;
+  - 3.3: «NVIDIA will collect… (iv) User Content and Generated Content
+    to improve NVIDIA products and services, including AI models».
+    Тобто промпти й відповіді можуть іти на навчання;
+  - заборонено надсилати «confidential information… personal data».
+  Розбіжність: пошуковий переказ казав «does not use prompts to
+  train» — текст умов це спростовує.
+- **Кредити скасовано:** співробітник sophwats, 10.09.2025 — «We no
+  longer use a credit-based system for build.nvidia.com… replaced by
+  rate limits»; «rate limits vary for each model, and we do not publish
+  those», ліміт видно у правому верхньому куті build.nvidia.com. Старі
+  «1000/5000 credits» (TomNVIDIA, 2024) застаріли.
+- **Ліміти не підвищують:** MarkusHoHo, 11.05.2026 — «There is no
+  official way… to receive a rate limit increase»; залежать від
+  «model, use-case and the amount of current overall traffic». ~40 RPM
+  — цифра спільноти, не офіційна.
+- **FAQ (docs.api.nvidia.com/nim/docs/product):** API — «for
+  prototyping»; завантажувані NIM — «research, application development,
+  and experimentation on up to 16 GPUs on any infrastructure»; продакшн
+  — ліцензія NVIDIA AI Enterprise («$4500 per GPU per year»), є 90-денний
+  trial.
+- Endpoint'у usage/лімітів немає (open feature request на форумі).
+
+### Технічне (живі виклики, ключ 2026-09-25)
+- Формат лише OpenAI: `https://integrate.api.nvidia.com/v1`
+  (chat/completions, embeddings). `/v1/messages` (Anthropic) → 404.
+  Під-сесії `deepseek` (Claude Code) напряму на NVIDIA не переїдуть.
+- Tool calling працює (glm-5.3-flash викликав `get_weather`, 46 с).
+- JSON за схемою (`response_format: json_schema`) працює, але лише з
+  вимкненим мисленням: `chat_template_kwargs: {"enable_thinking": false}`
+  (або `thinking: false`) → 2.9 с; без цього 28.7 с, content=None.
+- Embeddings: `nvidia/nemotron-3-embed-1b` — 0.3 с, розмірність 2048.
+- `/v1/models` віддає 82 моделі, але частина недоступна («Function…
+  Not found for account» 404; llama-3.3-70b — 410, знята 26.08.2026).
+  Доступність перевіряти викликом.
+- Швидкість: див. TROUBLES «NVIDIA free API: швидкість моделей».
+  deepseek-v4.1-flash на NVIDIA практично непридатна.
+
+### Що є в каталозі (за /v1/models; доступність — вибірково)
+LLM з мисленням (glm-5.3, kimi-k3, deepseek-v4.1-flash, gpt-oss-20b,
+nemotron-ultra-253b); embeddings (7, мультимодальні теж); vision-моделі
+(llama-3.2 vision, phi-3-vision, neva); guard/safety-моделі (llama-guard-4,
+nemoguard content-safety/topic-control) — фільтр вхідних і вихідних
+даних; код-моделі (codestral, starcoder2, granite-code). Reranking у
+списку /v1/models немає (може бути на іншому хості — не перевірено).
+
+### Як професіонали використовують (sourced, OmniRoute #6846 + форум)
+- клієнтський облік лімітів: ковзне вікно ~40 RPM, окремо на кожну
+  модель, обмеження паралельних запитів (4–8);
+- на 429 — `Retry-After`, інакше експоненційна пауза з jitter;
+- 502/504/таймаути — «модель перевантажена» → інша модель (fallback),
+  а не зниження ліміту;
+- для стабільної роботи — завантажувані NIM на власному GPU (до 16 GPU
+  безкоштовно для розробки).
+
+### Висновок для Agent Reach
+NVIDIA годиться як **безкоштовний запасний** провайдер для прямих
+OpenAI-викликів (`delegate`, хук-переписувач) з glm-5.3-flash і
+вимкненим мисленням. Не годиться для: під-сесій Claude Code (немає
+формату Anthropic), будь-чого конфіденційного (умови 3.3, 30 днів
+зберігання), чогось «на потік» (ліміти не гарантовані й не
+підвищуються).
