@@ -2491,3 +2491,16 @@ TAGS: nvidia, delegate, node, keepalive, timeout, ETIMEDOUT
   https.globalAgent = new https.Agent({keepAlive:false}); пакет не правити.
 - delegate 3.0.1 встановлено (контрольні суми конфігів незмінні); фікс UTF-8
   наживо не перевірено через цей збій.
+
+---
+## Дрібні граблі сесії 2026-09-25 (живий показ delegate)
+TAGS: termux, shell, grep, trash-md-guard, tmp
+- Довгий шлях scratchpad (`/data/.../tmp/claude-10599/-data-data-com-termux-…/scratchpad/…`)
+  при копіюванні з чату в Termux розривається переносом рядка → «No such file».
+  Для команд, які користувач запускає сам, — короткий шлях: `$PREFIX/tmp/<назва>`.
+- `diff -rq <встановлений пакет> <новий> | grep -v node_modules` ховає ВСІ рядки,
+  бо шлях встановленого пакета сам містить `node_modules`. Фільтрувати не за
+  шляхом, а за відносною частиною (або не фільтрувати).
+- Хук trash-md-guard блокує `rm -rf dlg` після `cd` у tmp: відносний шлях він
+  не розпізнає як tmp-виняток. Обхід без видалення: нова тека з унікальною
+  назвою (`dlg-$(date +%s)`).
