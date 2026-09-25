@@ -610,3 +610,34 @@ OpenAI-викликів (`delegate`, хук-переписувач) з glm-5.3-f
   токен 0.7–1.5 с, але один прогін завис >145 с без жодного байта
   (нестабільність безкоштовного рівня). Живий інструмент —
   tools/nvidia-live.py (меню моделей і кейсів).
+
+---
+
+## Виконавці й маршрутизатори для Claude Code — готові рішення (дослідження 2026-09-25)
+Запит користувача: «навіщо створюємо велосипед, який вже створили до нас».
+Ролі в нас: розподільник — Claude Opus 5.5 (оркестратор); виконавець важкого
+читання/писання/міркування — delegate (один запит, без інструментів);
+агент із пошуком — під-сесія deepseek.
+
+| Рішення | Що робить | Стан / ризики (джерело) |
+|---|---|---|
+| delegate (npm claude-code-deepseek-delegator) | Claude розподіляє, дешева модель виконує | Готовий пакет. 3.0.1 (24.09): фікс UTF-8 на межі шматків (у нас бачили «процес��»), попередження про відкинуті файли; автор перейменував акаунт 12122J → fjgbue. Запасних моделей і повтору тайм-аутів немає (src/client.mjs: лише та сама модель на 5xx/429). |
+| Claude Code Router (musistudio, ★37 418, MIT) | Шлюз: Anthropic-формат → будь-який провайдер; маршрути, запасні моделі, журнал | Відкритий #1804: у 3.1.0 fallback шле всі повтори «to the dead primary», у 3.0.22 працює. Маршрутизація під-агентів мовчки не спрацьовує (#1564). Залежність better-sqlite3 (нативна) — Termux під питанням; #931 «worked perfectly… termux» — 10.2025, стара версія. Компроміс (wmedia.es): «You keep the Claude Code UX, not Claude». |
+| FreeLLMAPI (★28 571, MIT) | Проксі над ~34 безкоштовними API: пріоритет → на 429/5xx пауза й наступна модель, до 20 спроб, Thompson-sampling | Є інструкція Termux (Node ≥ 22.13, без нативної SQLite, «Experimental»). Має /v1/messages. «No SLA». Каталог моделей тягне з freellmapi.co. ToS: Groq забороняє кілька акаунтів; Google free — дані на навчання. |
+| PAL MCP (раніше Zen, ★11 755) | Claude радиться з іншими моделями | Останній push 15.12.2025. |
+| LiteLLM Router | fallbacks, cooldown | DEFAULT_ALLOWED_FAILS 3, DEFAULT_COOLDOWN_TIME_SECONDS 5 (litellm/constants.py). |
+| OpenRouter models[] | «If the first model returns an error… try the next» | Переказ WebFetch документації. |
+
+Висновок: для надійності виконавця потрібні запасні моделі й обробка тайм-аутів,
+а не «розумніша» модель. Зараз надійніше FreeLLMAPI (у CCR fallback зламаний).
+Агенти на безкоштовних моделях — лише експеримент (якість агента падає).
+Не перевірено: відгуки користувачів FreeLLMAPI; CCR на Termux; `auto:*` у FreeLLMAPI.
+Чому не знайшли раніше: шукали інструмент, схожий на обраний, а не всю категорію;
+надбудови над delegate (переписувач, перемикач, логер) будували без повторного пошуку.
+
+Джерела: github.com/musistudio/claude-code-router (README, issues #1804, #1564,
+#931); github.com/tashfeenahmed/freellmapi (README, docs/en/install/02-android-termux.md,
+docs/en/architecture/00-high-level-index.md); artificiallyintimidating.com/p/freellmapi;
+wmedia.es/en/tips/claude-code-router-any-model; github.com/BeehiveInnovations/pal-mcp-server;
+github.com/BerriAI/litellm (litellm/constants.py); openrouter.ai/docs/guides/routing/model-fallbacks;
+npm claude-code-deepseek-delegator 3.0.0 vs 3.0.1 (diff коду).
