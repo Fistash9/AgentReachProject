@@ -78,6 +78,11 @@ description: Independent check of the orchestrator's own load-bearing claims aga
   підряд.
 - Статус змінився (того ж дня): переписувач у хуку тепер DeepSeek flash
   (d8c356c), ~$0.0006 за виклик, ліміт claude.ai не витрачається.
+- Провайдер delegate перемикається (tools/provider-switch.py, 2026-09-25):
+  DeepSeek flash або NVIDIA gpt-oss-20b (безкоштовно). Бектест на
+  gpt-oss теж 4/4 і 0 тривог (tools/verifier-backtest/results-nvidia.md),
+  але gpt-oss повільніший (14–72 с) і раз склеїв цитату з двох файлів —
+  крок 3 (grep цитат) не пропускати.
 - Кейси бектесту й промпт склав той самий оркестратор. Незалежність
   лише між раундами. Нові справжні помилки, які скіл пропустив,
   дописувати в `tools/verifier-backtest/` як кейси.

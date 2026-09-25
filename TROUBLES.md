@@ -2414,3 +2414,32 @@ the time or more»; 23.05: «Most of the time it gets hung up».
 Відповіді NVIDIA нема. NIM FAQ: «for prototyping, research, development
 and testing purposes only»; ліміти «vary per model… and number of
 concurrent users»; про логування/навчання на промптах — нічого.
+
+---
+## Перемикач провайдера DeepSeek ↔ NVIDIA gpt-oss (2026-09-25)
+TAGS: provider, nvidia, delegate, switch, gpt-oss
+
+ЯК: `python3 tools/provider-switch.py [nvidia|deepseek|status]` або
+menu.sh → 8.
+- Перемикає `~/.claude/delegator.json`: перед зміною робить .bak з
+  часом, конфігурацію DeepSeek зберігає в `delegator.deepseek.json`.
+- Пише `.provider` (у .gitignore) — його читає хук-переписувач.
+- Провайдер «nvidia» описано в `~/.claude/delegator-providers.json`
+  (catwalk-схема, `api_key: $NVIDIA_API_KEY`).
+- `run-delegate.sh` експортує ключ з `.env`.
+
+ВАЖЛИВО: процес delegate бачить NVIDIA_API_KEY лише після перезапуску
+Claude Code (або /mcp → delegate → reconnect). Статус показує, чи
+бачить. Під-сесії `deepseek` і claude-deepseek.sh лишаються на DeepSeek
+(у NVIDIA немає /v1/messages).
+
+ПЕРЕВІРЕНО:
+- хук: deepseek 1.0–1.1 с, nvidia 7.8 с (журнал
+  `.claude/logs/improver.log`);
+- окрема копія сервера delegate через run-delegate.sh → «delegated to
+  NVIDIA… gpt-oss-20b… spent $0.0000», 7 с;
+- повернення на deepseek → delegator.json байт у байт як до змін;
+- відкат коміту 8fa32bb у worktree.
+Бектест верифікатора на gpt-oss — 4/4, 0 хибних тривог
+(results-nvidia.md). Слабкість: одна склеєна цитата — тому крок 3 скілу
+(grep цитат) обов'язковий.
