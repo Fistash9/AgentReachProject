@@ -2465,3 +2465,10 @@ TAGS: nvidia, delegate, improver, timeout, fallback, deepseek
 - glm-5.3-flash через delegate: read ETIMEDOUT (помилка сокета, не 120-секундний
   тайм-аут delegate) через ~39 с після переписувача.
 - Рішення про переписувач не ухвалено (BACKLOG «A/B хука-переписувача»).
+- **Статус змінився (2026-09-25, за згодою користувача):** переписувач знято з
+  delegate — matcher хука в .claude/settings.local.json тепер лише
+  `mcp__deepseek__deepseek` (було `mcp__delegate__delegate|mcp__deepseek__deepseek`).
+  Причина: його чек-лист (WebSearch, «Джерела з URL») — для агента deepseek, а
+  delegate пошуку не має. Перевірено наживо: виклик delegate «12 × 12» → 144,
+  improver.log лишився 11 рядків, промпт пішов дослівно. Бекап:
+  .claude/settings.local.json.bak-20260925-113404 (відкат — скопіювати назад).
