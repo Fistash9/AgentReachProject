@@ -2389,3 +2389,28 @@ https://forums.developer.nvidia.com/t/383845 ,
 https://forums.developer.nvidia.com/t/373402
 
 НЕ ПОВТОРЮВАТИ спроби тим самим ключем — на боці NVIDIA.
+- Статус змінився (того ж дня): причина 403 — у `.env` лежав
+  НЕправильно скопійований ключ (перші два варіанти 75 і 69 символів,
+  не збігались із суфіксом у таблиці NGC). Після вставки правильного
+  (70 символів, суфікс збігається з таблицею) NGC → «key valid»,
+  чат → 200. Урок: перш ніж шукати проблему на форумі, звір суфікс
+  ключа з таблицею API Keys (org.ngc.nvidia.com → Account → API Keys).
+  Ключі тепер в Account settings, а не в Setup.
+
+## NVIDIA free API: швидкість моделей і відгуки (2026-09-25)
+TAGS: nvidia, latency, provider, free
+Замір (один запит «столиця України?», max_tokens 300, паралельно):
+- z-ai/glm-5.3-flash — 8.6 с ✓;
+- openai/gpt-oss-20b — 11.5 с ✓;
+- moonshotai/kimi-k3 — 54.2 с;
+- deepseek-ai/deepseek-v4.1-flash — 72 с (увесь max_tokens 50 пішов
+  на reasoning, content=None), а потім 3 таймаути по 120 с
+  (thinking False/enable_thinking False/default);
+- mistral-large-2-instruct, llama-3.1-nemotron-70b-instruct — 404 (є в
+  /v1/models, але «Function not found»).
+Відгуки (форум NVIDIA): «Nvidia Nim is too slow via API for DeepSeek
+Models» (05.05.2026): «doesn't even work for me via API for free half
+the time or more»; 23.05: «Most of the time it gets hung up».
+Відповіді NVIDIA нема. NIM FAQ: «for prototyping, research, development
+and testing purposes only»; ліміти «vary per model… and number of
+concurrent users»; про логування/навчання на промптах — нічого.
