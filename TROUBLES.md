@@ -2443,3 +2443,25 @@ Claude Code (або /mcp → delegate → reconnect). Статус показу�
 Бектест верифікатора на gpt-oss — 4/4, 0 хибних тривог
 (results-nvidia.md). Слабкість: одна склеєна цитата — тому крок 3 скілу
 (grep цитат) обов'язковий.
+
+---
+## Живий показ delegate на NVIDIA: DeepSeek висне, переписувач шкодить delegate (2026-09-25)
+TAGS: nvidia, delegate, improver, timeout, fallback, deepseek
+- deepseek-ai/deepseek-v4.1-flash на NVIDIA: жодного байта на «скажи ок»/«привіт» —
+  без потоку 40 с і 150 с, потоком 120 с (навіть заголовків), nvidia-live.py ~178 с.
+  У Playground build.nvidia.com (після входу) теж висить — перевірив користувач.
+  Отже не наш код і не ключ. deepseek-coder-6.7b-instruct — 404.
+- nemotron-ultra-253b — 404 «Function … Not found for account»;
+  z-ai/glm-5.3 (повна) — працює: 4.0 с до першого токена, 20.7 с усього (nvidia-live.py).
+- Хук-переписувач на delegate (gpt-oss, 5 спрацювань): 1.5 с — без змін; 45.2 с —
+  тайм-аут (fail-open); 24.0 с — з одного речення зробив промпт з «3–8 WebSearch/
+  WebFetch» і «Джерела з URL» → gpt-oss (у delegate інструментів немає) замість
+  відповіді вивів фальшивий виклик пошуку й зупинився; 26.4 с і 19.1 с — без змін.
+  Той самий промпт без переписувача раніше дав повну відповідь.
+- delegate v3.0.0 (src/client.mjs): повторює лише ту саму модель на 5xx/429 (до 2
+  разів, пауза 1 → 2 с); тайм-аут і ETIMEDOUT не повторює; перемикання на іншу
+  модель немає. Нову модель у ~/.claude/delegator-providers.json бачить лише після
+  /mcp → delegate → reconnect.
+- glm-5.3-flash через delegate: read ETIMEDOUT (помилка сокета, не 120-секундний
+  тайм-аут delegate) через ~39 с після переписувача.
+- Рішення про переписувач не ухвалено (BACKLOG «A/B хука-переписувача»).
