@@ -36,6 +36,13 @@ IMPROVER_MODEL = "deepseek-flash"
 DEEPSEEK_URL = "https://api.deepseek.com/anthropic/v1/messages"
 AGENT_PY = os.path.expanduser("~/AgentReachProject/agent.py")  # ключ, як у run-deepseek.sh
 TIMEOUT = 45
+# 2026-09-25: перемикач провайдера (tools/provider-switch.py пише .provider).
+# nvidia → gpt-oss-20b на build.nvidia.com (формат OpenAI, ключ NVIDIA_API_KEY у .env).
+PROVIDER_FILE = os.path.expanduser("~/AgentReachProject/.provider")
+ENV_FILE = os.path.expanduser("~/AgentReachProject/.env")
+NVIDIA_URL = "https://integrate.api.nvidia.com/v1/chat/completions"
+NVIDIA_MODEL = "openai/gpt-oss-20b"
+LOG_FILE = os.path.expanduser("~/AgentReachProject/.claude/logs/improver.log")
 SYSTEM_PROMPT = "Ти переписуєш промпти для делегованих AI-викликів. Виводь лише текст промпту, без пояснень."
 
 META_INSTRUCTIONS = """Ти переписуєш промт для делегованого AI-виклику (DeepSeek). Твій єдиний вивід — новий текст промту, БЕЗ жодних пояснень, преамбул чи лапок навколо.
@@ -84,6 +91,49 @@ def is_structured(prompt):
     return cues >= MIN_STRUCTURE_CUES
 
 
+def provider():
+    try:
+        return open(PROVIDER_FILE).read().strip() or "deepseek"
+    except OSError:
+        return "deepseek"
+
+
+def log(event, **kw):
+    """Один рядок JSON на подію — щоб було видно, куди пішов виклик (tail -F)."""
+    try:
+        os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
+        import time as _t
+        with open(LOG_FILE, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"ts": _t.strftime("%Y-%m-%dT%H:%M:%S"), "event": event, **kw},
+                               ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
+def call_nvidia(instruction):
+    """Один запит до NVIDIA (формат OpenAI); повертає текст або "" (fail-open)."""
+    try:
+        m = re.search(r"^NVIDIA_API_KEY=(\S+)", open(ENV_FILE, encoding="utf-8").read(), re.M)
+        if not m:
+            return ""
+        body = json.dumps({
+            "model": NVIDIA_MODEL,
+            "max_tokens": 8192,
+            "temperature": 0.3,
+            "messages": [{"role": "system", "content": SYSTEM_PROMPT},
+                         {"role": "user", "content": instruction}],
+        }).encode("utf-8")
+        req = urllib.request.Request(NVIDIA_URL, data=body, headers={
+            "content-type": "application/json",
+            "Authorization": "Bearer " + m.group(1),
+        })
+        with urllib.request.urlopen(req, timeout=TIMEOUT) as resp:
+            data = json.load(resp)
+        return (data["choices"][0]["message"].get("content") or "").strip()
+    except Exception:
+        return ""
+
+
 def call_deepseek(instruction):
     """Один запит до DeepSeek; повертає текст або "" (будь-яка помилка → fail-open)."""
     try:
@@ -125,7 +175,9 @@ def main():
     #    дослівно (делегат отримує рівно той текст, що написано, — напр.
     #    заморожений промпт verify-before-show).
     stripped = original_prompt.lstrip()
+    tool = data.get("tool_name", "")
     if stripped.startswith(NO_IMPROVE_MARKER):
+        log("skip_marker", tool=tool)
         new_input = dict(tool_input)
         new_input["prompt"] = stripped[len(NO_IMPROVE_MARKER):].lstrip()
         print(json.dumps({
@@ -139,11 +191,16 @@ def main():
     # 2) «Рідко втручатися» (принцип severity1/claude-code-prompt-improver):
     #    довгий структурований промпт уже чіткий — пропускаємо без змін.
     if is_structured(original_prompt):
+        log("skip_structured", tool=tool, words=len(original_prompt.split()))
         return
 
     instruction = META_INSTRUCTIONS.format(prompt=original_prompt)
 
-    improved = call_deepseek(instruction)
+    prov = provider()
+    import time as _t
+    t0 = _t.time()
+    improved = call_nvidia(instruction) if prov == "nvidia" else call_deepseek(instruction)
+    log("rewrite", tool=tool, provider=prov, ok=bool(improved), secs=round(_t.time() - t0, 1))
     if not improved:
         return  # fail-open: не вдалось покращити — пропускаємо оригінал
 

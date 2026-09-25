@@ -40,3 +40,6 @@ tools/verifier-backtest/sources/arxiv-2512.08296.txt
 tools/verifier-backtest/sources/baton-server.mjs.txt
 tools/verifier-backtest/sources/baton-PROTOCOL.md
 tools/verifier-backtest/sources/freellmapi-README.md
+
+# Стан перемикача провайдера (tools/provider-switch.py) — локальний
+.provider

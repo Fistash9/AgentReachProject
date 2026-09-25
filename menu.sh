@@ -13,6 +13,7 @@ echo "  4) Чистий термінал (без агентів)"
 echo "  5) Приєднатися до tmux-сесії 'work'"
 echo "  6) Стеження за deepseek (живі кроки)"
 echo "  7) Claude Code на DeepSeek"
+echo "  8) Провайдер для delegate: DeepSeek / NVIDIA (перемикач)"
 echo "  0) Вийти з меню"
 echo ""
 read -p "Вибір: " choice
@@ -25,5 +26,6 @@ case "$choice" in
     5) exec tmux attach -t work ;;
     6) exec python3 ~/AgentReachProject/tools/watch-deepseek.py ;;
     7) exec ~/AgentReachProject/claude-deepseek.sh ;;
+    8) exec python3 ~/AgentReachProject/tools/provider-switch.py ;;
     0|*) ;;
 esac
