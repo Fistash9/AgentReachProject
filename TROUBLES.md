@@ -2504,3 +2504,21 @@ TAGS: termux, shell, grep, trash-md-guard, tmp
 - Хук trash-md-guard блокує `rm -rf dlg` після `cd` у tmp: відносний шлях він
   не розпізнає як tmp-виняток. Обхід без видалення: нова тека з унікальною
   назвою (`dlg-$(date +%s)`).
+
+---
+## Freebuff у Termux працює через офіційну збірку linux-arm64 + grun (2026-09-25)
+TAGS: freebuff, termux, grun, deepseek, free, agent
+- npm відмовляє (EBADPLATFORM: os android). `npm pack freebuff@0.0.196` →
+  launcher.js тягне `https://codebuff.com/api/releases/download/<версія>/
+  freebuff-<platform>-<arch>.tar.gz`; для нас — linux-arm64. sha256 архіву
+  звіряти з package.json → binaryChecksums (збіглось: 481d8bec…).
+- `grun ./freebuff --version` → 0.0.196; `grun ./freebuff login` (браузер
+  сам не відкриється — «Bad system call», URL відкрити вручну); далі
+  `grun ./freebuff --cwd <тека>` — інтерфейс, агент з інструментами працює
+  (GLM 5.3 Flash відповів ~10 с). PR #1377 (os.cpus) не знадобився.
+- Freebucks: 25/день. GLM 5.3 Flash і Solar Mini 4 — 5/год, MiMo 2.6 Flash —
+  10/год, DeepSeek V4.1 Flash — 15/год (~1 год 40 хв/день) і «May use data
+  for AI training». Сайт каже «6 год DeepSeek/день» — не збігається з акаунтом.
+- Зміни моделі в сесії немає — лише на старті (End session). /byok —
+  власний OpenAI-сумісний провайдер.
+- Міст у Claude Code: freebuff-mcp 0.2.2 (Praket7) — не перевірено.
