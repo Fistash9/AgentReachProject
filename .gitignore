@@ -43,3 +43,6 @@ tools/verifier-backtest/sources/freellmapi-README.md
 
 # Стан перемикача провайдера (tools/provider-switch.py) — локальний
 .provider
+
+# бекапи локальних налаштувань перед зміною скриптом (2026-09-25)
+.claude/*.bak-*
