@@ -2472,3 +2472,22 @@ TAGS: nvidia, delegate, improver, timeout, fallback, deepseek
   delegate пошуку не має. Перевірено наживо: виклик delegate «12 × 12» → 144,
   improver.log лишився 11 рядків, промпт пішов дослівно. Бекап:
   .claude/settings.local.json.bak-20260925-113404 (відкат — скопіювати назад).
+
+---
+## NVIDIA не відповідає на генерацію; Node рве з'єднання на 39 с (2026-09-25)
+TAGS: nvidia, delegate, node, keepalive, timeout, ETIMEDOUT
+- З ~10:51 delegate падає з `read ETIMEDOUT`. Замір 15:07–15:22 («скажи ок»
+  раз на хвилину): 3 з 30 успіхів (Node 1/15, Python 2/15), успіхи 25–51 с;
+  вранці той самий запит — 3.6 с.
+- Мережа справна: NVIDIA GET /v1/models — 0.3 с, DeepSeek /models — 0.5 с;
+  генерація не прийшла навіть у curl за 90 с → висить обробка в NVIDIA.
+- Node з типовим агентом (keep-alive) рве з'єднання на ~39 с (14/14 у замірі;
+  тест 39.05 с); з `new https.Agent({keepAlive:false})` чекає до свого ліміту.
+  delegate 3.0.1 (src/client.mjs) агента не задає → бере типовий → відповіді
+  NVIDIA довші за ~39 с у delegate падають.
+- Не встановлено: чому саме 39 с (sysctl tcp_keepalive_* — Permission denied).
+- Можливий фікс (не зроблено, рішення користувача): у run-delegate.sh
+  підвантажувати через `node --require` скрипт, що ставить
+  https.globalAgent = new https.Agent({keepAlive:false}); пакет не правити.
+- delegate 3.0.1 встановлено (контрольні суми конфігів незмінні); фікс UTF-8
+  наживо не перевірено через цей збій.
