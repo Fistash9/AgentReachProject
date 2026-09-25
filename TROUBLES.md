@@ -2369,3 +2369,23 @@ DeepSeek-верифікатора ($0.0033):
   переписано; зламаний JSON і порожній промпт — пропущено; усі exit 0,
   інші поля збережено. Живо: верифікатор із позначкою дійшов
   дослівно (журнал delegate), «що в цьому файлі?» — переписано.
+
+---
+## NVIDIA API: 403 «Authorization failed» з новим ключем (2026-09-25)
+TAGS: nvidia, api-key, 403, provider
+
+СИМПТОМ: `GET https://integrate.api.nvidia.com/v1/models` → 200, а
+`POST /v1/chat/completions` з ключем `nvapi-…` (75 символів, записаний
+чисто, `.env`) → 403 `{"title":"Forbidden","detail":"Authorization
+failed"}` на всіх 4 перевірених моделях. `api.ngc.nvidia.com/v3/keys/get-caller-info`
+→ 401 «Invalid API key» (адресу цієї служби взято з пам'яті,
+[unverified]).
+
+ПРИЧИНА (форум NVIDIA, ≥10 гілок; 2 прочитано — 15.06 і 21.09.2026):
+в особистій організації немає дозволу «Public API Endpoints». Люди
+просять NVIDIA увімкнути його. Відповіді співробітників і рішення
+«самому» в прочитаних гілках немає; новий ключ не допомагає.
+https://forums.developer.nvidia.com/t/383845 ,
+https://forums.developer.nvidia.com/t/373402
+
+НЕ ПОВТОРЮВАТИ спроби тим самим ключем — на боці NVIDIA.
