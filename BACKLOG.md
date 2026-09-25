@@ -508,6 +508,28 @@ Fable — з usage credits), субагенти на дешевших модел
   «15 tasks per day», «3 concurrent tasks»; працює з GitHub-репо (задачі
   через issue з міткою «jules», результат — Pull Request). Журнал сесії йому
   не давати (репо публічне). Політика даних на сайті не описана.
+- Статус змінився (2026-09-25, друга сесія): прочитано 12 сторінок
+  jules.google/docs (curl). Висновки:
+  - Як працює: нова Ubuntu-VM на задачу, клон репо, план → схвалення →
+    код, diff, гілка/PR (Jules — автор комітів). Є Python 3.12 (pytest,
+    ruff, mypy), Node 22, Docker, git; VM з інтернетом. Запуск: веб,
+    мітка `jules` на issue, CLI (`jules remote new --session "..."`,
+    `jules remote pull`), REST API. Задачі за розкладом (редагувати не
+    можна), «Suggested tasks» — лише `#TODO`, до 5 репо.
+  - Ліміти free: «Daily Tasks (rolling 24 hours) 15», «Concurrent Tasks
+    3», Gemini 2.5 Pro.
+  - Давати: pytest-тести для tools/*.py (тестів немає), прогін
+    .claude/hooks/tests/*.mjs, ruff/mypy + виправлення, документування
+    чи рефакторинг одного скрипта. Промпт вузький і конкретний.
+  - Не давати: те, що потребує .env/agent.py (поза git), MCP-серверів,
+    живих API (DeepSeek, BazaarLink), Termux; довгі процеси («Long-running
+    processes… aren't currently supported»); веб-дослідження.
+  - Дані: FAQ обіцяє лише «does not train on private repository content»;
+    про публічні репо на прочитаних сторінках нічого.
+  - Граблі: Jules сам читає AGENTS.md з кореня — у нас це симлінк на
+    RULES.md (baton, delegate, TRASH.md). Як Jules поведеться з цими
+    правилами — не перевірено.
+  - Пробна задача: pytest-тести для tools/check-links.py.
 - **Що:** клонує GitHub-репозиторій у хмарну VM, пише план, вносить
   зміни, запускає тести, відкриває Pull Request — асинхронно, поки
   користувач робить щось інше. Працює на Gemini-моделях
