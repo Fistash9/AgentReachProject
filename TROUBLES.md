@@ -2522,3 +2522,25 @@ TAGS: freebuff, termux, grun, deepseek, free, agent
 - Зміни моделі в сесії немає — лише на старті (End session). /byok —
   власний OpenAI-сумісний провайдер.
 - Міст у Claude Code: freebuff-mcp 0.2.2 (Praket7) — не перевірено.
+
+---
+## Безкоштовний DeepSeek для delegate: BazaarLink (2026-09-25)
+TAGS: deepseek, free, delegate, bazaarlink, provider
+- Пошук (після підказки користувача «шукати рішення, а не відсутність»):
+  OpenRouter — зараз жодного :free DeepSeek (публічний /api/v1/models);
+  GitHub Models — закрито 30.07.2026, models.github.ai віддає заглушку «OK»
+  на будь-що; OpenCode Zen — `deepseek-v4-flash-free` у списку, але «Model is
+  unavailable», ключ з карткою; NVIDIA — висить.
+- BazaarLink (api.bazaarlink.ai/v1, OpenAI-формат, реєстрація без картки):
+  у публічному /api/v1/models `deepseek/deepseek-v4-flash-0731free:free` з
+  ціною 0/0. Перевірено ключем: «ок» за 2.9 с; 757 слів українською з Node
+  за 20.8 с, 0 символів �, usage.cost 0.
+- Підключено до delegate: провайдер `bazaarlink` у ~/.claude/delegator-
+  providers.json, routing у ~/.claude/delegator.json (бекапи .bak-20260925-
+  232137), ключ BAZAARLINK_API_KEY у .env → run-delegate.sh; /mcp reconnect.
+  Живий виклик delegate: 1 122 токени, `via bazaarlink · spent $0.0000`,
+  кирилиця ціла (фікс UTF-8 3.0.1 підтверджено).
+- Не перевірено: ліміти (каталог FreeLLMAPI: 10 rpm, 50 rpd), політика даних.
+- Увага: tools/provider-switch.py не знає bazaarlink — його `nvidia` запише
+  поточний конфіг (BazaarLink) у delegator.deepseek.json поверх збереженого.
+  Хук-переписувач (лише для агента deepseek) досі бере .provider=nvidia.

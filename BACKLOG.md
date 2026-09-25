@@ -243,6 +243,13 @@
   повернути DeepSeek flash основним (платно, баланс ~$0.25), NVIDIA —
   запасним? Причина: NVIDIA free «for testing only», за день — зависання
   DeepSeek-на-NVIDIA, обриви, 3/30 успіхів у замірі.
+  - Статус змінився (2026-09-25): зроблено — основний провайдер BazaarLink
+    (безкоштовний DeepSeek V4 Flash), перевірено живим викликом delegate
+    (TROUBLES.md «Безкоштовний DeepSeek для delegate»). NVIDIA — запасний.
+- **provider-switch.py: додати bazaarlink (2026-09-25).** Зараз перемикач
+  знає лише deepseek/nvidia і при `nvidia` перезапише delegator.deepseek.json
+  конфігом BazaarLink. Також .provider для хука-переписувача (агент deepseek)
+  досі nvidia — NVIDIA не відповідає, хук чекає 45 с і пропускає.
 - **Node keep-alive: delegate рве відповіді довші за ~39 с (2026-09-25).**
   Можливий фікс у run-delegate.sh (`node --require` з keepAlive:false),
   пакет не правити. Рішення користувача.
