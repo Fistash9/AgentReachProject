@@ -222,8 +222,16 @@ def test_group_7_pass_and_fail(env):
     assert env.mod.main() == 0
 
     hook_file = env.proj_dir / ".claude" / "hooks" / "sample-hook.py"
-    hook_file.write_text("import sys\nsys.exit(1)\n")
 
+    # Fail 1: non-zero exit code
+    hook_file.write_text("import sys\nsys.exit(1)\n")
+    env.reset_counters()
+    rc = env.mod.main()
+    assert rc == 1
+    assert any("sample-hook.py на нейтральному" in msg for msg in env.mod.bad)
+
+    # Fail 2: exit 0 but prints permission decision "deny" to stdout
+    hook_file.write_text('import json\nprint(json.dumps({"hookSpecificOutput": {"permissionDecision": "deny"}}))\n')
     env.reset_counters()
     rc = env.mod.main()
     assert rc == 1
