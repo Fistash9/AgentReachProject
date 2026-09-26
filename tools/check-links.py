@@ -86,8 +86,14 @@ def main():
                     if tok.startswith("/") and tok.endswith((".py", ".mjs", ".sh")):
                         hook_paths.append(tok)
                         chk(os.path.exists(tok), f"settings {ev}: {tok} не існує")
+    # статуслайн — не хук: лише «підключений» і «існує», без прогону групи 7
+    sl_paths = []
+    for tok in s.get("statusLine", {}).get("command", "").replace("'", " ").split():
+        if tok.startswith("/") and tok.endswith((".py", ".mjs", ".sh")):
+            sl_paths.append(tok)
+            chk(os.path.exists(tok), f"settings statusLine: {tok} не існує")
     for f in sorted(glob.glob(os.path.join(P, ".claude/hooks/*.py"))):
-        chk(f in hook_paths, f"хук {os.path.basename(f)} не підключений у settings")
+        chk(f in hook_paths + sl_paths, f"хук {os.path.basename(f)} не підключений у settings")
         r = subprocess.run([sys.executable, "-m", "py_compile", f], capture_output=True)
         chk(r.returncode == 0, f"{os.path.basename(f)} не компілюється")
 
