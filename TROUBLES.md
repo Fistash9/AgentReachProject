@@ -2621,3 +2621,29 @@ TAGS: jules, api, pytest, bazaarlink, delegate, mutation
   подано як факт, хоч механізм не перевірено (в TROUBLES позначено);
   хибна — запис пам'яті без дозволу: його вимагає крок 3.8 session-close і
   правила auto memory, про запис сказано в звіті.
+## Кінець сесії: що автоматизувати; BazaarLink — ліміт спільний; Freebuff як рецензент (2026-09-26)
+TAGS: statusline, session-close, bazaarlink, freebuff, sessionend, cost
+- Статуслайн Claude Code отримує JSON із `cost.total_cost_usd`,
+  `context_window.used_percentage`, `exceeds_200k_tokens`, `session_id`
+  (code.claude.com/docs/en/statusline) — вартість пишеться у файл без /cost.
+  `jq` у Termux немає → скрипт на Python, 0.057 с на запуск; підхопився
+  наживо одразу після правки settings.local.json.
+- Хук `SessionEnd` існує (офіційна дока hooks): спільний бюджет 1.5 с (до 60 с
+  через timeout), без керування рішенням — лише лог/прибирання; delegate туди
+  не влізе. Пошукова зведенка WebSearch стверджувала, що SessionEnd немає
+  (стара issue) — хибно; звіряти з докою.
+- Приклад інших: hex/claude-sessions (43★) — пороги контексту 40/65/80% у
+  Stop-хуку, «second opinion» не частіше раз на 30 хв і лише зі згоди.
+- BazaarLink: денний ліміт — на акаунт, СПІЛЬНИЙ для всіх безкоштовних
+  моделей (DeepSeek і `qwen/qwen3.7-flash:free` — однакове «Free model daily
+  limit reached»; `auto:free` — «site-wide capacity full»). Інша безкоштовна
+  модель ліміт не зберігає. delegate знає лише моделі з
+  ~/.claude/delegator-providers.json (Qwen — «Unknown model»).
+- Freebuff як другий рецензент (користувач запускає вручну): повна відповідь,
+  конкретніша за DeepSeek flash, чесно розділив факти й припущення. Під
+  `grun` інший $HOME — `~/AgentReachProject` не відкривається; давати шлях
+  відносно поточної теки або `$PREFIX/tmp/...`.
+- `git revert` не має `-q` — перший тест відкату «пройшов» лише на вигляд;
+  перевіряти, що revert справді виконався (порожній diff з базовим комітом).
+
+---
