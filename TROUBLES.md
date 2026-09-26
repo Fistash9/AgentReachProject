@@ -2783,3 +2783,42 @@ pypdf: під-сесія з permission_mode bypassPermissions сама вико�
 під-сесії через deepseek-reply.
 
 ---
+## DeepSeek API: що корисного, claude-deepseek.sh на flash + manual (2026-09-26)
+TAGS: deepseek, api, vision, files api, claude-deepseek.sh, deepseek-flash, deepseek-chat, auto mode, rate limit, balance
+
+ДОСЛІДЖЕННЯ (під-сесія deepseek на flash, 6 сторінок api-docs.deepseek.com;
+ключове звірено мною curl): 
+- Vision: «The deepseek-flash model accepts images», «upper bound of 1024
+  tokens per image»; у pro — «Not supported» (/guides/vision, /quick_start/pricing).
+  Нова здатність для аналізатора («не бачу кадри») — проба в BACKLOG.
+- Files API: лише зображення — «Supported formats: JPEG, PNG, GIF, and WebP»
+  (/guides/files_api); пересилання текстів не лікує.
+- Дока для Claude Code (/quick_start/agent_integrations/claude_code):
+  ANTHROPIC_MODEL=deepseek-flash[1m], CLAUDE_CODE_AUTO_COMPACT_WINDOW=786432,
+  CLAUDE_CODE_EFFORT_LEVEL=max. НЕ взято: вікно 786k — більше контексту
+  на кожен запит (не економія); effort max — множить витрату (baton).
+- Rate limit (/quick_start/rate_limit): 2500 одночасних (flash) / 500 (pro),
+  понад — 429; очікування — порожні рядки/SSE keep-alive, «If the request
+  has not started inference after 10 minutes, the server will close the
+  connection». Наші обриви цим не пояснюються. Error codes: 500/503 —
+  «retry after a brief wait» (чи повторює delegate — не перевірено).
+- Ціна цього дослідження на flash: баланс $4.72 → $4.69 (≈$0.03; на pro
+  було ~$0.10–0.12). Баланс списується ІЗ ЗАПІЗНЕННЯМ: між двома знімками
+  без викликів він упав на $0.06 — знімати «після» з паузою.
+
+ЗРОБЛЕНО (рішення користувача):
+- claude-deepseek.sh: рядки 16–20 → "deepseek-flash" (було v4-pro і легасі
+  v4-flash); запуск `exec claude --permission-mode manual "$@"` — у
+  DeepSeek-сесіях охоронець дій — користувач (бо класифікатор auto mode
+  тут — модель DeepSeek, а окремого налаштування моделі класифікатора в
+  доці немає: permission-modes, env-vars). Статус змінився для записів
+  вище, де «claude-deepseek.sh:18 = deepseek-v4-pro».
+- Живий тест `claude-deepseek.sh -p`: model deepseek-flash, «Париж»; сесія
+  спершу спробувала делегувати сама собі (хук «Делегуй на DeepSeek») —
+  manual це заблокував. `total_cost_usd` 0.295 — оцінка за цінами Claude,
+  НЕ DeepSeek: баланс не змінився ($4.68 → $4.68). Статуслайн у
+  DeepSeek-сесіях теж показує «ціну Claude».
+- `deepseek-chat` (agent.py:25, telegram_deepseek_bot.py:59) — працює:
+  API відповідає model "deepseek-flash". Міняти не треба.
+
+---
