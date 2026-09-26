@@ -467,3 +467,24 @@ delegate-prompt-improver, delegate-outcome-logger, request-brief-reminder
 - Готові виконавці й маршрутизатори — ECOSYSTEM.md; provider-switch.py
   ще не знає bazaarlink (BACKLOG).
 - Фокус — у baton (`next`) і BACKLOG «Активні».
+
+## Оновлення 2026-09-26 (сесії 25–26.09: Jules, session-close)
+- Статус змінився: Freebuff перенесено з $PREFIX/tmp у ~/freebuff,
+  команда `freebuff` (через grun) — рядок «програма поки в $PREFIX/tmp»
+  вище застарів.
+- Jules: перша проба — PR #1 з тестами tools/check-links.py
+  (tests/test_check_links.py, 12 тестів; злито 0009e6b); Jules API
+  підключено (JULES_API_KEY у .env). Можливості й граблі — BACKLOG
+  «Jules», TROUBLES.
+- Статуслайн `.claude/hooks/statusline-cost.py`: модель, $ і % контексту;
+  пише зміни в `.claude/logs/session-cost.jsonl` (підключено в
+  settings.local.json). check-links бачить statusLine.
+- session-close: крок 3.9 (вартість із журналу статуслайна + порада
+  про нову сесію й /effort) і 3.10 (питання про зовнішню перевірку
+  сесії іншою моделлю, рецепт у TROUBLES).
+- BazaarLink: денний ліміт спільний для всіх безкоштовних моделей;
+  запасний — платний DeepSeek flash (~$0.01 за виклик). Freebuff
+  придатний як другий рецензент (запускає користувач).
+- Фокус — у baton (`next`) і BACKLOG «Активні»: браузер на телефоні,
+  Stop-хук з порогами контексту після тижня спостереження, перевірка
+  засвоєння уроків.
