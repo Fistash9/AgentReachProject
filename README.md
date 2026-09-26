@@ -32,7 +32,7 @@ agent
 | [USER_PROFILE.md](./USER_PROFILE.md) | Портрет користувача |
 | [WEEKLY.md](./WEEKLY.md) | Тижневі підсумки й відбір уроків (проба з 2026-09-26) |
 | [trees/](./trees/) | Живі дерева великих задач: картки STATUS/done when/evidence (проба з 2026-09-26) |
-| [tools/](./tools/) | check-links.py, claimcheck/, watch-deepseek.py — перевірки й стеження |
+| [tools/](./tools/) | check-links.py, claimcheck/, watch-deepseek.py, baton-diff.py (що випало з baton між передачами) — перевірки й стеження |
 | [tools/provider-switch.py](./tools/provider-switch.py) | Перемикач провайдера delegate і хука: DeepSeek ↔ NVIDIA gpt-oss (menu.sh п.8) |
 | [tools/nvidia-live.py](./tools/nvidia-live.py) | Живий прогін моделей NVIDIA в консолі (меню моделей і кейсів) |
 | [tools/verifier-backtest/](./tools/verifier-backtest/) | Бектести верифікатора: кейси, результати (DeepSeek і NVIDIA) |
