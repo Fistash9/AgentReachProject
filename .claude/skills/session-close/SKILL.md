@@ -163,6 +163,11 @@ Freebuff (запускає користувач) або не надсилати.
 
 ## Крок 4 — Скласти baton_pass
 
+Спершу знімок (правило «Бекап поза git», рішення користувача 2026-09-26):
+`mkdir -p .baton/history && cp .baton/baton.json .baton/history/pass-$(python3 -c "import json;print(json.load(open('.baton/baton.json'))['passCount'])").json`
+— baton_pass замінює next / openQuestions / task / files / status, а в
+журналі ledger лишається тільки handoffNote.
+
 Виклич `mcp__baton__baton_pass`. Це не одне речення, а структура — заповнюй поля змістовно, а не "see git log":
 
 - **task** — коротка назва цієї сесії (напр. "Дослідження Freebuff + аудит Skills + session-close skill")
