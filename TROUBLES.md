@@ -2913,3 +2913,25 @@ TAGS: git, attribution, claude-session, sessionUrl
   значенням. Тому тільки sessionUrl: false.
 - Схоже в інших: claude-code#82690 — новий ключ sessionUrl знову вмикав
   рядок тим, хто вже вимкнув атрибуцію.
+
+---
+## DeepSeek-під-сесії: вбудований пошук, фільтр вмісту, чужа роль (2026-09-26)
+TAGS: deepseek, web-search, content-filter, baton, під-сесія, хук
+- Вбудований пошук: у таблиці сумісності Anthropic API DeepSeek
+  (api-docs.deepseek.com/guides/anthropic_api, curl) server_tool_use і
+  web_search_tool_result — «Supported». Що WebSearch у під-сесіях іде
+  саме через нього — висновок: пошук працював (106 викликів у 96
+  журналах), сам запит пошуку в журналі не видно; ціна пошуку в доці
+  не вказана.
+- Фільтр вмісту: WebFetch 3 рази — «API Error: 400 Content Exists Risk»
+  (DeepSeek відкидає частину сторінок). Рецепт: у звіті позначити й іти
+  далі, не повторювати.
+- Чужа роль: з теки проєкту під-сесія виконує правила оркестратора —
+  baton_pick_up 7, baton_status 2, самовиклик mcp__deepseek__deepseek 11,
+  delegate 5, memory 1 (скрипт по 96 журналах sdk-cli). Самовиклик —
+  через глобальний classify-task.sh; виправлено 2026-09-26: хук мовчить,
+  якщо ANTHROPIC_BASE_URL містить «deepseek» (перевірено наживо: рядок
+  «SKIP (DeepSeek backend)»). Решта — вирішує підрозділ
+  trees/pidrozdil-deepseek.md.
+- WebFetch-переказ сторінки DeepSeek доки збрехав («нічого про пошук
+  немає» і тут же цитата «Supported») — такі сторінки читати curl.
