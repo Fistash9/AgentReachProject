@@ -5,6 +5,13 @@
 
 ## Активні (плануємо зробити)
 
+- **Зрозумілі замки українською (2026-09-26, рішення користувача — нова
+  сесія).** Запити дозволу англійською з командами незрозумілі. План:
+  PreToolUse-хук на 4 замки (git commit, git push, mcp__deepseek__deepseek,
+  mcp__deepseek__deepseek-reply) повертає permissionDecision "ask" +
+  permissionDecisionReason українською (hooks.md: для "ask" причина
+  «shown to the user»). Бекап settings, тест на git commit --dry-run,
+  «так» користувача. До того — пояснення в чаті перед кожним замком.
 - **Розібрати 8 забутих пунктів baton (аудит 2026-09-26).** Повний
   список із доказами — trees/baton-audit-2026-09-26.md («Забуто (8)»):
   тест передачі стану Claude↔DeepSeek; unlazy --bind; session-close крок 3
