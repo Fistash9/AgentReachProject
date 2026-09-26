@@ -152,8 +152,10 @@
 - .baton/ і HANDOFF.md — локальні (у .gitignore). AGENTS.md — комітиться.
 - Перед кожним baton_pass — знімок .baton/baton.json у
   .baton/history/pass-<N>.json (pass замінює next/openQuestions/task).
-- Після baton_pick_up (нова сесія взяла baton у контекст) старіші знімки
-  можна прибрати — з записом у TRASH.md до rm/mv.
+- Після baton_pick_up — python3 tools/baton-diff.py (що випало з baton
+  між передачами); кожен випалий пункт вирішити з користувачем: зроблено /
+  у BACKLOG / відкинути. Лише потім старіші знімки прибрати — з записом у
+  TRASH.md до rm/mv.
 
 ## DeepSeek — вибір інструменту
 - Для розмов/рутини — викликати інструмент deepseek (під-сесія на DeepSeek).
