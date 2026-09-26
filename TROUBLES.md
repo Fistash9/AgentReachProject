@@ -2574,3 +2574,32 @@ TAGS: review, deepseek, bazaarlink, transcript, delegate
   currently full» — спільна потужність на весь сайт, не наша квота. Частину 3
   зроблено на платному DeepSeek (`deepseek:deepseek-v4-flash`; id
   `deepseek-flash` delegate не знає): $0.012 за 58k токенів.
+
+---
+## Jules: перша проба, API і граблі; BazaarLink — денний ліміт (2026-09-26)
+TAGS: jules, api, pytest, bazaarlink, delegate, mutation
+- Jules-сторінки (jules.google/docs) віддаються стиснутими: `curl` без
+  `--compressed` дає бінарне сміття замість тексту.
+- Документація Jules відстає від сайту: у доці free = Gemini 2.5 Pro, на сайті
+  26.09 — Gemini 3.6 Flash; режиму «Interactive plan» у доці немає.
+- У меню запуску Jules за замовчуванням стояв **Start** (без схвалення плану) —
+  обирати **Review**.
+- Jules API (v1alpha, ключ JULES_API_KEY у .env, заголовок x-goog-api-key):
+  список сесій, стан, `outputs` з PR і повним unidiff. Повідомлення в
+  ЗАВЕРШЕНУ сесію (`:sendMessage`) запустило нову роботу: стан
+  AWAITING_PLAN_APPROVAL → IN_PROGRESS за ~1 хв, хоча ні користувач, ні я
+  план не схвалювали. Механізм не перевірено → кожне повідомлення Jules
+  вважати дозволом діяти.
+- Перевірка чужих тестів: «passed» замало — мутаційна перевірка (навмисно
+  зламати скрипт у тимчасовому worktree) знайшла непокриту гілку (група 7,
+  "deny"), хоча PR казав «comprehensive tests». Шаблон мутації звіряти з
+  реальним рядком (перший раз `f.endswith` замість `fp.endswith` → мутація не
+  застосувалась).
+- У git worktree немає FETCH_HEAD основного дерева: `git checkout FETCH_HEAD`
+  там падає — брати коміт за хешем.
+- `gh pr merge --match-head-commit` вимагає ПОВНИЙ хеш (40 символів).
+- pytest 9.1.1 встановлено в Termux (pip, згода користувача); `pip check` —
+  без конфліктів. Тести: `python3 -m pytest tests/ -q`.
+- BazaarLink 26.09: перший виклик — «site-wide free-model capacity is currently
+  full», другий (≈за годину) — «Free model daily limit reached. Top up credits»
+  (денний ліміт вичерпано; скільки викликів у ліміті — не встановлено).
