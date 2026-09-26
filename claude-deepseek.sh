@@ -13,12 +13,12 @@ if [ -z "$ANTHROPIC_AUTH_TOKEN" ]; then
     exit 1
 fi
 export ANTHROPIC_BASE_URL="https://api.deepseek.com/anthropic"
-export ANTHROPIC_MODEL="deepseek-v4-pro"
-export ANTHROPIC_DEFAULT_OPUS_MODEL="deepseek-v4-pro"
-export ANTHROPIC_DEFAULT_SONNET_MODEL="deepseek-v4-pro"
-export ANTHROPIC_DEFAULT_HAIKU_MODEL="deepseek-v4-flash"
-export CLAUDE_CODE_SUBAGENT_MODEL="deepseek-v4-flash"
+export ANTHROPIC_MODEL="deepseek-flash"
+export ANTHROPIC_DEFAULT_OPUS_MODEL="deepseek-flash"
+export ANTHROPIC_DEFAULT_SONNET_MODEL="deepseek-flash"
+export ANTHROPIC_DEFAULT_HAIKU_MODEL="deepseek-flash"
+export CLAUDE_CODE_SUBAGENT_MODEL="deepseek-flash"
 export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1
 export CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1
 
-cd ~/AgentReachProject && exec claude "$@"
+cd ~/AgentReachProject && exec claude --permission-mode manual "$@"
