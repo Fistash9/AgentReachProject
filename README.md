@@ -30,6 +30,7 @@ agent
 | [HANDOFF.md](./HANDOFF.md) | Стан передачі контексту (Baton) |
 | [TRASH.md](./TRASH.md) | Журнал видалень (запис ДО rm) |
 | [USER_PROFILE.md](./USER_PROFILE.md) | Портрет користувача |
+| [WEEKLY.md](./WEEKLY.md) | Тижневі підсумки й відбір уроків (проба з 2026-09-26) |
 | [tools/](./tools/) | check-links.py, claimcheck/, watch-deepseek.py — перевірки й стеження |
 | [tools/provider-switch.py](./tools/provider-switch.py) | Перемикач провайдера delegate і хука: DeepSeek ↔ NVIDIA gpt-oss (menu.sh п.8) |
 | [tools/nvidia-live.py](./tools/nvidia-live.py) | Живий прогін моделей NVIDIA в консолі (меню моделей і кейсів) |
