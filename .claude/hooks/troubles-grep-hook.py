@@ -21,6 +21,43 @@ GENERIC_TAGS = {
 }
 
 
+HINT_PREFIX = "TROUBLES.md має релевантні записи"
+
+
+def already_shown(transcript_path):
+    """Заголовки, які цей хук уже показав після останнього стиснення
+    контексту. Як Claude Code для SubagentStart: не повторювати копію,
+    що вже в контексті; після compaction показати знову. Журнал пишеться
+    асинхронно, тож зрідка підказка повториться — це безпечно. Будь-яка
+    помилка → порожня множина (поведінка як до правки)."""
+    shown = set()
+    if not transcript_path:
+        return shown
+    try:
+        with open(transcript_path, "rb") as f:
+            raw = f.read()
+        start = raw.rfind(b'"subtype":"compact_boundary"')
+        start = raw.rfind(b"\n", 0, start) + 1 if start != -1 else 0
+        marker = HINT_PREFIX.encode("utf-8")
+        for line in raw[start:].splitlines():
+            if marker not in line or b"hook_additional_context" not in line:
+                continue
+            try:
+                att = json.loads(line).get("attachment") or {}
+            except ValueError:
+                continue
+            content = att.get("content")
+            parts = content if isinstance(content, list) else [content]
+            for part in parts:
+                if not isinstance(part, str) or HINT_PREFIX not in part:
+                    continue
+                for item in part.split("\n- ")[1:]:
+                    shown.add(item.rsplit(" (тег: ", 1)[0].strip())
+    except Exception:
+        return set()
+    return shown
+
+
 def main():
     try:
         data = json.load(sys.stdin)
@@ -58,6 +95,11 @@ def main():
                 hits.append(f"{header} (тег: {tag})")
                 seen_headers.add(header)
                 break
+
+    # Не повторювати записи, які агент уже бачить у контексті
+    # (92% підказок були повторами в межах сесії, заміряно 2026-09-26)
+    shown = already_shown(data.get("transcript_path"))
+    hits = [h for h in hits if h.rsplit(" (тег: ", 1)[0] not in shown]
 
     if not hits:
         return
