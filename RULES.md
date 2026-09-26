@@ -150,6 +150,10 @@
 - Перед завершенням сесії — викликати baton_pass, щоб передати контекст далі.
 - baton_status — для швидкої перевірки, хто останній агент і на чому зупинились.
 - .baton/ і HANDOFF.md — локальні (у .gitignore). AGENTS.md — комітиться.
+- Перед кожним baton_pass — знімок .baton/baton.json у
+  .baton/history/pass-<N>.json (pass замінює next/openQuestions/task).
+- Після baton_pick_up (нова сесія взяла baton у контекст) старіші знімки
+  можна прибрати — з записом у TRASH.md до rm/mv.
 
 ## DeepSeek — вибір інструменту
 - Для розмов/рутини — викликати інструмент deepseek (під-сесія на DeepSeek).
