@@ -3021,3 +3021,19 @@ TAGS: agent, subfolder, claudeMdExcludes, autoMemory, hooks, review, deepseek
   урок уже був записаний текстом → потрібні механізми (хуки), не текст.
   Перший запуск я поділив на 3 частини через delegate — повтор уроку 25.09;
   зупинено TaskStop на прохання користувача.
+
+## Kickbacks.ai — реклама в рядку очікування Claude Code: не беремо (2026-09-27)
+TAGS: kickbacks, реклама, spinnerVerbs, instagram, рілс, безпека, розширення
+- Звідки: рілс Instagram DaVLoXkMXrI (2026-07-03) обіцяє, що Kickbacks
+  «відбиває підписку $100/міс» і «коштує нуль». Розшифровано локально
+  (yt-dlp -x → wav 16 кГц → whisper-cli, модель small, -l ru).
+- Перевірено: сервіс справжній (червень 2026, автор Andrew McCalip, не
+  Anthropic); заробіток $0,50–0,70 за 1 000 п'ятисекундних показів, реальні
+  звіти: 43 центи за робочий день, підписку не покриває. Частка 50% чи 70% —
+  джерела розходяться.
+- Чому не беремо: у VS Code/Cursor переписує розширення Anthropic, послаблює
+  CSP (лишається після вимкнення), непідписані автооновлення кожні 90 с,
+  закритий код. У терміналі — штатні spinnerVerbs + statusLine. Заяви
+  Anthropic про бан саме за Kickbacks не знайдено [не перевірено].
+- Джерела: go-to-agency.com/en/blog/kickbacks-ai-ads-claude-code-spinner,
+  justbeingresourceful.com/2026/07/02/kickbacks-pays-you-to-stare-at-claude-codes-loading-spinner-heres-the-real-math-2026/
