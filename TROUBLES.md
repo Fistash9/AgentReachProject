@@ -23,6 +23,11 @@ TAGS: dsh, glibc, glibc-runner, patch, glibc.node
 Статус може змінитись (2026-09-27): вийшли версії 0.1.x (@deepseek-ai/dsh
 0.1.7-rc.2, 2026-09-24); запуск через grun (як Freebuff) не перевірявся —
 правило поки чинне. BACKLOG «DeepSeek Harness — ідеї…».
+Перевірено 2026-09-28: dsh 0.1.7-rc.2 ставиться (npm --ignore-scripts, 513
+пакетів, 305 МБ), --help працює, але профіль падає: «No usable native binding
+found for node-addon-require-builtin-android-arm64» (cordis-plugin-loader).
+Причина — немає збірки під Android/без glibc. Можливий обхід — Node під glibc
+через grun (не перевірено).
 
 ---
 ## #03 — pip install openai падає на jiter
