@@ -85,3 +85,11 @@
   в кінці», спосіб — .trash/ (вибір користувача).
 - Відновлюване: так — `.trash/baton-history-2026-09-26/` (поза git);
   повернути: `mv .trash/baton-history-2026-09-26/* .baton/history/`.
+
+### 2026-09-27 — .baton/history/pass-70.json, pass-71.json → .trash/
+- Що: знімки baton #70 і #71 (перед pass 2026-09-26).
+- Чому: baton_pick_up #72 у новій сесії виконано, baton-diff.py показав
+  1 випалий пункт (classify-task.sh у пункті 7 меню) — він уже вирішений
+  («лишити так», fa17666); користувач підтвердив «зроблено» і прибирання.
+- Відновлюване: так — `.trash/baton-history-2026-09-27/` (поза git);
+  повернути: `mv .trash/baton-history-2026-09-27/* .baton/history/`.
