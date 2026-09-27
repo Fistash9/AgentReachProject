@@ -1,0 +1,52 @@
+{
+  "agent": "deepseek-search",
+  "permissions": {
+    "allow": [
+      "WebSearch",
+      "WebFetch"
+    ],
+    "deny": [
+      "Bash",
+      "Write",
+      "Edit",
+      "mcp__*"
+    ]
+  },
+  "claudeMdExcludes": [
+    "/data/data/com.termux/files/home/.claude/CLAUDE.md",
+    "/data/data/com.termux/files/home/AgentReachProject/CLAUDE.md",
+    "/data/data/com.termux/files/home/AgentReachProject/AGENTS.md",
+    "/data/data/com.termux/files/home/AgentReachProject/RULES.md"
+  ],
+  "autoMemoryEnabled": false,
+  "disableAllHooks": true,
+  "deniedMcpServers": [
+    {
+      "serverName": "agent-reach"
+    },
+    {
+      "serverName": "transcriptor"
+    },
+    {
+      "serverName": "memory"
+    },
+    {
+      "serverName": "delegate"
+    },
+    {
+      "serverName": "baton"
+    },
+    {
+      "serverName": "deepseek"
+    },
+    {
+      "serverName": "pkgtruth"
+    },
+    {
+      "serverName": "claude.ai Claude Docs"
+    },
+    {
+      "serverName": "claude.ai Notion"
+    }
+  ]
+}
