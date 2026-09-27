@@ -20,6 +20,9 @@ TAGS: dsh, glibc, glibc-runner, patch, glibc.node
 СИМПТОМ: failed to patch glibc-runner / No command dsh found
 ПРИЧИНА: DSH потребує glibc-patch, який не працює на Android
 РІШЕННЯ: НЕ встановлювати DSH. Використовувати власний agent.py з requests
+Статус може змінитись (2026-09-27): вийшли версії 0.1.x (@deepseek-ai/dsh
+0.1.7-rc.2, 2026-09-24); запуск через grun (як Freebuff) не перевірявся —
+правило поки чинне. BACKLOG «DeepSeek Harness — ідеї…».
 
 ---
 ## #03 — pip install openai падає на jiter
