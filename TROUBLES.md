@@ -3097,3 +3097,27 @@ TAGS: instagram, рілс, монтаж, hyperframes, heygen, скіл, віде
   чи без Mac: вирізання людини з кадру — через компʼютерний зір macOS).
 - Звʼязок з проєктом: наступний крок після reference-analyzer і script-agent
   (монтаж). Рішення не ухвалено.
+
+## Граблі сесії 2026-09-28: auto mode без вердикту, фонові під-сесії в журналах, скидання baton, IWE
+TAGS: auto-mode, classifier, permission-mode, jsonl, sdk-cli, baton, iwe, grun, kb-map
+- auto mode: «The server-side auto mode classifier gave no verdict (error)» —
+  Write не проходить; 4 спроби поспіль без вердикту (повтор не допомагає).
+  Shift+Tab на екранній клавіатурі Termux недоступний. Після повідомлення
+  користувача «--continue --permission-mode default» (ручний режим за докою:
+  «claude --permission-mode default») Write пройшов.
+- Журнали сесій: за 5 днів 147 з 161 файлів — фонові під-сесії
+  (`"entrypoint":"sdk-cli"`), інтерактивні — `cli`. Статистику рахувати лише
+  по cli і лише записи `"type":"attachment"` для підказок хуків — інакше
+  завищення (перший підрахунок: 2 012 підказок / 759 повторів; правильно після
+  дедупу be89aff — 21–30 на сесію, повторів 0).
+- baton: якщо `.baton/baton.json` немає, `baton_pass` починає нову естафету
+  (passCount з 1, done/watchOut порожні); ledger.jsonl дописується далі. Так
+  зроблено «одна естафета — одна тема» (TRASH.md 2026-09-28): HANDOFF
+  70 674 → 3 687 Б. Перед перенесенням — baton-diff по знімках
+  (`--history <архів> --current <архів>/baton.json`).
+- IWE 0.24.2: збірки android немає; `aarch64-unknown-linux-gnu` напряму —
+  «cannot execute: required file not found», через `grun ./iwe` — працює.
+- Великі сторінки доки через WebFetch лягають у файл tool-results — витягати
+  grep-ом потрібні рядки, не читати цілком.
+- Пошук по записах: `python3 tools/kb-map.py <слово>` → адреси файл:рядок,
+  далі `sed -n` одного розділу (пілот 2026-09-28, trees/pam-yat-proyektu.md).
