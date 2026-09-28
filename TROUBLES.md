@@ -3078,3 +3078,22 @@ TAGS: termux, tmp, npm, пісочниця, перевірка, dsh
 - Експорт журналу для рецензії губить повідомлення, надіслані посеред ходу:
   вони в jsonl як `"type":"queue-operation"` (поле content), а не message.
   Наступного разу експортувати й їх; також вирізати `stkn=`/`igsh=` у URL.
+
+## Рілс DdwLi3KKgQ2: скіл «монтажер у стилі блогера» (HyperFrames + Kossolapov) (2026-09-28)
+TAGS: instagram, рілс, монтаж, hyperframes, heygen, скіл, відео
+- Звідки: рілс @kossolapov_igor (26.09.2026, 50 с). Розшифровано локально
+  (yt-dlp → wav 16 кГц → whisper-cli small, -l ru); whisper спотворив назви
+  («Heiden», «Epislapov») — справжні взято зі сторінки автора.
+- Суть: Claude Code + скіл HyperFrames (HeyGen, відео з HTML) + скіл монтажера
+  Косолапова; 2–3 ролики блогера → Claude робить скіл стилю montage-<нік> →
+  монтує ваше відео в цьому стилі (паузи, графіка на словах, підписи, музика).
+- Перевірено: сторінка kossolapov.com/ru/blog/reels-montage-skill (архів ZIP
+  15 МБ, SHA-256 c3b0e605…fd2d, install.py); github.com/heygen-com/hyperframes —
+  Apache-2.0, 53 702 зірки (28.09.2026).
+- Вимоги (за автором): перевірено лише на Mac Apple Silicon; ключ OpenAI
+  (центи за ролик); ElevenLabs — за бажанням; Instagram без входу часто не
+  віддає відео.
+- Не перевірено: вміст архіву й install.py; робота в Termux/Android (навряд
+  чи без Mac: вирізання людини з кадру — через компʼютерний зір macOS).
+- Звʼязок з проєктом: наступний крок після reference-analyzer і script-agent
+  (монтаж). Рішення не ухвалено.
