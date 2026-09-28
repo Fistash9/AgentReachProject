@@ -108,3 +108,15 @@
   trees/pidrozdil-deepseek.md); користувач підтвердив прибирання.
 - Відновлюване: так — `.trash/baton-history-2026-09-27b/` (поза git);
   повернути: `mv .trash/baton-history-2026-09-27b/* .baton/history/`.
+
+### 2026-09-28 — .baton/baton.json, pass-74.json, pass-75.json → .baton/history/archive-2026-09-28/
+- Що: жива естафета baton (76 передач, done 264, watchOut 104, 72 КБ) і її
+  знімки #74, #75; плюс копія HANDOFF.md (його перезапише наступний pass).
+- Чому: план Б вузла M3 (trees/pam-yat-proyektu.md) — «одна естафета — одна
+  тема» за задумом автора baton (PROTOCOL: pick_up — «continue where you left
+  off», done/watchOut накопичуються): стара естафета тягнулась через різні
+  теми, pick_up став важким і пропускався 2 сесії поспіль. Рішення
+  користувача 2026-09-28 («Лише 1–2, правило пізніше»). ledger.jsonl не чіпаю.
+- Відновлюване: так — `.baton/history/archive-2026-09-28/` (поза git);
+  повернути: `mv .baton/history/archive-2026-09-28/baton.json .baton/`
+  (перед цим прибрати нову baton.json).
