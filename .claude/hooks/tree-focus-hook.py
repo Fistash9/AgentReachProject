@@ -21,6 +21,9 @@ TROUBLES «Beads на Termux…»): замість одного вказівни
 - «в роботі» — усі листові `[>]` (до 3, решта +N), кожен зі шляхом предків;
   «далі» (SessionStart) — наступний `[ ]` того ж рівня або рівнем вище.
 - `[?]` — зроблено, чекає перевірки: окремий рядок (ставиться вручну).
+- `@агент` у кінці рядка вузла — чий він (2026-09-30, два агенти): свої й
+  непозначені [>] — «в роботі», чужі — рядком «У dsh в роботі: …»; хто «я» —
+  BATON_AGENT, за замовчуванням claude-code.
 - «змінено й не закомічено» — сам, з `git status` (~0,03 с), бо «перевірено»
   хук знати не може, а незакриті зміни — може (запит користувача 2026-09-29).
 - `[>]` ніде немає → нагадування «жоден вузол не в роботі»; запасний
@@ -40,6 +43,7 @@ MAX_NODES = 6
 MAX_WORK = 3
 FOREIGN = "script-agent/output/"  # чужа тека, завжди поза git
 NODE = re.compile(r"^(\s*)- \[(.)\] (\S+)\s+(.*)$")
+OWNER = re.compile(r"\s@([\w-]+)\s*$")  # «@dsh» у кінці рядка вузла — чий він
 RULE = ("Нове питання → вузол у кінець черги (якщо поточний може йти без "
         "нього — інакше скажи вголос); беручись за вузол — [>], на воротах — "
         "[x] (лише після перевірки); зроблено, але не перевірено — [?]; "
@@ -58,8 +62,10 @@ def parse(path):
     for l in lines:
         m = NODE.match(l)
         if m:
+            o = OWNER.search(m.group(4))
             nodes.append({"depth": len(m.group(1)), "st": m.group(2),
-                          "id": m.group(3), "name": m.group(4)})
+                          "id": m.group(3), "name": OWNER.sub("", m.group(4)),
+                          "owner": o.group(1) if o else None})
     return title.split(" · ")[0], nodes
 
 
@@ -118,7 +124,8 @@ def main():
     event = data.get("hook_event_name") or "UserPromptSubmit"
     start = event == "SessionStart"
     cwd = data.get("cwd") or os.getcwd()
-    work, waiting, queues = [], [], []
+    me = os.environ.get("BATON_AGENT") or "claude-code"
+    work, waiting, queues, others = [], [], [], {}
     for card in sorted(glob.glob(os.path.join(cwd, "trees", "*.md"))):
         try:
             title, nodes = parse(card)
@@ -126,6 +133,10 @@ def main():
             continue  # битий файл не глушить інші картки
         paths = active_paths(nodes)
         for path, i in paths:
+            owner = path[-1]["owner"]
+            if owner and owner != me:  # чужий вузол — окремим рядком
+                others.setdefault(owner, []).append(path[-1]["id"])
+                continue
             # кожне повідомлення — лише ID (бюджет M4: ≤3–4 тис. ток./сесію);
             # повні назви — на SessionStart
             line = f"{title} › " + " › ".join(
@@ -151,6 +162,8 @@ def main():
     else:
         out.append("Жоден вузол не в роботі ([>] у trees/*.md). Перед роботою над "
                    "темою: знайди її картку в trees/ або заведи вузол і постав [>].")
+    for who, ids in others.items():
+        out.append(f"У {who} в роботі: " + ", ".join(ids))
     if waiting:
         out.append("Чекає перевірки: " + "; ".join(waiting[:MAX_WORK])
                    + more(waiting, MAX_WORK))
