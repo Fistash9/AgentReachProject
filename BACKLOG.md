@@ -30,6 +30,21 @@
   дописуванні), agent.py/.env/.baton поза git. Джерела: alook.ai, augmentcode,
   poehnelt (сесія 2026-09-30). Пройде — у RULES.md через RULES-WHY.md.
 
+- **Проба: DSH без кліків в ізоляції — етап 1 ПРОЙДЕНО (2026-09-30, рішення користувача) — [claude-code, 2026-09-30]**
+  Чому: пісочниці на телефоні нема (Landlock → ENOSYS, unshare(NEWUSER) → EINVAL, bwrap
+  нема) → у DSH workspace-write+ask = клік на КОЖНУ команду; «дозволити назавжди» в DSH
+  нема (dsh-user-approval: лише ask/never, answerer не бачить аргументів).
+  Етап 1 (узгоджено з DSH, 4 листи): agents/claude-code/run-dsh-isolated.sh — proot
+  --isolated, копія проєкту /root/proj-trial (без .env/agent.py) тим самим шляхом,
+  DSH_HOME=/root/.dsh-trial (лише ключ, AGENTS.md, profiles/), danger-full-access, tui.
+  Доказ: журнал пробного DSH — 4 виклики bash, approval/asked 0; ізоляція: Termux-home
+  порожня, ~/.claude і .env нема, git працює на копії.
+  Граблі: джерело --bind proot-distro — шлях з боку Termux ($PREFIX/…/rootfs/root/…),
+  не гостьовий; cp -aL по profiles/ ламає pnpm (991 посилання) — лише cp -a без sessions/.
+  Етап 2 (не почато): справжній проєкт + живий канал — вирішити стоп-механізм (два
+  автовідповідачі без людини), веб-порт ≠3080, baton у tui, сесія бачить cwd як
+  /root/proj-trial (наслідки не перевірено). Прибрати копії — через TRASH.md.
+
 - **Рілс DdzTomrgn7m — проаналізувати (2026-09-29, запит користувача).**
   https://www.instagram.com/reel/DdzTomrgn7m/ (хвіст stkn= прибрано).
   Місце в дереві — після перегляду; черга: після M4 (trees/pam-yat-proyektu.md).
