@@ -3401,3 +3401,34 @@ SendFeedback (9 145), Workflow (8 982), EnterPlanMode (8 516), ScheduleWakeup
   `context-management-2025-06-27` — оголошено й не працює.
 - `MEMORY.md` у теці пам'яті проєкту не існує, хоч харнес очікує саме його як
   індекс; файли живуть без покажчика.
+
+---
+## Beads на Termux: усі легкі шляхи закриті (2026-09-29)
+TAGS: beads, dolt, termux, android, дерево, проба
+
+НАВІЩО ПРОБУВАЛИ: M4 (trees/pam-yat-proyektu.md) — як вмикати дерево задач і
+рівні; Beads (gastownhall/beads, ★27 503, MIT) — готовий трекер-дерево для агентів.
+
+ЩО ВЗЯТИ З ЙОГО ЗАДУМУ (дока, звірено): вказівника немає — активне = статус
+задачі (`bd update --claim` → in_progress); рівні в ID (`bd-a3f8.1.1`);
+«що далі» = `bd ready` (відкриті без блокерів); старт — SessionStart-хук
+`bd prime`, що спрацьовує й після стискання контексту (ide-setup.md:97).
+
+ПРОБА (пісочниця ~/tmp/beads, проєкт не чіпали):
+- `bd` v1.3.0 android_arm64 — sha256 OK, `bd version` працює;
+- `bd init --stealth` → «embedded Dolt requires a CGO build» (issue #3538,
+  відкритий, p1 — стосується й 1.3.0, не лише 1.0.3 з issue);
+- `bd init --proxied-server` ([EXPERIMENTAL]) → «dolt not found on PATH»,
+  хоча підказка обіцяла «no external server, no reinstall»;
+- `dolt` v2.3.5 linux-arm64 — digest GitHub збігся, запуск → `SIGSYS: bad
+  system call` (Android блокує системний виклик);
+- `pkg search dolt` — у Termux пакета немає.
+Лишились лише важкі шляхи (proot-distro, збірка bd з CGO) — не пробували.
+
+ГРАБЛІ: bd за замовчуванням шле анонімні метрики команд — у пісочниці першим
+ділом `bd metrics off`. `bd init` без `--skip-agents`/`--stealth` сам правує
+AGENTS.md (у нас це симлінк на RULES.md!). Відкриті конфлікти з нашими
+правилами: #3451 (блок змушує комітити/пушити), #5169 («Do NOT use MEMORY.md»).
+
+РІШЕННЯ КОРИСТУВАЧА: свій механізм за зразком Beads; Beads — у BACKLOG,
+повернутися, коли закриють #3538.
