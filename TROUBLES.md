@@ -3439,3 +3439,69 @@ AGENTS.md (у нас це симлінк на RULES.md!). Відкриті ко�
 
 РІШЕННЯ КОРИСТУВАЧА: свій механізм за зразком Beads; Beads — у BACKLOG,
 повернутися, коли закриють #3538.
+
+## Статус змінився (2026-09-30): DSH працює — але в proot, не в Termux
+TAGS: dsh, proot, glibc, продовження #02
+
+— [dsh, 2026-09-30T00:15+0300]
+
+Запис **#02 («НЕ встановлювати DSH на Termux», glibc-runner) лишається чинним для Termux** —
+не переписую його. Нове:
+
+DSH 0.2.0-rc.2 **працює в Ubuntu через `proot-distro`** на цьому ж телефоні.
+Доказ (перевірено запуском, не припущення):
+- запущений екземпляр: профіль `web`, `npx dsh web`, дані в `/root/.dsh`;
+- той самий dsh виконує MCP-сервери **з Termux-теки**: `Knowledge Graph MCP Server running on stdio`
+  і `[baton] baton 0.1.0 up as agent="probe"`.
+
+Наслідки: профіль `tui` з плагіном `@aiwayds/dsh-tui-pi@2.25.0`; launcher `run-dsh.sh`;
+вікно `dsh` у `tmux-work.sh`.
+
+Грабельки proot:
+- **не** запускає `claude` (`Error: claude native binary not installed`), хоч Termux-бінарник
+  `node` (v26.4.0) виконує нормально;
+- Termux-файлова система видима з proot як `/data/data/com.termux/files/...`, запис працює;
+- pnpm 12 падає з `ERR_PNPM_IGNORED_BUILDS`; лікується `strictDepBuilds: false` +
+  `ignoredBuiltDependencies` у `pnpm-workspace.yaml` профілю (скрипти при цьому НЕ виконуються).
+
+## Beads у proot: важкий шлях ВІДКРИВСЯ (2026-09-30)
+TAGS: beads, dolt, proot, CGO, дерево, продовження «Beads на Termux»
+
+— [dsh, 2026-09-30T01:06+0300]
+
+Продовження запису «Beads на Termux: усі легкі шляхи закриті» (2026-09-29), де лишалось:
+«Лишились лише важкі шляхи (proot-distro, збірка bd з CGO) — не пробували».
+
+ПРОБА (пісочниця `/root/tmp/beads` у proot; у проєкті нічого не ставилось):
+- `beads_1.3.0_linux_arm64.tar.gz` — розмір 49272237 і sha256 `4ce9446a…1c608` збіглися;
+- `bd version` → 1.3.0;
+- **`bd init --stealth --skip-agents` → код 0**, `Backend: dolt, Mode: embedded`;
+- **жодного** «embedded Dolt requires a CGO build» і **жодного SIGSYS**. Причина: linux_arm64
+  збірка з CGO + proot не має seccomp-обмежень Termux.
+
+ЩО ВИДАЄ ДЕРЕВО:
+- `bd list` — дерево гліфами ├──/└──; рівні в ID (`beads-gx9.1.1`), як і писалося раніше;
+- `bd show <id>` — **хто й коли видно**: `Created by: root · Assignee: dsh`,
+  `Created/Updated: 2026-09-29`. Хто = поле **Assignee**; `created_by` — системний користувач;
+- `bd children <id>` — піддерево; `bd ready` — відкриті без блокерів;
+- ⚠️ **ієрархія ≠ блокування**: `--parent` дає рівні, але дитина лишається в `bd ready`;
+  для блокування потрібна залежність (`bd link`/`--deps`).
+
+ЧИТАННЯ БЕЗ bd (те, про що питав claude-code):
+- сховище за замовчуванням — **embedded Dolt** (тека `embeddeddolt/`), текстового
+  `issues.jsonl` **немає** → без `bd`/`dolt` не читається;
+- **`bd export`** → JSONL у stdout: `id`, `title`, `status`, `assignee`, `created_at`,
+  `updated_at` (ISO), `dependencies` з `type: parent-child`; читається будь-чим;
+- **Termux бачить файли proot напряму**: rootfs — звичайна тека
+  `/data/data/com.termux/files/usr/var/lib/proot-distro/containers/ubuntu/rootfs/…`
+  (перевірено читанням `metadata.json`). Тобто export можна класти і в Termux-теку відразу.
+
+ГРАБЛІ:
+- поза git: `warning: beads.role not configured (GH#2950)` — у репозиторії лікується
+  `git config beads.role maintainer`;
+- метрики — першим ділом `bd metrics off` (як і записано в попередньому записі).
+- ✅ **`bd` запускається і з Termux** (уточнення до підрозділу «ЧИТАННЯ БЕЗ bd» вище):
+  `proot-distro login ubuntu -- env BEADS_DIR=/root/tmp/beads/.beads /root/tmp/beads/bd list`
+  → **код 0, те саме дерево**. Отже база може бути **одна на двох агентів**, без дзеркала-експорту;
+  мій попередній висновок «bd лише з proot» — хибний.
+  — [dsh, 2026-09-30T01:12+0300] (джерело: спостереження claude-code, передане користувачем)
