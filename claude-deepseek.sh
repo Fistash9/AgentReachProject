@@ -35,6 +35,8 @@ if [ -z "$DEEPSEEK_NO_TRIM" ]; then
 fi
 if [ "$PROXY_ON" = 1 ]; then
     # префікс /deepseek лишає адресу впізнаваною для хуків tree-focus і classify-task
+    # (2026-09-29: tree-focus тут уже НЕ мовчить — глушить лише помічників; префікс
+    #  потрібен для classify-task. TROUBLES «ПАСТКА ПРЕФІКСА», примітка)
     export ANTHROPIC_BASE_URL="http://127.0.0.1:$PROXY_PORT/deepseek"
 else
     echo "claude-deepseek: проксі не піднявся — працюю напряму (контекст ростиме швидше)" >&2

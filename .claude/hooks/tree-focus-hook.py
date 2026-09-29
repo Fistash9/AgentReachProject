@@ -17,26 +17,33 @@ TROUBLES «Beads на Termux…»): замість одного вказівни
 один короткий рядок.
 
 Як працює:
-- вузол — рядок "- [x] ID назва" (x: пробіл/x/~/>); глибина — відступ.
-- шлях — найглибший `[>]` картки з предками; «далі» — наступний `[ ]` того
-  ж рівня (або рівнем вище, якщо рівень скінчився).
+- вузол — рядок "- [x] ID назва" (x: пробіл/x/~/>/?); глибина — відступ.
+- «в роботі» — усі листові `[>]` (до 3, решта +N), кожен зі шляхом предків;
+  «далі» (SessionStart) — наступний `[ ]` того ж рівня або рівнем вище.
+- `[?]` — зроблено, чекає перевірки: окремий рядок (ставиться вручну).
+- «змінено й не закомічено» — сам, з `git status` (~0,03 с), бо «перевірено»
+  хук знати не може, а незакриті зміни — може (запит користувача 2026-09-29).
 - `[>]` ніде немає → нагадування «жоден вузол не в роботі»; запасний
   <cwd>/.claude/active-tree (старий вказівник) дає чергу на SessionStart.
-- під-сесії DeepSeek (ANTHROPIC_BASE_URL містить deepseek) — мовчить, як
-  classify-task.sh (M4.5 — окремий вузол).
+- під-сесії-помічники DeepSeek (адреса deepseek + effort або sdk-cli) — мовчить;
+  головна DeepSeek-сесія дерево бачить (M4.5, 2026-09-29).
 - будь-яка помилка — мовчить (fail-open), нічого не блокує.
 """
 import glob
 import json
 import os
 import re
+import subprocess
 import sys
 
 MAX_NODES = 6
+MAX_WORK = 3
+FOREIGN = "script-agent/output/"  # чужа тека, завжди поза git
 NODE = re.compile(r"^(\s*)- \[(.)\] (\S+)\s+(.*)$")
 RULE = ("Нове питання → вузол у кінець черги (якщо поточний може йти без "
         "нього — інакше скажи вголос); беручись за вузол — [>], на воротах — "
-        "[x]; після відповіді покажи чергу.")
+        "[x] (лише після перевірки); зроблено, але не перевірено — [?]; "
+        "після відповіді покажи чергу.")
 
 
 def short(s, n):
@@ -56,20 +63,23 @@ def parse(path):
     return title.split(" · ")[0], nodes
 
 
-def active_path(nodes):
-    """Найглибший [>] і його предки; індекс цього вузла."""
-    best = None
+def active_paths(nodes):
+    """Усі «листові» [>] (без [>] нащадків) — кожен зі шляхом предків."""
+    out = []
     for i, n in enumerate(nodes):
-        if n["st"] == ">" and (best is None or n["depth"] > nodes[best]["depth"]):
-            best = i
-    if best is None:
-        return [], None
-    path, depth = [nodes[best]], nodes[best]["depth"]
-    for n in reversed(nodes[:best]):
-        if n["depth"] < depth:
-            path.insert(0, n)
-            depth = n["depth"]
-    return path, best
+        if n["st"] != ">":
+            continue
+        child = next((m for m in nodes[i + 1:] if m["depth"] <= n["depth"]
+                      or m["st"] == ">"), None)
+        if child is not None and child["st"] == ">" and child["depth"] > n["depth"]:
+            continue  # глибше є свій [>] — показуємо його шлях
+        path, depth = [n], n["depth"]
+        for m in reversed(nodes[:i]):
+            if m["depth"] < depth:
+                path.insert(0, m)
+                depth = m["depth"]
+        out.append((path, i))
+    return out
 
 
 def next_node(nodes, i):
@@ -83,50 +93,90 @@ def next_node(nodes, i):
     return None
 
 
+def git_dirty(cwd):
+    """Змінені й не закомічені файли (крім чужої script-agent/output/)."""
+    r = subprocess.run(["git", "status", "--porcelain"], cwd=cwd,
+                       capture_output=True, text=True, timeout=3)
+    files = [l[3:] for l in r.stdout.splitlines()
+             if l[3:] and not l[3:].startswith(FOREIGN)]
+    return files
+
+
+def more(items, n):
+    return f" (+{len(items) - n})" if len(items) > n else ""
+
+
 def main():
-    if "deepseek" in os.environ.get("ANTHROPIC_BASE_URL", ""):
+    # Мовчить лише в під-сесіях-помічниках deepseek-mcp: вони завжди мають
+    # CLAUDE_CODE_EFFORT_LEVEL (env.js) і entrypoint sdk-cli (перевірено
+    # наживо 2026-09-29); головна claude-deepseek.sh effort знімає — дерево бачить.
+    helper = (os.environ.get("CLAUDE_CODE_EFFORT_LEVEL")
+              or os.environ.get("CLAUDE_CODE_ENTRYPOINT", "cli") != "cli")
+    if "deepseek" in os.environ.get("ANTHROPIC_BASE_URL", "") and helper:
         return
     data = json.load(sys.stdin)
     event = data.get("hook_event_name") or "UserPromptSubmit"
+    start = event == "SessionStart"
     cwd = data.get("cwd") or os.getcwd()
-    lines = []
+    work, waiting, queues = [], [], []
     for card in sorted(glob.glob(os.path.join(cwd, "trees", "*.md"))):
         try:
             title, nodes = parse(card)
         except Exception:
             continue  # битий файл не глушить інші картки
-        path, i = active_path(nodes)
-        if not path:
-            continue
-        crumbs = " › ".join(short(f"{n['id']} {n['name']}", 40) for n in path)
-        line = f"В роботі: {title} › {crumbs}"
-        if event == "SessionStart":
-            nxt = next_node(nodes, i)
-            if nxt:
-                line += f"\n  далі: {short(nxt['id'] + ' ' + nxt['name'], 50)}"
-            queue = [n for n in nodes if n["st"] == " " and n["depth"] == 0]
-            if queue:
-                more = f" (+{len(queue) - MAX_NODES})" if len(queue) > MAX_NODES else ""
-                line += "\n  черга картки: " + "; ".join(
-                    short(f"{n['id']} {n['name']}", 30) for n in queue[:MAX_NODES]) + more
-                line += f" ({os.path.relpath(card, cwd)})"
-        lines.append(line)
+        paths = active_paths(nodes)
+        for path, i in paths:
+            # кожне повідомлення — лише ID (бюджет M4: ≤3–4 тис. ток./сесію);
+            # повні назви — на SessionStart
+            line = f"{title} › " + " › ".join(
+                short(f"{n['id']} {n['name']}", 40) if start else n["id"]
+                for n in path)
+            if start:
+                nxt = next_node(nodes, i)
+                if nxt:
+                    line += f" (далі: {short(nxt['id'] + ' ' + nxt['name'], 40)})"
+            work.append(line)
+        waiting += [short(f"{n['id']} {n['name']}", 45) if start else n["id"]
+                    for n in nodes if n["st"] == "?"]
+        if start and paths:
+            q = [n for n in nodes if n["st"] == " " and n["depth"] == 0]
+            if q:
+                queues.append(f"Черга «{title}» ({os.path.relpath(card, cwd)}): "
+                              + "; ".join(short(f"{n['id']} {n['name']}", 30)
+                                          for n in q[:MAX_NODES]) + more(q, MAX_NODES))
 
-    if lines:
-        text = "\n".join(lines) + ("\n" + RULE if event == "SessionStart" else "")
+    out = []
+    if work:
+        out.append("В роботі: " + " | ".join(work[:MAX_WORK]) + more(work, MAX_WORK))
     else:
-        text = ("Жоден вузол не в роботі ([>] у trees/*.md). Перед роботою над "
-                "темою: знайди її картку в trees/ або заведи вузол і постав [>].")
-        pointer = os.path.join(cwd, ".claude", "active-tree")
-        if event == "SessionStart" and os.path.isfile(pointer):
-            rel = open(pointer, encoding="utf-8").read().strip()
-            title, nodes = parse(os.path.join(cwd, rel))
-            queue = [n for n in nodes if n["st"] == " " and n["depth"] == 0]
-            text += (f"\nОстання активна картка: {title} ({rel}): "
-                     + "; ".join(short(f"{n['id']} {n['name']}", 30)
-                                 for n in queue[:MAX_NODES]))
+        out.append("Жоден вузол не в роботі ([>] у trees/*.md). Перед роботою над "
+                   "темою: знайди її картку в trees/ або заведи вузол і постав [>].")
+    if waiting:
+        out.append("Чекає перевірки: " + "; ".join(waiting[:MAX_WORK])
+                   + more(waiting, MAX_WORK))
+    try:
+        dirty = git_dirty(cwd)
+    except Exception:
+        dirty = []
+    if dirty:
+        out.append(f"Не закомічено: {len(dirty)} ("
+                   + ", ".join(os.path.basename(f.rstrip("/")) for f in dirty[:3])
+                   + more(dirty, 3) + ")"
+                   + (" — перевір і закоміть або познач вузол [?]." if start else ""))
+    if start:
+        out += queues
+        if not work:
+            pointer = os.path.join(cwd, ".claude", "active-tree")
+            if os.path.isfile(pointer):
+                rel = open(pointer, encoding="utf-8").read().strip()
+                title, nodes = parse(os.path.join(cwd, rel))
+                q = [n for n in nodes if n["st"] == " " and n["depth"] == 0]
+                out.append(f"Остання активна картка: {title} ({rel}): "
+                           + "; ".join(short(f"{n['id']} {n['name']}", 30)
+                                       for n in q[:MAX_NODES]))
+        out.append(RULE)
     print(json.dumps({"hookSpecificOutput": {"hookEventName": event,
-                                             "additionalContext": text}},
+                                             "additionalContext": "\n".join(out)}},
                      ensure_ascii=False))
 
 
