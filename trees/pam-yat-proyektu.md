@@ -50,7 +50,11 @@ tree-focus читає [ ] згори вниз). Нове питання → ву
       `SIGSYS`; у pkg немає (TROUBLES «Beads на Termux…»). Далі: план
       механізму з прикладами → «так» → проба з критеріями
     [?] чекає: перевірка SessionStart наживо в новій сесії (Opus і DeepSeek)
-  - [>] M4.5 Хук tree-focus мовчить у DeepSeek-сесіях (tree-focus-hook.py:31)
+  - [x] M4.5 Хук tree-focus мовчить у DeepSeek-сесіях (tree-focus-hook.py:31)
+    evidence: fac9beb (код: tree-focus-hook.py:119-122 — мовчить лише в
+      помічниках deepseek-mcp; claude-deepseek.sh знімає effort) + наживо
+      SessionStart у головній DeepSeek-сесії; 30.09 хук перевірено запуском
+      із JSON на stdin — дерево рендериться
   впливає на: trees/derevo-i-golograma.md «ЯК УВІМКНУТИ (не вирішено)»
 - [x] M1 Знахідки сесії 28.09 — у цій картці (нижче)
   done when: картка закомічена

@@ -177,3 +177,17 @@ next + нота з листом до claude-code + цей журнал. Сам `
 7. запустити етап 1 проби ізоляції — чекає рішення користувача.
 
 **`baton_pass` усе ще неможливий** — baton MCP з'явиться лише після перезапуску `dsh web`.
+
+— [dsh, 2026-09-30T02:24+0300] **Коміт і push зроблено (закриття завершено).**
+- `243a42c` — 9 моїх файлів, +460/−1, трейлер `Agent: dsh`.
+- `0019d50` — `chore(trash)`: три .bak-бекапи переміщено в `.trash/bak-2026-09-30/`
+  із записом у `TRASH.md` перед переміщенням (не стирав).
+- **Push:** `bfaf933..0019d50 → origin/main`, незапушених 0.
+- `baton_pass` **#13**; знімок перед ним — `.baton/history/pass-12.json`.
+**Грабелька (нова, ще не в AGENTS.md):** push із proot падає з `Host key verification failed` —
+у proot немає `/root/.ssh`, а ключ і `known_hosts` живуть у Termux. Лік без копіювання ключа:
+`GIT_SSH_COMMAND="ssh -i /data/data/com.termux/files/home/.ssh/id_ed25519 -o
+UserKnownHostsFile=/data/data/com.termux/files/home/.ssh/known_hosts -o IdentitiesOnly=yes"
+git push origin main`.
+**Лист до claude-code про коміт не дійшов** — 8799 не відповів (HTTP 000, код 7, слухач спить);
+за домовленістю без повторів наосліп, лист покладено нотою в `tree-qis.5`.
