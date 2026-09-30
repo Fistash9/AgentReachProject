@@ -26,7 +26,11 @@ TROUBLES «Beads на Termux…»): замість одного вказівни
   BATON_AGENT, за замовчуванням claude-code.
 - «змінено й не закомічено» — сам, з `git status` (~0,03 с), бо «перевірено»
   хук знати не може, а незакриті зміни — може (запит користувача 2026-09-29).
-- `[>]` ніде немає → нагадування «жоден вузол не в роботі»; запасний
+- 2026-09-30 (M4, проба не пройдена): «в роботі» — лише `[>] … @я`; `[>]` без
+  `@агент` — рядок «без власника», а не мій. Раніше непозначені вважались
+  моїми, і чужий T7 та застарілий M4 глушили нагадування нижче, коли робота
+  йшла поза деревом (розбір baton-diff 30.09).
+- мого `[>]` немає → нагадування «жоден твій вузол не в роботі»; запасний
   <cwd>/.claude/active-tree (старий вказівник) дає чергу на SessionStart.
 - під-сесії-помічники DeepSeek (адреса deepseek + effort або sdk-cli) — мовчить;
   головна DeepSeek-сесія дерево бачить (M4.5, 2026-09-29).
@@ -125,7 +129,7 @@ def main():
     start = event == "SessionStart"
     cwd = data.get("cwd") or os.getcwd()
     me = os.environ.get("BATON_AGENT") or "claude-code"
-    work, waiting, queues, others = [], [], [], {}
+    work, waiting, queues, others, unowned = [], [], [], {}, []
     for card in sorted(glob.glob(os.path.join(cwd, "trees", "*.md"))):
         try:
             title, nodes = parse(card)
@@ -134,7 +138,10 @@ def main():
         paths = active_paths(nodes)
         for path, i in paths:
             owner = path[-1]["owner"]
-            if owner and owner != me:  # чужий вузол — окремим рядком
+            if owner is None:  # без @агент — не мій: хто його робить, невідомо
+                unowned.append(path[-1]["id"])
+                continue
+            if owner != me:  # чужий вузол — окремим рядком
                 others.setdefault(owner, []).append(path[-1]["id"])
                 continue
             # кожне повідомлення — лише ID (бюджет M4: ≤3–4 тис. ток./сесію);
@@ -160,10 +167,14 @@ def main():
     if work:
         out.append("В роботі: " + " | ".join(work[:MAX_WORK]) + more(work, MAX_WORK))
     else:
-        out.append("Жоден вузол не в роботі ([>] у trees/*.md). Перед роботою над "
-                   "темою: знайди її картку в trees/ або заведи вузол і постав [>].")
+        out.append(f"Жоден твій вузол не в роботі ([>] … @{me} у trees/*.md) — "
+                   "поточна робота невидима. Перед роботою над темою: знайди її "
+                   f"картку в trees/ або заведи вузол і постав [>] … @{me}.")
     for who, ids in others.items():
         out.append(f"У {who} в роботі: " + ", ".join(ids))
+    if unowned:
+        out.append("[>] без власника: " + ", ".join(unowned[:MAX_WORK])
+                   + more(unowned, MAX_WORK) + " — познач @агент або зніми [>].")
     if waiting:
         out.append("Чекає перевірки: " + "; ".join(waiting[:MAX_WORK])
                    + more(waiting, MAX_WORK))
