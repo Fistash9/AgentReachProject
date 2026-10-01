@@ -5,6 +5,12 @@
 
 ## Активні (плануємо зробити)
 
+- **Пісочниця: проба Backlog.md (2026-10-01, рішення користувача) — [claude-code, 2026-10-01]**
+  `~/tmp/backlogmd-test` (поза проєктом і git): npm-пакет backlog.md 1.53.0 /
+  backlog.md-linux-arm64. Критерій: `--version`, `init`, задача-батько + дитина,
+  `board`. Звідки: G2 (trees/derevo-i-golograma.md). Прибрати після рішення —
+  із записом у TRASH.md.
+
 - **Проба: Beads як спільне дерево двох агентів (2026-09-30, рішення користувача) — [claude-code, 2026-09-30]**
   База поза проєктом: `/root/shared-tree/.beads` (Ubuntu/proot). DSH — напряму; claude-code —
   `proot-distro login ubuntu -- env BEADS_DIR=/root/shared-tree/.beads BD_DISABLE_METRICS=1
