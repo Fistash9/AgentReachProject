@@ -48,7 +48,10 @@ export ANTHROPIC_DEFAULT_SONNET_MODEL="deepseek-flash"
 export ANTHROPIC_DEFAULT_HAIKU_MODEL="deepseek-flash"
 export CLAUDE_CODE_SUBAGENT_MODEL="deepseek-flash"
 export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1
-export CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1
+# Вікно DeepSeek V4 — 1M (рішення користувача 2026-10-01, baton-diff п.15/22).
+# Раніше тут стояв DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1: попередження не
+# прибирав, а автокомпакт вимикав (TROUBLES «Прапорець вікна…», env-vars.md:269).
+export CLAUDE_CODE_MAX_CONTEXT_TOKENS=1000000
 
 cd ~/AgentReachProject
 # без exec: інакше trap не спрацює і проксі лишиться висіти після виходу

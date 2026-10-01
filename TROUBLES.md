@@ -3374,6 +3374,16 @@ auto-compaction». Це і є причина, чому сесія дійшла �
 context rot) проти «зняти прапорець і подивитись, на чому стискає сам».
 Рішення за користувачем, сесію закрито до нього.
 
+Статус змінився (2026-10-01, розбір baton-diff п.15/16/22/23): рішення
+користувача — 1 000 000. У `claude-deepseek.sh` прапорець замінено на
+`CLAUDE_CODE_MAX_CONTEXT_TOKENS=1000000` (`model-config.md:760`: для ID не з
+`claude-` «applies directly and proactive compaction continues»). `run-deepseek.sh`
+НЕ змінено (рішення користувача): прапорець там поставлено в 2f876e3 проти збою
+під-сесій на шляху generate_session_title — за `env-vars.md` цей шлях вимикає
+CLAUDE_CODE_DISABLE_TERMINAL_TITLE, а не прапорець вікна, але наживо не
+перевірено. deepseek-mcp передає під-сесіям усе середовище (`dist/env.js:26-30`).
+Перевірка наживо — у наступній DeepSeek-сесії (платна, запускає користувач). — [claude-code, 2026-10-01]
+
 ## Що ще займає контекст: 43 інструменти з 68 не викликались жодного разу (2026-09-29)
 TAGS: контекст, tools, схеми, mcp, tool-search, deepseek
 
