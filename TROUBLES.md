@@ -3515,3 +3515,56 @@ TAGS: beads, dolt, proot, CGO, дерево, продовження «Beads на
   → **код 0, те саме дерево**. Отже база може бути **одна на двох агентів**, без дзеркала-експорту;
   мій попередній висновок «bd лише з proot» — хибний.
   — [dsh, 2026-09-30T01:12+0300] (джерело: спостереження claude-code, передане користувачем)
+
+## Граблі сесії 2026-10-01: grun і аргументи, Backlog.md у Termux, DeepSeek max_uses, переказ WebFetch
+TAGS: grun, glibc, termux, npm, backlog.md, deepseek, web_search, max_uses, balance, webfetch, hook, tree-focus, ls
+
+— [claude-code, 2026-10-01]
+- **grun ламає аргументи з пробілами**: `grun:5` — `glibc-runner.sh $@` без лапок
+  (`backlog task create "А Б"` → «too many arguments … got 4»). Обхід — glibc-завантажувач
+  напряму: `env -u LD_PRELOAD $PREFIX/glibc/lib/ld-linux-aarch64.so.1 --library-path
+  $PREFIX/glibc/lib <бінарник> "$@"` (запускач-зразок: `~/tmp/backlogmd-test/bl`).
+- **npm у Termux** бачить платформу `android` → опційні `*-linux-arm64` пакети мовчки
+  пропускає («Binary package not installed for android-arm64»). Бінарник: `npm pack
+  <пакет>-linux-arm64@<версія>` + `tar -xzf`.
+- **Backlog.md 1.53.0 працює в Termux** через обхід вище (баг Bun #26752 закрито
+  «completed» 05.02.2026): init, батько/дитина (TASK-1.1), `board` (TUI) — ок.
+  Користувачу дошка Канбан «не зрозуміло як і що» (trees/derevo-i-golograma.md, G2).
+- **DeepSeek web_search не дотримує max_uses**: `usage.server_tool_use.web_search_requests`
+  = 8 при max_uses 5 (3 виклики), 10 і 12 при 8.
+- **Баланс DeepSeek списується із запізненням** до ~15 хв: 12:16 $1.34 → 12:31 $1.32 без
+  нових викликів. Ціну окремих викликів у серії не розділити.
+- **WebFetch-переказ задвоює числа**: «138 instances / 12 repositories» → «138138 / 1212»
+  (arXiv 2602.11988). Числа зі статей — curl HTML (`arxiv.org/html/<id>`).
+- **`ls … | head -N` обрізав список** → хибний висновок «proxy.py немає». Для «є/немає» —
+  `ls` без head, `find` або `test -e`.
+- **Тег `@агент` — лише в кінці ПЕРШОГО рядка вузла** (OWNER у tree-focus-hook.py), інакше
+  хук пише «без власника» (9bb716a → 2e4dfe9). Вивід хука перевіряти ДО коміту, не в
+  одній команді з ним.
+- **delegate-prompt-improver пропускає структуровані промпти** (`improver.log`:
+  `skip_structured`) — прогін B-мета не переписано, порівняння чесне.
+- **beads_viewer (bv)**: LICENSE «MIT with OpenAI/Anthropic Rider» — «use» включно з
+  «executing» заборонено сторонам, що діють від імені Anthropic. Юридично не перевірено.
+- Семантичні API з Termux: Semantic Scholar API — порожньо, сторінка — 403; ERIC — без
+  тексту. DeepSeek-пошук бере ті самі абстракти через дзеркала.
+
+## Зовнішня перевірка сесії 2026-10-01 (1a0cc370): DeepSeek flash + раунд «перелік невідомого»
+TAGS: review, deepseek, session-close, queued_command, export, ask, auto mode
+
+— [claude-code, 2026-10-01]
+- Експорт журналу: 668 тис. симв., особистого 0; ОДИН запит (вікно flash 1M): 248 070 вх.
+  токенів, 127 с, `end_turn`. Продовження в тій самій розмові — з кешу DeepSeek
+  (248 064 / 250 752 cache_read), 20–23 с. Разом ≈$0.06 (баланс $1.29 → $1.23).
+- Раунд, запропонований користувачем: рецензент пише ПЕРЕЛІК НЕВІДОМОГО → асистент закриває
+  доказами → рецензент переглядає. Результат: з 18 знахідок знято 7 (№4 — коміт DSH
+  з'явився через 11 хв ПІСЛЯ заяви; №6 — питання користувача було, мій експорт його
+  пропустив; №10–12 — коміти під ask-правилом; №13 — дрібну розбіжність винесено у звіт
+  за Правилом 3; №15 — сесія ще тривала), змінено 5, лишилось 6; додано 3 нові
+  (повторний WebSearch після питання 09:42; формат рецензії; auto mode і ask).
+- ЕКСПОРТ МАЄ БРАТИ `queued_command` (повідомлення користувача посеред ходу) — перший
+  експорт загубив 5 таких повідомлень, і рецензент «зловив» неіснуючу вигадку.
+- Auto mode і `permissions.ask`: «If an explicit ask rule matches the command, Claude Code
+  asks you instead, even in auto mode» (code.claude.com/docs/en/permission-modes, ~ряд.
+  716) — коміти під `Bash(git commit *)` у ask ішли через запит користувачу.
+- Звірка цитат рецензента: 13 дослівно, 1 частково, 4 — переказ/JSON-екранування (коміти
+  в експорті з `\n`); вигаданих цитат 0.
