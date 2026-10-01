@@ -130,3 +130,20 @@
 - Відновлюване: так — повернути: `mv .trash/bak-2026-09-30/* agents/dsh/` для README
   і `mv .trash/bak-2026-09-30/tmux-work.sh.bak-* .` для скрипта.
   (Вміст tmux-work.sh до правки є і в git: коміт 243a42c^ .)
+
+### 2026-10-01 — /root/proj-trial і /root/.dsh-trial (Ubuntu/proot) → /root/.trash/2026-10-01/
+— [claude-code, 2026-10-01T17:54+0300]
+- Що: копія проєкту для проби «DSH без кліків в ізоляції», етап 1 (`/root/proj-trial`,
+  11M, власний .git, HEAD bfaf933) і домівка пробного DSH (`/root/.dsh-trial`, 13M:
+  ключ, AGENTS.md, profiles/, sessions/ 14K, storages/). Перед перенесенням зупинено
+  процес пробного DSH (pid 12553 proot + 12561 `node …dsh --profile tui`, працював
+  1 д 13 год у вікні tmux work:1).
+- Чому: пункти 4 і 12 з baton-diff #14→#15; етап 1 пройдено (BACKLOG «Проба DSH без
+  кліків»). Копія не містить нічого, чого нема в git: 8 змінених файлів збігаються з
+  243a42c байт у байт, agents/dsh/JOURNAL.md у копії — старіша версія (0 рядків, яких
+  нема в git); не звірено лише 3 .bak і script-agent/output/. Рішення користувача
+  2026-10-01: «Закрити і в кошик». /root/tmp/beads НЕ чіпав — там bd для проби Beads.
+- Відновлюване: так — у proot: `mv /root/.trash/2026-10-01/proj-trial
+  /root/.trash/2026-10-01/.dsh-trial /root/`; з Termux — ті самі шляхи з префіксом
+  `$PREFIX/var/lib/proot-distro/containers/ubuntu/rootfs`. Пробу перезапускає
+  `agents/claude-code/run-dsh-isolated.sh`.
