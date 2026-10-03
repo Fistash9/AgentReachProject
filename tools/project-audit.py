@@ -267,8 +267,12 @@ def stale(root):
     ctx = os.path.join(root, "CONTEXT.md")
     last = git("log", "-1", "--format=%cI", "--", "CONTEXT.md")
     out["context_last_commit"] = last
-    if last:
-        after = git("rev-list", "--count", f"--since={last}", "HEAD")
+    # Рахуємо від САМОГО коміту CONTEXT (sha..HEAD), а не --since=<дата>: --since
+    # включав і його власний коміт, даючи 44 замість 43.
+    last_sha = git("log", "-1", "--format=%H", "--", "CONTEXT.md")
+    out["context_last_sha"] = last_sha
+    if last_sha:
+        after = git("rev-list", "--count", f"{last_sha}..HEAD")
         out["commits_after_context"] = int(after) if after and after.isdigit() else None
 
     hist = git("rev-list", "--count", "HEAD")
@@ -283,7 +287,7 @@ def stale(root):
         lastc = git("log", "-1", "--format=%cI", "--", f)
         uncommitted = git("status", "--porcelain", "--", f)
         skew.append({"file": f,
-                     "mtime_days_ago": round((datetime.now(timezone.utc) - mtime).days, 1),
+                     "mtime_days_ago": (datetime.now(timezone.utc) - mtime).days,
                      "last_commit": lastc,
                      "uncommitted": bool(uncommitted)})
     out["files"] = skew
@@ -313,16 +317,20 @@ def tree(root):
         for base, dirs, fs in os.walk(tdir):
             dirs[:] = [d for d in dirs if d != "__pycache__"]
             files += [os.path.join(base, f) for f in fs if f.endswith(".md")]
-    nodes = {"open": 0, "active": 0, "done": 0}
+    nodes = {"open": 0, "active": 0, "done": 0, "parked": 0, "unclear": 0}
     per_file, leaves = {}, []
-    NODE = re.compile(r"^(\s*)- \[( |x|>)\] (.+)$")
+    # Було \[( |x|>)\] — статуси [~] (поза метою/не кандидат) і [?] (неясно) не
+    # розпізнавались зовсім: вузол зникав із підрахунку, а його рядки-поля
+    # приписувались сусідньому вузлу (50 із 53).
+    NODE = re.compile(r"^(\s*)- \[( |x|>|~|\?)\] (.+)$")
+    STATUS = {" ": "open", "x": "done", ">": "active", "~": "parked", "?": "unclear"}
     for p in sorted(files):
         lines = read_text(p).splitlines()
         found = []
         for i, line in enumerate(lines):
             m = NODE.match(line)
             if m:
-                st = {" ": "open", "x": "done", ">": "active"}[m.group(2)]
+                st = STATUS[m.group(2)]
                 nodes[st] += 1
                 found.append({"depth": len(m.group(1)), "i": i, "st": st,
                               "name": m.group(3).strip()[:90], "fields": set()})

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """L0-мапа «що вже досягнуто» — збирає досягнуте з трьох джерел і міряє опору.
 
-Навіщо: 80 пунктів `done` у baton, 56 у BACKLOG «Завершено» і 6 вузлів [x]
-у дереві живуть у трьох різних місцях і ніде не зведені. Проста звірка
+Навіщо: пункти `done` у baton, «Завершено» у BACKLOG і вузли [x] у дереві
+(усі рівні вкладеності) живуть у трьох різних місцях і ніде не зведені. Проста звірка
 показала, що дослівно збігається ~1% — тобто це не «одне й те саме,
 записане тричі», а три майже неперетинні списки.
 
@@ -19,10 +19,13 @@ import glob
 import json
 import os
 import re
+import subprocess
 from datetime import datetime, timezone
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-COMMIT = re.compile(r"\b[0-9a-f]{7,40}\b")
+# Було \b[0-9a-f]{7,40}\b — ловило не-хеші (20260930, 1000000). Тепер: чистий hex
+# (не самі цифри) + обов'язкова перевірка, що об'єкт справді є комітом (is_commit).
+COMMIT = re.compile(r"\b(?![0-9]+\b)[0-9a-f]{7,40}\b")
 PATHRE = re.compile(r"[A-Za-z0-9_./-]+\.(?:md|py|sh|js|json|yml|yaml|jsonl)")
 
 GROUPS = [
@@ -171,6 +174,19 @@ def addresses(order):
     return out
 
 
+_COMMIT_CACHE = {}
+
+
+def is_commit(sha):
+    """Чи справді існує такий коміт. Самого regex мало: він ловив дати (20260930),
+    суми (1000000) і id сесій (5389f068) — через це 3 пункти мали хибну опору «коміт»."""
+    if sha not in _COMMIT_CACHE:
+        r = subprocess.run(["git", "cat-file", "-e", f"{sha}^{{commit}}"],
+                           cwd=ROOT, capture_output=True)
+        _COMMIT_CACHE[sha] = (r.returncode == 0)
+    return _COMMIT_CACHE[sha]
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--json", default=None)
@@ -194,18 +210,33 @@ def main():
                 order.append({"text": x, "first_seen": os.path.basename(f)})
 
     backlog = open(os.path.join(ROOT, "BACKLOG.md"), encoding="utf-8").read()
-    bl_items = [l[2:].strip() for l in backlog.split("## Завершено", 1)[-1].split("\n")
-                if l.startswith("- ")] if "## Завершено" in backlog else []
+    bl_items = []
+    if "## Завершено" in backlog:
+        # Межа розділу — до наступного «## ». Без цього «Завершено» тяглось до кінця
+        # файлу й прихоплювало чужі розділи (Unverified Claims, Аналізатор, Відкладено):
+        # 56 замість 41.
+        sec = backlog.split("## Завершено", 1)[-1]
+        nxt = re.search(r"\n## ", sec)
+        if nxt:
+            sec = sec[:nxt.start()]
+        bl_items = [l[2:].strip() for l in sec.split("\n") if l.startswith("- ")]
+    TX_NODE = re.compile(r"^\s*- \[x\]\s*(.+)$")
     tx = []
     for p in glob.glob(os.path.join(ROOT, "trees", "*.md")):
         for l in open(p, encoding="utf-8"):
-            if l.startswith("- [x]"):
-                tx.append({"text": l[6:].strip(), "file": os.path.relpath(p, ROOT)})
+            m = TX_NODE.match(l.rstrip("\n"))
+            if m:  # усі рівні: було l.startswith("- [x]") — тільки верхній, 7 замість 19
+                tx.append({"text": m.group(1).strip(), "file": os.path.relpath(p, ROOT)})
+
+    def norm(s):
+        return re.sub(r"\s+", " ", re.sub(r"[`*_«»\"'(),:;!?…—–-]", " ", s.lower())).strip()
+
+    backlog_norm = norm(backlog)  # ОДИН раз: раніше norm(backlog) кликався на кожне вікно
 
     for it in order:
         t = it["text"]
         files = PATHRE.findall(t)
-        it["commits"] = COMMIT.findall(t)
+        it["commits"] = [c for c in COMMIT.findall(t) if is_commit(c)]
         it["files"] = [f for f in files if os.path.exists(os.path.join(ROOT, f.lstrip("./")))]
         # опора трьох класів: коміт · файл · згадка журналу (журнали без .md теж рахуються)
         it["journal"] = bool(re.search(r"TROUBLES|BACKLOG|CONTEXT|HANDOFF|RULES-WHY|WEEKLY|"
@@ -215,10 +246,9 @@ def main():
                                "файл" if it["files"] else
                                "журнал" if it["journal"] else "немає")
         it["has_support"] = it["support_class"] != "немає"
-        # дослівна присутність у BACKLOG (6 слів)
-        norm = lambda s: re.sub(r"\s+", " ", re.sub(r"[`*_«»\"'(),:;!?…—–-]", " ", s.lower())).strip()
+        # дослівна присутність у BACKLOG (6 слів) — по заздалегідь нормованому тексту
         w = norm(t).split()
-        it["in_backlog"] = any(" ".join(w[i:i + 6]) in norm(backlog)
+        it["in_backlog"] = any(" ".join(w[i:i + 6]) in backlog_norm
                                for i in range(max(1, len(w) - 5)))
 
     by_group = {}
