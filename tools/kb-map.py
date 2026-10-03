@@ -80,6 +80,9 @@ def build():
     e += entries_md(os.path.join(ROOT, "BACKLOG.md"), "###")
     e += entries_md(os.path.join(ROOT, "RULES-WHY.md"), "##")
     e += entries_md(os.path.join(ROOT, "README.md"), "##")
+    e += entries_md(os.path.join(ROOT, "GOALS.md"), "##")
+    for p in sorted(glob.glob(os.path.join(ROOT, "agents", "*", "*.md"))):
+        e += entries_md(p, "#")
     for p in sorted(glob.glob(os.path.join(ROOT, "trees", "*.md"))):
         e += entries_md(p, "#")
     e += entries_memory()
