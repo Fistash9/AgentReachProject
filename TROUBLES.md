@@ -3893,3 +3893,31 @@ TAGS: deepseek, cache, thinking, effort, вартість
 Нічого «не скидається»; промах мого 03.10 справжній (не артефакт). Ціна перемикання — один
 повний вхід (тут ≈$0.002 на 16 тис. токенів). /think у DSH на рівні API — НЕ перевірено
 (його low/high може не мапитися на thinking disabled/enabled).
+
+---
+## Вікно DSH (tui): Enter під час роботи не відправляє; DSH не бачить свого /think (2026-10-03, тести)
+TAGS: dsh, tmux, tui, канал, steer, follow-up, think, reasoningEffort
+— [claude-code, 2026-10-03] (на прохання користувача «проведи тест слідкуючи за кодом»)
+
+КОД (@aiwayds/dsh-tui-pi у /root/.dsh/profiles/tui/node_modules): `index.js:2152–2165` —
+якщо агент працює (`bridge.isRunning()`), Enter відкриває діалог маршруту
+(`route-dialog.js`): «1. Queue as follow-up / 2. Steer now», типово 1; ПІДТВЕРДЖУЄ
+другий Enter, Esc скасовує й повертає чернетку в поле (`ui.editor.setText(text)`,
+курсор у кінці). Вільний агент → пряма відправка.
+ТЕСТИ (tmux work:3):
+- А, DSH вільний (cc-think-1): лист пішов одразу, поле порожнє.
+- Б, DSH зайнятий (cc-test-b1, один Enter): діалог «▸ 1. Queue as follow-up…» посеред
+  екрана, висить ≥30 с, поле порожнє, лист НЕ відправлено; Esc → текст у полі
+  (cursor_x=67, у кінці). На знімках лише низу екрана діалогу НЕ видно.
+- cc-cache-1 (раніше): лист дійшов (журнал seq 631, inbox/spliced next-turn), але копія
+  лишилась у полі з курсором на ПОЧАТКУ (cursor_x=0) — це не шлях Esc; як саме — НЕ
+  встановлено. Ctrl+U з курсором на початку не стирає нічого — брати Ctrl+K.
+РЕЦЕПТ: перед листом шукати на ВСЬОМУ екрані «Queue as follow-up»/«Question»/«working…»;
+після — перевірити доставку в журналі DSH (`user/message` з id листа) і порожнє поле.
+
+ЧОМУ DSH НЕ БАЧИТЬ /think: команда пише в журнал лише `command/run think low` →
+`command/done «Think: low…»` (16:22:53, видно тільки на екрані) і змінює параметр запиту
+(`request/header … "reasoningEffort": "low"`, 16:24:02; до того "high"); у розмову
+(`user/message`) нічого не потрапляє (grep «Think:»/«reasoningEffort» серед user/message — 0).
+Тому DSH кілька ходів писав «за тобою лишається /think low». Про такі зміни йому треба
+казати листом.
