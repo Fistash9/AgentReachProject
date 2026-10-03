@@ -45,6 +45,17 @@ import sys
 
 MAX_NODES = 6
 MAX_WORK = 3
+MAX_HOWTO = 1600  # 1600: щоб влазили всі три правила списку HOWTO_RULES (M11.1, 2026-10-03)
+HOWTO_RULES = ("check-content-not-titles",
+               "fix-root-cause-of-every-bug",
+               "read-dsh-channel-map-before-planning")
+MEM_PROJECT = "-data-data-com-termux-files-home-AgentReachProject"
+MEM_ENV = os.environ.get("CLAUDE_MEMORY_DIR")
+MEM_CANDIDATES = [MEM_ENV] if MEM_ENV else []
+MEM_CANDIDATES += [
+    "/data/data/com.termux/files/home/.claude/projects/" + MEM_PROJECT + "/memory",
+    os.path.expanduser("~/.claude/projects/" + MEM_PROJECT + "/memory"),
+]
 FOREIGN = "script-agent/output/"  # чужа тека, завжди поза git
 NODE = re.compile(r"^(\s*)- \[(.)\] (\S+)\s+(.*)$")
 OWNER = re.compile(r"\s@([\w-]+)\s*$")  # «@dsh» у кінці рядка вузла — чий він
@@ -116,6 +127,61 @@ def more(items, n):
     return f" (+{len(items) - n})" if len(items) > n else ""
 
 
+def mem_howto():
+    """Правило → (опис, рядок «How to apply») з memory-файлів (M11.1).
+
+    Читає лише ті файли, де є рядок «How to apply:»; будь-яка помилка —
+    мовчки (fail-open), як і решта хука.
+    """
+    out = {}
+    mem_dir = next((d for d in MEM_CANDIDATES if d and os.path.isdir(d)), None)
+    if mem_dir is None:
+        return out
+    for p in sorted(glob.glob(os.path.join(mem_dir, "*.md"))):
+        try:
+            txt = open(p, encoding="utf-8", errors="replace").read()
+        except Exception:
+            continue
+        lines = txt.split("\n")
+        apply_line = next((l.strip() for l in lines
+                           if l.startswith("How to apply:")), None)
+        if not apply_line:
+            continue  # правила без «як застосовувати» в контекст не вносимо
+        desc = next((l.strip()[len("description:"):].strip().strip('"')
+                     for l in lines if l.startswith("description:")), "")
+        out[os.path.basename(p)[:-3]] = (desc, apply_line)
+    return out
+
+
+def howto_section():
+    """Секція «Як застосовувати:» — короткий список правил, <= MAX_HOWTO симв.
+
+    Бере лише правила з HOWTO_RULES, у заданому порядку; відсутній файл або
+    файл без рядка «How to apply:» — пропускається. Якщо немає жодного —
+    повертає "".
+    """
+    mem = mem_howto()
+    picked = [(nm, mem[nm]) for nm in HOWTO_RULES if nm in mem]
+    if not picked:
+        return ""
+    head = "Як застосовувати:"
+    out, used = [head], len(head)
+    for nm, (_, apply_line) in picked:
+        line = "• " + nm + " — " + apply_line
+        if used + len(line) + 1 <= MAX_HOWTO:
+            out.append(line)
+            used += len(line) + 1
+            continue
+        room = MAX_HOWTO - used - 2 - len(nm) - 5  # -2: newline join + запас
+        if room >= 40:
+            cut = apply_line[:room]
+            if cut.endswith("…"):  # не подвоювати «…», якщо текст правила вже обірвано
+                cut = cut[:-1]
+            out.append("• " + nm + " — " + cut + "…")
+        break
+    return "\n".join(out)
+
+
 def main():
     # Мовчить лише в під-сесіях-помічниках deepseek-mcp: вони завжди мають
     # CLAUDE_CODE_EFFORT_LEVEL (env.js) і entrypoint sdk-cli (перевірено
@@ -130,6 +196,7 @@ def main():
     cwd = data.get("cwd") or os.getcwd()
     me = os.environ.get("BATON_AGENT") or "claude-code"
     work, waiting, queues, others, unowned = [], [], [], {}, []
+    hits = []  # активні вузли — для секції «Як застосовувати»
     for card in sorted(glob.glob(os.path.join(cwd, "trees", "*.md"))):
         try:
             title, nodes = parse(card)
@@ -154,6 +221,7 @@ def main():
                 if nxt:
                     line += f" (далі: {short(nxt['id'] + ' ' + nxt['name'], 40)})"
             work.append(line)
+            hits.append((path[-1]["id"], path))  # лише листок: батьки не тягнуть секцію
         waiting += [short(f"{n['id']} {n['name']}", 45) if start else n["id"]
                     for n in nodes if n["st"] == "?"]
         if start and paths:
@@ -163,6 +231,7 @@ def main():
                               + "; ".join(short(f"{n['id']} {n['name']}", 30)
                                           for n in q[:MAX_NODES]) + more(q, MAX_NODES))
 
+    hits = {nid: p for nid, p in hits}  # дедуп за id вузла (стабільно), не за id() обʼєкта
     out = []
     if work:
         out.append("В роботі: " + " | ".join(work[:MAX_WORK]) + more(work, MAX_WORK))
@@ -199,6 +268,10 @@ def main():
                            + "; ".join(short(f"{n['id']} {n['name']}", 30)
                                        for n in q[:MAX_NODES]))
         out.append(RULE)
+        if hits:  # немає активних вузлів — немає підстав вносити правила
+            howto = howto_section()
+            if howto:
+                out.append(howto)
     print(json.dumps({"hookSpecificOutput": {"hookEventName": event,
                                              "additionalContext": "\n".join(out)}},
                      ensure_ascii=False))
