@@ -439,5 +439,36 @@ KILL: якщо режим не зменшує вхід нижче ~21,6 тис. 
     порівняння з ручним аналізом у Claude Code
   evidence: —
 
+  примітка 2026-10-03 [claude-code]: ручний аналіз рілса Dd_pNketZNl
+    зроблено в Claude Code (yt-dlp → whisper small → transcript_stats → кадри
+    ffmpeg; кадри виправили «код»→«CLAUDE», 184k→188k) — матеріал для
+    «порівняння з ручним аналізом»; ANALYZER.md тепер вимагає звірки кадрів
+    у режимі Б (не закомічено). Файли: scratchpad сесії 3451e000.
+- [ ] T8 Аудит підрозділу DeepSeek: історія, цілі, поєднання, що вимкнути @claude-code
+  UP: користувач 2026-10-03 (Q4 у trees/yakist-roboty-agentiv.md): «булоб
+    добре зробити аудит цієї чатини проекту , там ще є діпсік на пряму , теж
+    цілі звірити історію і комбінувати у щось робоче а не потрібне вимкнути
+    і переписати»; рішення «Окремою сесією»
+  склад: delegate (BazaarLink, provider-switch), deepseek/deepseek-reply
+    (платно), прямий API (deepseek-search.py, deepseek-thinking-proxy.py,
+    claude-deepseek.sh, run-deepseek.sh), хуки (classify-task.sh і y/n-брама
+    delegator — глобальні; лічильник ціни; delegate-prompt-improver;
+    delegate-outcome-logger), скіли на ньому (verify-before-show, session-close
+    3.10), watch-deepseek, nvidia-live, verifier-backtest, DSH;
+    BACKLOG: keep-alive delegate, A/B переписувача, auto mode у DeepSeek,
+    provider-switch без bazaarlink, «чи покриває автоделегування платне»
+  done when: по кожному складнику — історія (перший коміт/запит користувача),
+    мета, замір ужитку (журнали), мета досягнута? → карта залежностей і
+    поєднань → рішення користувача раундами ≤4 → вимкнено/переписано з
+    .bak і перевіркою; classify-task і hook-test.log (3,97 МБ) — першими
+  з BACKLOG (без питання — входить у T8): claimcheck вибір сесії (BACKLOG:366,
+    дубль 03.10 позначено); Auto mode у DeepSeek-сесіях (:383); переписувач —
+    чи потрібен агенту deepseek (:269); пошук у тригерах delegate (:478);
+    provider-switch без bazaarlink (:491); keep-alive delegate ~39 с (:495);
+    «чи покриває автоделегування платне» (:203) — [claude-code, 2026-10-03]
+  діра (Q5, підсумок ask-проби 03.10): платний прямий DeepSeek через Bash
+    (deepseek-search.py, curl api.deepseek.com) — 94 виклики з 26.09 без замка;
+    рішення користувача «Відкласти в T8» — [claude-code, 2026-10-03]
+
 Поза деревом (черга рішень): замок на mcp__deepseek__deepseek-reply;
 «так» на формат картки.
