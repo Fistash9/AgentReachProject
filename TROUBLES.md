@@ -3972,3 +3972,10 @@ TAGS: dsh, tmux, лист, канал, proot, l2s, symlink, sandbox
 - Режим пісочниці DSH (`/permission danger-full-access`) НЕ зберігається між сесіями: профіль tui
   тримає лише reasoningEffort (agents/dsh/links-2026-10-03.md §2.2) → нова сесія DSH знову з
   workspace-write, де bash падає (SANDBOX_UNAVAILABLE); вводить користувач у вікні DSH.
+- ДОВЕДЕНО (2026-10-03 18:3x, одна мить): зовні Termux — `git status` → `T agents/dsh/start-load-2026-10-03.md`,
+  `stat` → symbolic link; ЗСЕРЕДИНИ proot — і `/data/data/com.termux/files/usr/bin/git`, і git Ubuntu →
+  порожньо, `stat` → regular file. Тобто з proot ярлик l2s не бачить ЖОДНА програма (навіть бінарник
+  Termux — він теж іде через переклад шляхів proot). Перевірку T робить лише той, хто ЗОВНІ proot
+  (claude-code / користувач у Termux); процедура DSH «перевіряю термінівським git» — не працює.
+  — [claude-code, 2026-10-03] (питання користувача «а це виправить щось чи це крок до виправлення»: крок —
+  діагноз; виправлення наявного ярлика — git checkout -- ззовні, тека DSH → рішення користувача)
