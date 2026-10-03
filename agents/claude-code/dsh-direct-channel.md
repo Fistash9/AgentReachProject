@@ -88,3 +88,5 @@ Termux; якщо зміниться — `tmux display -p '#{socket_path}'` з Te
   що класифікатор заблокував claude-code у вікні DSH: «Security Weaken»). Писати claude-code —
   лише через користувача або домовлені канали (8788, файли, baton), із захистом Z1.3.
 — [claude-code, 2026-10-03]
+- Мапа вікон tmux `work` (перевірено 2026-10-03, `tmux list-windows -t work`): 0=claude
+  (claude-code), 1=agent, 2=shell, 3=dsh. — [claude-code, 2026-10-03]
