@@ -3979,3 +3979,13 @@ TAGS: dsh, tmux, лист, канал, proot, l2s, symlink, sandbox
   (claude-code / користувач у Termux); процедура DSH «перевіряю термінівським git» — не працює.
   — [claude-code, 2026-10-03] (питання користувача «а це виправить щось чи це крок до виправлення»: крок —
   діагноз; виправлення наявного ярлика — git checkout -- ззовні, тека DSH → рішення користувача)
+- ПРИЧИНА ЯРЛИКІВ (2026-10-03, звірено claude-code і DSH): proot запущено з `--link2symlink`
+  (`ps`: «proot --kill-on-exit --link2symlink …»; `proot --help`: «Emulates hard links with symbolic
+  links when SELinux policies do not allow hard links»). Інструмент запису DSH створює НОВИЙ файл
+  атомарно: тимчасовий → `linkFile(tempPath, absolutePath)` (`dsh-fs-local/lib/index.js:551`),
+  існуючий — через `rename` (:559–561). Під proot це «жорстке посилання» стає ярликом на
+  `/.l2s/.l2s.<ім'я>.tmp0001…`. Ніхто його не прибирає: копії в `/.l2s` з 08.09, 83 МБ (du).
+  Не всі нові файли стають ярликами (з 5 звітів 03.10 — один) — чому, не встановлено; гіпотезу
+  «cp не створює» DSH відкликав. Лікування — `git checkout -- <файл>` ЗЗОВНІ (зсередини: audit
+  виправився, start-load — ні). У git-історії ярликів 0. Чистка `/.l2s` — окреме рішення
+  користувача (там і журнали сесій DSH). — [claude-code, 2026-10-03]
