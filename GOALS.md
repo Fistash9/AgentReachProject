@@ -29,3 +29,6 @@ tools/kb-map.py цей файл ще не індексує (хвіст).
 Зачатки: Z1.6 «спільний чат користувач + агенти» (trees/zvyazok-dvoh-agentiv.md:77),
 G3 «поставка → склад → кухня» (trees/derevo-i-golograma.md:165, trees/_inbox/).
 — [claude-code, 2026-10-03]
+Застереження: з 2026-10-03 Artifact у проєкті вимкнено ("enableArtifact": false у
+.claude/settings.local.json, M14). Пульт сторінкою claude.ai → спершу прибрати цей ключ.
+— [claude-code, 2026-10-03; рішення користувача «Так, у проєкт»]
