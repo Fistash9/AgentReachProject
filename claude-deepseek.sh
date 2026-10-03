@@ -52,6 +52,11 @@ export CLAUDE_CODE_DISABLE_TERMINAL_TITLE=1
 # Раніше тут стояв DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1: попередження не
 # прибирав, а автокомпакт вимикав (TROUBLES «Прапорець вікна…», env-vars.md:269).
 export CLAUDE_CODE_MAX_CONTEXT_TOKENS=1000000
+# Інструменти підвантажувати на вимогу (ToolSearch), а не всі наперед: на не-первинній
+# адресі Claude Code вантажить їх усі (env-vars.md:141). Виміряно 2026-10-03: 54 → 12
+# інструментів, схеми 86 702 → 26 869 симв.; виклик прихованого MCP через DeepSeek
+# пройшов (HTTP 200). Рішення користувача 2026-10-03 (M3.1 п.17). Вимкнути — видалити рядок.
+export ENABLE_TOOL_SEARCH=true
 
 cd ~/AgentReachProject
 # без exec: інакше trap не спрацює і проксі лишиться висіти після виходу
