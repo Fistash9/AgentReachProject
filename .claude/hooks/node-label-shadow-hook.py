@@ -20,9 +20,12 @@ import re
 import sys
 
 ROOT = "/data/data/com.termux/files/home/AgentReachProject"
-LOG = os.path.join(ROOT, ".claude", "logs", "node-label-shadow.jsonl")
+LOG = os.environ.get("NODE_LABEL_SHADOW_LOG") or os.path.join(
+    ROOT, ".claude", "logs", "node-label-shadow.jsonl")  # env — для тестів (DSH cc-nodeids-2)
+LOG_MAX = 512 * 1024  # більше — переносимо в .1 (ротація)
+TAIL = 65536          # читаємо лише хвіст журналу сесії, не весь (DSH cc-nodeids-2)
 ID = r"\*{0,2}([TQGMZ]\d+(?:\.\d+)*)\*{0,2}"
-AFTER = re.compile(ID + r"\s*(?:—|-|:)\s*([^.;|\n«»()]{3,60})")
+AFTER = re.compile(ID + r"\s*—\s*(?![*\-–—:,(\[`])([^.;|\n«»()]{3,60})")
 QUOTE = re.compile(ID + r"\s*\(?«([^»]{3,60})»")
 BEFORE = re.compile(r"([\wʼ'-]+(?:\s+[\wʼ'-]+){1,4})\s*\(" + ID + r"\)")
 STOP = set("це для що як або вже ще так ні не на в у з із до від по за the and".split())
@@ -62,8 +65,15 @@ def check(text, idx):
 
 def last_text(path):
     texts = []
-    for line in open(path, encoding="utf-8"):
-        d = json.loads(line)
+    with open(path, "rb") as f:
+        f.seek(0, 2)
+        f.seek(max(0, f.tell() - TAIL))
+        lines = f.read().decode("utf-8", "ignore").splitlines()[1:]
+    for line in lines:
+        try:
+            d = json.loads(line)
+        except ValueError:
+            continue
         if d.get("type") == "user" and isinstance(d["message"]["content"], str):
             texts = []
         if d.get("type") == "assistant":
@@ -95,12 +105,15 @@ def main():
     if not tp or not os.path.isfile(tp):
         return
     hits = check(last_text(tp), load_index())
-    if hits:
-        os.makedirs(os.path.dirname(LOG), exist_ok=True)
-        with open(LOG, "a", encoding="utf-8") as f:
-            f.write(json.dumps({"t": datetime.datetime.now().isoformat(timespec="seconds"),
-                                "session": data.get("session_id"), "hits": hits},
-                               ensure_ascii=False) + "\n")
+    # Рядок на КОЖЕН запуск (і з hits: []): порожній лог інакше не відрізнити від
+    # зламаного хука (DSH cc-nodeids-2, «fail-loud»).
+    os.makedirs(os.path.dirname(LOG), exist_ok=True)
+    if os.path.isfile(LOG) and os.path.getsize(LOG) > LOG_MAX:
+        os.replace(LOG, LOG + ".1")
+    with open(LOG, "a", encoding="utf-8") as f:
+        f.write(json.dumps({"t": datetime.datetime.now().isoformat(timespec="seconds"),
+                            "session": data.get("session_id"), "runs": 1, "hits": hits},
+                           ensure_ascii=False) + "\n")
 
 
 if __name__ == "__main__":

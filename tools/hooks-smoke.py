@@ -2,7 +2,8 @@
 """Перевірка підключених хуків на відомих входах (Q9, 2026-10-06).
 
 Навіщо: хуки fail-open (`except Exception: pass`) — зламаний хук мовчить, а
-тестів хуків не було. «Не впав» тут нічого не доводить, тому кожен випадок
+тести були лише на один хук (.claude/hooks/tests/, request-brief, 2026-09-23 —
+їх запускаємо теж). «Не впав» тут нічого не доводить, тому кожен випадок
 перевіряє ОЧІКУВАНУ відповідь (підказка / блок / тиша). Команди беруться з
 живих налаштувань (.claude/settings.local.json, ~/.claude/settings.json) —
 битий шлях теж ловиться.
@@ -107,6 +108,11 @@ def main():
          lambda rc, o, e: ("В роботі" in ctx(o)[0] or "Жоден" in ctx(o)[0]) and len(ctx(o)[0]) < 600,
          "короткий рядок фокусу (<600 симв.)"),
         ("node-label-shadow (бектест)", None, None, None, None, None, None, "1 розбіжність на «T5 — скіл пошуку»"),
+        ("node-label-shadow наживо (тимч. лог)", "Stop", "node-label-shadow-hook.py", None,
+         {**base, "hook_event_name": "Stop"}, {"NODE_LABEL_SHADOW_LOG": os.path.join(tmp, "shadow.jsonl")},
+         lambda rc, o, e: rc == 0 and '"runs": 1' in open(os.path.join(tmp, "shadow.jsonl")).read()
+         and '"T5"' in open(os.path.join(tmp, "shadow.jsonl")).read(),
+         "рядок з runs і T5 у тимчасовому лозі (робочий не чіпається)"),
         ("unlazy Stop", "Stop", "stop-hook.mjs", None,
          {**base, "hook_event_name": "Stop", "stop_hook_active": True}, None,
          lambda rc, o, e: rc == 0, "код 0 при stop_hook_active"),
@@ -209,6 +215,16 @@ def main():
         bad += state != "ok"
         label = files[-1].split("/")[-1] if files else cmd[:40]
         rows.append((mark, f"{ev} {mt} {label}", f"не ганяється: {why}", state))
+
+    # Наявні тести хуків (.claude/hooks/tests/*.mjs, 2026-09-23) — одна точка перевірки.
+    tdir = os.path.join(ROOT, ".claude", "hooks", "tests")
+    for t in sorted(os.listdir(tdir)) if os.path.isdir(tdir) else []:
+        if t.endswith(".mjs"):
+            r = subprocess.run(["node", os.path.join(tdir, t)], capture_output=True, text=True, cwd=ROOT)
+            good = r.returncode == 0
+            bad += not good
+            rows.append(("✅" if good else "❌", f"тест {t}", "код 0",
+                         f"код {r.returncode}" + ("" if good else f": {(r.stderr or r.stdout).strip()[:150]}")))
 
     for r in rows:
         print(f"{r[0]} {r[1]} — очікую: {r[2]} — {r[3]}")
