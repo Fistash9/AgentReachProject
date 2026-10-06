@@ -69,6 +69,18 @@ def short(s, n):
     return s if len(s) <= n else s[:n - 1] + "…"
 
 
+NAME_CAP = 120  # 2026-10-06: обрізана назва («T5 Зошит і куратор: перший ур…»)
+# виглядала як зміст — агент сплутав T5 зі «скілом пошуку». Тепер повна назва
+# до 120 симв.; довша — з явною позначкою (план claude-code + DSH, cc-nodeids-1).
+
+
+def label(n):
+    s = f"{n['id']} {n['name']}"
+    if len(s) <= NAME_CAP:
+        return s
+    return s[:NAME_CAP].rsplit(" ", 1)[0] + " …(обрізано — відкрий вузол)"
+
+
 def parse(path):
     lines = open(path, encoding="utf-8").read().split("\n")
     title = next((l[2:].strip() for l in lines if l.startswith("# ")),
@@ -214,21 +226,21 @@ def main():
             # кожне повідомлення — лише ID (бюджет M4: ≤3–4 тис. ток./сесію);
             # повні назви — на SessionStart
             line = f"{title} › " + " › ".join(
-                short(f"{n['id']} {n['name']}", 40) if start else n["id"]
+                label(n) if start else n["id"]
                 for n in path)
             if start:
                 nxt = next_node(nodes, i)
                 if nxt:
-                    line += f" (далі: {short(nxt['id'] + ' ' + nxt['name'], 40)})"
+                    line += f" (далі: {label(nxt)})"
             work.append(line)
             hits.append((path[-1]["id"], path))  # лише листок: батьки не тягнуть секцію
-        waiting += [short(f"{n['id']} {n['name']}", 45) if start else n["id"]
+        waiting += [label(n) if start else n["id"]
                     for n in nodes if n["st"] == "?"]
         if start and paths:
             q = [n for n in nodes if n["st"] == " " and n["depth"] == 0]
             if q:
                 queues.append(f"Черга «{title}» ({os.path.relpath(card, cwd)}): "
-                              + "; ".join(short(f"{n['id']} {n['name']}", 30)
+                              + "; ".join(label(n)
                                           for n in q[:MAX_NODES]) + more(q, MAX_NODES))
 
     hits = {nid: p for nid, p in hits}  # дедуп за id вузла (стабільно), не за id() обʼєкта
@@ -265,10 +277,10 @@ def main():
                 title, nodes = parse(os.path.join(cwd, rel))
                 q = [n for n in nodes if n["st"] == " " and n["depth"] == 0]
                 out.append(f"Остання активна картка: {title} ({rel}): "
-                           + "; ".join(short(f"{n['id']} {n['name']}", 30)
+                           + "; ".join(label(n)
                                        for n in q[:MAX_NODES]))
         out.append(RULE)
-        if hits:  # немає активних вузлів — немає підстав вносити правила
+        if True:  # 2026-10-06: правила — завжди на старті, не лише з [>] (DSH, cc-nodeids-1)
             howto = howto_section()
             if howto:
                 out.append(howto)
