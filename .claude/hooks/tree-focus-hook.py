@@ -280,6 +280,8 @@ def main():
                            + "; ".join(label(n)
                                        for n in q[:MAX_NODES]))
         out.append(RULE)
+        out.append("Назва вузла — з джерела, не з цього списку: "
+                   "python3 tools/trees-index.py <ID> (рекурсивно, файл:ID).")
         if True:  # 2026-10-06: правила — завжди на старті, не лише з [>] (DSH, cc-nodeids-1)
             howto = howto_section()
             if howto:
