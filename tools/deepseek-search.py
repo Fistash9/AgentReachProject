@@ -61,6 +61,22 @@ SYSTEM = """Ти — пошуковий дослідник. Знайди від�
 Чого не знайшов → Червоні прапорці → [не перевірено].
 Даних немає — скажи, що не знаєш, не вгадуй."""
 
+# Тариф flash, $ за 1M токенів, off-peak (api-docs.deepseek.com/quick_start/
+# pricing, 2026-10-06); пік (будні 01–04 і 06–10 UTC) — ×2; китайські свята
+# не враховано. Ціна самих пошуків на сторінці не вказана — не рахується.
+PRICE = {"hit": 0.003, "miss": 0.15, "out": 0.60}
+
+
+def cost(u):
+    g = time.gmtime()
+    peak = g.tm_wday < 5 and (1 <= g.tm_hour < 4 or 6 <= g.tm_hour < 10)
+    k = 2 if peak else 1
+    usd = k * ((u.get("input_tokens") or 0) * PRICE["miss"]
+               + (u.get("cache_read_input_tokens") or 0) * PRICE["hit"]
+               + (u.get("output_tokens") or 0) * PRICE["out"]) / 1e6
+    return usd, peak
+
+
 CHUNK_TIMEOUT = 600   # тиша між шматками потоку
 TOTAL_TIMEOUT = 900   # весь виклик
 
@@ -201,6 +217,12 @@ def main():
     print(f"\n== Розмова: {sid} | вх {u.get('input_tokens')} "
           f"(з кешу {u.get('cache_read_input_tokens', 0)}) | вих {u.get('output_tokens')} "
           f"| пошуків {stu.get('web_search_requests', '?')}")
+    usd, peak = cost(u)
+    print(f"== Ціна ≈${usd:.4f} ({'пік' if peak else 'не пік'}; без вартості пошуків)")
+    n = stu.get("web_search_requests")
+    if isinstance(n, int) and n > a.uses:
+        print(f"УВАГА: пошуків {n} при --uses {a.uses} — сервер ліміт не тримає.",
+              file=sys.stderr)
     if not answer:
         sys.exit(1)
 
