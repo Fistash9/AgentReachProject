@@ -4047,3 +4047,20 @@ TAGS: export, transcript, review, deepseek, jsonl, queued_command, session-expor
   самим записом; файли не зачеплено (git diff). Після обриву — одразу назвати збій
   користувачу, а не лише «де зупинився».
 — [claude-code, 2026-10-06]
+
+## Перевірка ключів перед комітом: git pre-commit + tools/secret-scan.py (2026-10-06)
+TAGS: git, секрет, API-ключ, pre-commit, secret-scan, agent.py, ECC
+Запит: ідея з ECC, вибір користувача «Перевірка ключа в коміті» (BACKLOG «ECC: 6 ідей», п.1).
+- Діра: git-add-status-hook бачить лише текст команди git add → ловить назву agent.py,
+  але не ключ у вмісті іншого файлу і не `git add .`.
+- Рішення: .git/hooks/pre-commit (поза git! один рядок) → tools/secret-scan.py: додані рядки
+  `git diff --cached` проти точних значень наших ключів (agent.py, .env) і шаблонів sk-/ghp_/
+  AKIA/nvapi-/AIza. Обхід свідомо: `git commit --no-verify`.
+- Граблі: шаблон `sk-…` без межі слова ловив «ask-questions-one-at-a-time-plainly» → потрібне
+  (?<![A-Za-z0-9]). Після цього історія: 393 коміти — 0 спрацювань; справжніх ключів
+  (agent.py + 3 з .env) в історії — 0.
+- Тест (тимчасовий репозиторій): звичайний коміт — проходить; «ask-questions…» — проходить;
+  чужий sk- — блок, код 1; наш ключ з .env — блок, код 1; --no-verify — проходить.
+- Хук у .git/hooks не версіонується: у новому клоні поставити знову (команда — рядок вище).
+  Чи спрацьовує в DSH (proot) — не перевірено.
+— [claude-code, 2026-10-06]
