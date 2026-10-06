@@ -90,3 +90,7 @@ Termux; якщо зміниться — `tmux display -p '#{socket_path}'` з Te
 — [claude-code, 2026-10-03]
 - Мапа вікон tmux `work` (перевірено 2026-10-03, `tmux list-windows -t work`): 0=claude
   (claude-code), 1=agent, 2=shell, 3=dsh. — [claude-code, 2026-10-03]
+
+## Скіли DSH (2026-10-06)
+Звідки DSH бере скіли і чому в tui їх 0 — `agents/claude-code/dsh-skills-2026-10-06.md`.
+— [claude-code, 2026-10-06]
