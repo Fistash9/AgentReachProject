@@ -62,6 +62,12 @@ tree-focus читає [ ] згори вниз). Нове питання → ву
       `SIGSYS`; у pkg немає (TROUBLES «Beads на Termux…»). Далі: план
       механізму з прикладами → «так» → проба з критеріями
     [?] чекає: перевірка SessionStart наживо в новій сесії (Opus і DeepSeek)
+    evidence Opus 2026-10-07 (сесія d10f5cd0): SessionStart показав «В роботі» з рівнями
+      (Ідея › G2, Якість › Q3/Q4 (+3)), черги 4 дерев і інструкцію «після відповіді
+      покажи чергу» ✓. DeepSeek — не перевірено. Але правила дерева я сам не виконав:
+      черги після відповідей не показував, вузли Q4.1/Q4.2 взяв без [>] (виправлено
+      пізніше), [>] водночас 6 (G2, Q3, Q4, Q5, Q9, Z1), .claude/active-tree вказує на
+      цю картку, а робота йшла в yakist-roboty-agentiv.md. — [claude-code, 2026-10-07]
   - [x] M4.5 Хук tree-focus мовчить у DeepSeek-сесіях (tree-focus-hook.py:31)
     evidence: fac9beb (код: tree-focus-hook.py:119-122 — мовчить лише в
       помічниках deepseek-mcp; claude-deepseek.sh знімає effort) + наживо
