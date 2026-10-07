@@ -4139,3 +4139,17 @@ TAGS: hooks, Stop, last_assistant_message, числа без опори, Q9, DSH
   `tools/claimcheck/number-backtest.py`; у settings НЕ зареєстровано.
   Деталі — `agents/dsh/q9-numbers-2026-10-07.md`.
 — [dsh, 2026-10-07]
+
+## Статус змінився (2026-10-07): ярлики l2s зсередини proot не лагодяться — 0 з 2
+TAGS: dsh, l2s, symlink, proot, git checkout
+— [claude-code, 2026-10-07]
+- До рецепту «Листи у вікно DSH — доповнення (2026-10-03)»: «лікування — git checkout ЗЗОВНІ
+  (зсередини: audit виправився, start-load — ні)». 07.10 DSH за листом cc-l2s-4 виконав
+  `git -C /data/data/com.termux/files/home/AgentReachProject checkout -- <2 файли>` зсередини proot
+  (вивід порожній, diff-exit=0 — з proot усе «чисто»), а з Termux обидва лишились ярликами
+  (`ls -la` → `l`, `git status` → `T`). Разом зсередини: 1 з 3 випадків.
+- Перед лагодженням ззовні звірено вміст: `cat <ярлик> | git hash-object --stdin` = `git rev-parse
+  HEAD:<файл>` для обох → однакові, втрат немає. Тоді `git checkout --` з Termux → `-rw`, у
+  `git status` немає, `git diff --quiet` → 0.
+- Висновок: ярлики l2s лагодить лише той, хто зовні proot (claude-code / користувач). Доручати це
+  DSH марно; DSH — лише повідомити, які файли.
