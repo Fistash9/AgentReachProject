@@ -576,12 +576,16 @@ def collect_dsh(dsh_dir: str) -> dict:
         raise SystemExit(f"Немає сесій DSH у {dsh_dir}")
 
     sessions = []
+    # ⚠️ 2026-10-08: словник ОДИН на всі файли. Раніше він створювався всередині
+    # циклу (per-file), тому seeded-форки (isSeeded, seedLength) рахували копії
+    # повідомлень батька ще раз -- переоцінка на 2548 повідомлень і +58.8 % ціни
+    # ($8.67 -> $5.46 станом на 08.10). Доказ і деталі: TROUBLES.md 2026-10-08.
+    seen_ids = set()
     for path in files:
         sid = os.path.basename(os.path.dirname(path))
         origin = None
         parent = None
         cwd = None
-        seen_ids = set()
         n_records = 0
         n_dup = 0
         tok = defaultdict(int)
