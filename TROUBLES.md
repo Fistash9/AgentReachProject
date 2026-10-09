@@ -4301,3 +4301,33 @@ TAGS: instagram, рілс, скіл, llm-council, під-агенти, ціна
   замінено дослівно на текст PR #5 (beb8bad, nikolaandrejic23-pixel): «The verdict format matters…
   don't generate an HTML report or any files». diff з оригіналом — лише цей рядок. Відхід від
   файла репозиторію — за рішенням користувача. — [claude-code, 2026-10-09]
+
+## install-check-hook: нагадування перед встановленням стороннього (2026-10-09)
+TAGS: hooks, скіл, mcp, плагін, встановлення, install-check
+Запит: «як ти міг встановити не перевіривши?» → рішення користувача «А + Б, хук нагадує».
+- Що: .claude/hooks/install-check-hook.py (PreToolUse, Bash|Write, НЕ блокує, раз на ціль за
+  сесію, лог .claude/logs/install-check.log). Правило — RULES.md «Перед ВСТАНОВЛЕННЯМ».
+- Перевірено: 13 імітацій входу — 13 як очікувано (5 спрацювань: mkdir+cp, git clone у ~/.claude/
+  skills, claude mcp add, claude plugin install, Write нового скіла; тиша: ls/cat/grep/git add,
+  правка наявного скіла, heredoc-текст, повтор). Живий тест: `true || mkdir -p .claude/skills/_probe…`
+  → нагадування прийшло в тій же сесії, тека не створилась. settings бекап:
+  .claude/settings.local.json.bak-20261009-installcheck.
+- Межі: скрипт python/node, що пише в skills, не видно з рядка команди; встановлення через
+  /plugin у TUI — не перевірено, чи йде через Bash.
+— [claude-code, 2026-10-09]
+- Статус змінився (2026-10-09): «не перевірено» з запису вище — перевірено (користувач: «перевір те
+  що не перевірене, як можна зберегти не перевіривши?»; та сама помилка, що й зі скілом).
+  (1) Запис зі скрипта (python3 -c / node -e) — підтвердилось, хук мовчав → додано SCRIPTS +
+  ознаки запису. (2) Знайдено 2 хибні спрацювання, яких 13 перших імітацій не мали: `claude mcp add
+  --help` і `echo '{…cp … .claude/skills…}'` (розбиття по && ігнорувало лапки) → розбір через shlex,
+  пропуск --help/-h. (3) Підкоманди з `claude plugin --help`: install|i, update, marketplace add —
+  додано; mcp add-json/add-from-claude-desktop — додано. (4) /plugin у вікні: PreToolUse — «Before a
+  tool call executes» (code.claude.com/docs/en/hooks); /plugin набирає користувач, агент ставить
+  плагін лише через `claude plugin install` у Bash — його хук ловить. (5) pkgtruth 0.2.2: лише
+  пакетні менеджери (npm/pnpm/yarn/bun/deno/pip/uv); cp у skills і `claude plugin install` → exit 0
+  мовчки; не перетинається. Напряму `pkgtruth` не запускається (bad interpreter, той самий shebang-
+  баг), у settings викликається через node — працює (`npm i crossenv` → deny).
+  Тест: .claude/hooks/tests/check-install-check.py — 27/27, INSTALL_CHECK_OK, лог не забруднює.
+  Живі проби: лапки → тиша; `true || claude plugin i zzz-probe` → спрацював.
+  Лишається межа: інсталятор-скрипт без ознак запису в рядку команди (напр. `python3 x.py`
+  з шляхом усередині файлу) не видно. — [claude-code, 2026-10-09]
