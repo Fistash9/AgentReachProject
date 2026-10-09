@@ -4331,3 +4331,19 @@ TAGS: hooks, скіл, mcp, плагін, встановлення, install-chec
   Живі проби: лапки → тиша; `true || claude plugin i zzz-probe` → спрацював.
   Лишається межа: інсталятор-скрипт без ознак запису в рядку команди (напр. `python3 x.py`
   з шляхом усередині файлу) не видно. — [claude-code, 2026-10-09]
+
+## run-deepseek.sh: ENABLE_TOOL_SEARCH для під-сесій інструмента deepseek (2026-10-09)
+TAGS: deepseek-mcp, run-deepseek.sh, ENABLE_TOOL_SEARCH, env, підставний бінарник
+Запит: baton-diff #25→#27 п.4 «ENABLE_TOOL_SEARCH у run-deepseek.sh» → рішення користувача «зробити зараз».
+- Що: рядок `export ENABLE_TOOL_SEARCH=true` у run-deepseek.sh (як у claude-deepseek.sh, e94cbd9:
+  54 → 12 інструментів). deepseek-mcp 0.1.0 передає під-сесії все env сервера, крім 9 ключів
+  ANTHROPIC_*/CLAUDE_CODE_* (dist/env.js:26–30).
+- Перевірка без плати (рецепт): DEEPSEEK_MCP_CLAUDE_BIN=<скрипт, що пише env у файл і друкує
+  {"type":"result",…}> + JSON-RPC initialize → tools/call deepseek у stdin run-deepseek.sh →
+  у файлі ENABLE_TOOL_SEARCH=true, ANTHROPIC_BASE_URL=…deepseek…, ключ є (сам ключ не друкувати).
+- Діє лише після перезапуску MCP-сервера deepseek (/mcp → reconnect або нова сесія).
+- Не перевірено: живий платний виклик deepseek з цим env (stream-json, v4-pro за замовчуванням);
+  e94cbd9 перевіряв той самий env на claude -p через DeepSeek — HTTP 200.
+- Помічено, не змінено: run-deepseek.sh досі має CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1,
+  який у claude-deepseek.sh прибрали, бо вимикав автокомпакт (TROUBLES «Прапорець вікна…»).
+— [claude-code, 2026-10-09]
