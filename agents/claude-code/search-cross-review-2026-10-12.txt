@@ -1,0 +1,177 @@
+deepseek-search: перший шматок 0.6 с, усе 60.5 с
+УВАГА: пошуків 8 при --uses 4 — сервер ліміт не тримає.
+# Взаємна перевірка коду двома AI-агентами різних моделей: інструменти, виміри, межі
+
+## Коротка відповідь
+
+Так, це вже сформований робочий патерн, і він має три шари:
+
+1. **Плагіни/MCP-сервери до Claude Code та інших CLI** — десятки проєктів, які дають одному агенту «запитати другу модель» або збудувати багатомодельну раду (cross-review, ai-jury, MMAR, ask-llm, deliberation-mcp, amicus, dsh-review тощо). Це переважно **саморобні або одноосібні проєкти** з MIT-ліцензією, часто мало зірок, і всі вони **декларують** користь, але майже ніхто не міряє її проти бейзлайну.
+2. **Академічні виміри** — найтвердіший результат зараз: benchmark **c-CRAB** (оцінює рев'ю не за схожістю тексту, а за тим, чи виправляє код тест: найкращий одиничний інструмент — Claude Code, 32.1%; об'єднання 4 інструментів — 41.5%). Плюс велике польове дослідження CodeRabbit (приймається ~36% коментарів, 43.3% відмов — хибні спрацювання).
+3. **Теоретичне обґрунтування** — різні сімейства моделей мають «корельовані сліпі зони»; перевірка своїм же сімейством схильна до самопідтвердження (це прямо фіксують і дослідження, і автори інструментів).
+
+**Головний висновок (мій):** «одна пише — інша перевіряє і запускає тести» реально працює як **фільтр хибних спрацювань** і як **друга думка на високоризикових змінах**, але поки що **не має жодного незалежного A/B-доказу**, що мультимодельність краща за «просто попросити ту саму модель перевірити ще раз». Це визнають навіть автори таких інструментів.
+
+---
+
+## Докази
+
+### А. Готові інструменти (першоджерела — репозиторії/реєстри)
+
+| # | Твердження | Мітка | URL · цитата |
+|---|---|---|---|
+| A1 | Існує MCP-сервер, що оркеструє перевірку між Claude, Codex, Gemini, **DeepSeek**, Grok, Perplexity із «порогом одноголосного сходження» | [першоджерело] (README, самозвіт) | github.com/LCV-Ideas-Software/cross-review — «`cross-review` … orchestrates provider API clients (OpenAI/Codex, Anthropic/Claude, Google Gemini, DeepSeek, xAI/Grok, and Perplexity)… with unanimous convergence gates» |
+| A2 | Є воркфлоу для Claude Code, де три сімейства моделей голосують на кожному «гейті» (план/реалізація/багфікс) | [першоджерело] | github.com/99xAgency/GodModeSkill — «Multi-LLM cross-review workflow for Claude Code. /work orchestrates plan/implement/bug-fix with 3 different model families voting on every gate» |
+| A3 | Є «суд присяжних» для рев'ю: незалежні рев'ю → анонімне крос-рев'ю → рішення головуючого; з **обов'язковим крос-вендорним гейтом** | [першоджерело] | github.com/berkayturanci/ai-jury — «Min_vendors — Distinct vendors that must have contributed a review before the run counts as cross-vendor consensus. Ships at 2: fewer, and the run exits 3»; «The chair re-judges each candidate finding against the code to drop false positives» |
+| A4 | Є «пакетний мультиагентний змагальний рев'ю» для **DeepSeek Harness**: паралельні рев'юери, потім окремий верифікатор **на кожне** знахідку, чия задача — її спростувати | [першоджерело] (README) | github.com/Viger1/dsh-review — «Verify adversarially — every finding gets its own verifier whose job is to refute it… default to "not real" when the evidence is ambiguous» |
+| A5 | Той же dsh-review публікує **конкретні виміри** на своїх сусідніх плагінах | [першоджерело] (самозвіт) | dsh-review — «73 agents, 49 confirmed findings, 14 refuted. Two of the confirmed ones were only established because a verifier wrote a script and reproduced the failure» |
+| A6 | Той же автор **відкрито визнає**, що його метод не порівнювався з бейзлайном | [першоджерело] | dsh-review — «What has **not** been measured is whether it beats simply asking the model to review the same diff: no A/B, no false-positive rate against a baseline» |
+| A7 | Є проєкт, що поєднує одномодельний (PAR) і **мультимодельний (MMAR)** змагальний рев'ю з **крос-критикою** між моделями + набір eval-фікстур | [першоджерело] | github.com/prime-radiant-inc/parallel-adversarial-review — «Stage 1: parallel reviews… Stage 2: cross-critique (each CLI verifies other CLIs' findings)… Stage 3: synthesis»; «Pass thresholds: recall ≥ 0.8, precision ≥ 0.7» |
+| A8 | Той же проєкт документує, навіщо потрібна саме крос-модель | [першоджерело] | Там же — «A three-stage pipeline that uses multiple installed coding-agent CLIs as independent reviewers, then runs a cross-critique grid where each reviewer evaluates the others' findings (catching hallucinations and severity inflation)» |
+| A9 | Існує **офіційний від OpenAI** плагін `codex-plugin-cc`, від якого роблять community-порти | [першоджерело] (згадка в README порту) | github.com/ghiaog123/opencode-plugin-cc — «A community port of `openai/codex-plugin-cc` that drives your local `opencode` CLI instead of Codex. Not affiliated with OpenAI, Anthropic, or the opencode project» |
+| A10 | Патерн «review + adversarial-review» як окремі команди всередині Claude Code | [першоджерело] | Там же — «`/opencode:review` — Read-only review… `/opencode:adversarial-review` — Same, but the prompt attacks the design: tradeoffs, assumptions, failure modes» |
+| A11 | Є MCP-міст, що дає Claude Code «другу думку» від Codex/Gemini/Grok/Ollama з **4-фазним конвеєром валідації** знахідок | [першоджерело] | github.com/Lykhoyda/ask-llm — «Review agents follow a 4-phase pipeline inspired by Anthropic's code-review plugin: context gathering, prompt construction with explicit false-positive exclusions, synthesis, and source-level validation of each finding» |
+| A12 | Є «рада» з **детермінованим підрахунком** голосів і незалежним головуючим, який не є Claude; запускається headless у CI | [першоджерело] | npm пакет `amicus` — «Stage-1 reviews → anonymized cross-review → deterministic tally → non-Claude chair verdict… So the verdict stays independent. Claude is judged but never votes or chairs» |
+| A13 | Є MCP-сервер консенсусу з «сліпим» голосуванням, де оркестратор не може сам собі підтвердити рішення | [першоджерело] | npm `@antonbabenko/deliberation-mcp` — «The orchestrator commits a blind verdict before seeing the panel, cannot reach consensus on its own vote alone (at least one external must approve)» |
+| A14 | Є _roadmap_-версії «ради» з **алгоритмічним підрахунком** голосів і **незалежним** (не-Claude) головуючим, включно з **дебатами** | [першоджерело] | Там же — «consensus — run the full multi-round convergence loop with a provider arbiter (blind pass + peer review -> adjudicate -> revise)» |
+| A15 | Окремий інструмент для **критичного** коду з «запобіжником» на катастрофічні знахідки | [першоджерело] | pypi.org/project/kuang — «a human-in-the-loop adversarial review panel for mission-critical code… a ruin-class circuit-breaker that stops the moment a survivability-threatening ("UGLY") finding appears» |
+| A16 | Є інструмент, який **фіксує метрику прийнятності коментаря** через поведінковий сигнал | [третя сторона] (розбір статті ByteDance) | cloud.tencent.com.cn/developer/article/2748614 — «Outdated Rate：被标记代码行后续是否被改——用行为信号代替人工标 precision» |
+
+### Б. Виміри результатів (що знайшли дослідження)
+
+| # | Твердження | Мітка | Дата · URL · цитата |
+|---|---|---|---|
+| B1 | Створено benchmark **c-CRAB**, де рев'ю зараховується лише якщо дія за цим рев'ю **проходить виконуваний тест** | [першоджерело] у переказі | arXiv:2603.23448 (цитовано) — «A review comment counts as correct if acting on it produces a behaviourally correct fix that makes the test pass» |
+| B2 | Результати c-CRAB: Claude Code 32.1%, Devin 24.8%, PR-Agent 23.1%, Codex 20.1%, **об'єднання 41.5%** | [не перевірено] (числа з блогу-переказу, саму статтю не відкривав) | orcarouter.ai/blog/code-review-agent-benchmark — «Claude Code — 32.1% … Union of all four — 41.5%» |
+| B3 | Пряме застереження: 41.5% — це **unіon** чотирьох інструментів, а не оцінка жодного з них | [першоджерело] у переказі | Там же — «41.5% figure — 97 of the 234 tests passed by at least one tool — is a union across all four reviewers: a test counts once if any agent passed it. No single agent scored 41.5%» |
+| B4 | Обсяг коментарів не корелює з користю: 7.3 коментаря на PR дають менший виграш, ніж можна очікувати | [не перевірено] | Там же — «roughly five times the comments buys well under double the pass rate» |
+| B5 | Польове дослідження CodeRabbit: 239 репозиторіїв, 10 191 PR, 31 073 пари «рев'ю—фідбек»; прийнято 36.4%, відхилено 56.3%, з них **43.3% — хибні спрацювання** | [третя сторона] (китайський аналітичний огляд) | cloud.tencent.com.cn/developer/article/2748614 (про arXiv:2607.03316) — «接受 36.4%… 拒绝 56.3%… AI 本身错（58.0%）：假阳性 43.3%（最大头）」 |
+| B6 | Маленький фільтр-модель як «передній гейт» перевершує велику модель у відсіюванні поганих коментарів | [третя сторона] | Там же — «Qwen3-4B + diff 输入，F1=76%，远超 70B 直接提示的 64%» |
+| B7 | Промислове впровадження ByteDance (FSE 2025): 219 правил, другорядний LLM-фільтр, пікова точність 75.0% | [третя сторона] | Там же — «ReviewFilter：第二个 LLM 做二次校验，Conclusion-First 模式峰值精度 75.0%» |
+| B8 | LLM-рев'ю має «помірну» точність; повністю автоматичний процес ненадійний, рекомендовано human-in-the-loop | [першоджерело] (цитата з arXiv) | arxiv.org/html/2505.20206v1 — «The results indicated that the LLM's assessments had moderate accuracy… a fully automated code review process may be unreliable. We suggested a hybrid process combining human involvement and LLMs» |
+| B9 | Навіть при мінімізованій температурі відповіді LLM-рев'ю варіюються → проблема відтворюваності | [третя сторона] (Semantic Scholar) | arXiv:2502.20747 — «even with temperature minimized, LLM responses varied to different degrees, highlighting the need for caution when using LLM-generated code reviews to make real-world decisions» |
+| B10 | Незалежне підтвердження ідеї «філософських диспозицій» як фрейму рев'ю: 51% знахідок відсутні в генеричному виводі тієї ж моделі | [першоджерело] (препрінт, self-validation від автора) | arXiv:2605.23108 — «51% of disposition findings are absent from the same model's generic output»; «No findings were judged false-positive by the author (though independent validation is needed)» |
+
+### В. Межі та ризики
+
+| # | Твердження | Мітка | URL · цитата |
+|---|---|---|---|
+| C1 | Контекст/reputational «фреймінг» у метаданих PR **знижує** здатність ACR-агентів бачити вразливість; атака відтворила 32 з 33 CVE | [першоджерело] (препрінт) | arXiv:2603.18740 — «state-of-the-art ACR is robust against template-based attacks but vulnerable to our LLM-assisted iterative attack (32/33 CVEs successfully re-introduced). Redacting metadata before passing the PR to ACR is an effective defense» |
+| C2 | Те саме дослідження: вивчено 6 LLM з 4 сімейств, включно з DeepSeek, 14 910 запитів; framing-ефект системний | [першоджерело] | Там же — «large-scale exploratory study on 6 LLMs across four model families (OpenAI, Anthropic, Google, and DeepSeek) under five framing conditions (14,910 queries in total)» |
+| C3 | Автоматизаційна упередженість: людина помічає ~30% помилок, коли AI надійний, і ~75% — коли збої видимі | [третя сторона] (компіляція цитат) | github.com/Laoujin/Atlas (citations.jsonl) — «When AI is reliable, humans detect only ~30% of errors vs. ~75% when systems fail visibly (Parasuraman et al., 1993)» |
+| C4 | Розробники з AI-асистентом писали менш безпечний код, але вважали його безпечнішим | [третя сторона] | Там же — «Developers with AI assistance 'wrote significantly less secure code' yet 'were more likely to believe' it was secure (Perry et al., 2023)» |
+| C5 | Більшість PR-ів від агентів взагалі не отримують людського рев'ю | [першоджерело] (препрінт) | arXiv:2609.37985 — «Duma et al. (2026) found that most agent PRs receive no human review» |
+| C6 | Обсяг: AIDev налічує 2.7 млн агентських PR (71 677 у репозиторіях >100 зірок) | [першоджерело] | Там же — «The AIDev dataset records 932,791 agent PRs at its MSR 2026 release… and 2.7 million at the v4 snapshot» |
+
+---
+
+## Суперечності
+
+1. **c-CRAB 41.5% проти 32.1%.**
+   Абстракт говорить «~40%», але це **об'єднання** чотирьох інструментів; найкращий одиничний — 32.1%. Цитувати 41.5% як «показник одного рев'юера» — помилка. Джерело прямо попереджає про це (B3). У цій самій таблиці в статті міститься ще одна розбіжність: «dataset table (Table 4) lists 67 repositories, while the Threats to Validity section says … across 56 repositories» — **дві цифри, які не зведені**; не усереднюю.
+
+2. **«Кількість коментарів = якість».** c-CRAB показує протилежне (B4): більше коментарів не дає пропорційно більше правильних, а лише навантажує рецензента. Частина vendor-маркетингу подає велику кількість знахідок як перевагу — це суперечить виміру.
+
+3. **Мультимодельність проти одномодельності.** Немає жодного знайденого джерела з прямим A/B «та сама модель двічі» проти «дві різні моделі». Інструменти (A6) і дослідження (B10: single primary model, N=3 для крос-модель) самі називають це прогалиною. Аргумент на користь різних моделей зараз — **дизайнерський**, а не виміряний.
+
+4. **Різні джерела про точність фільтрів.** c-CRAB дає 84% «корисних» коментарів у малій вибірці (92 коментарі, 6 PR), CodeRabbit-дослідження дає 43.3% хибних спрацювань і лише 36.4% прийняття. Це різні метрики (внутрішня корисність vs реальна реакція розробників) — не зводьте їх до одного числа.
+
+---
+
+## Висновок (висновок)
+
+Патерн «одна модель пише — інша перевіряє та запускає тести» **реально використовується** і як готові плагіни/MCP-сервери, і як патерн у CI. Найцінніша частина в ньому — не «друга модель» сама собою, а **три речі, які справді мають опору в джерелах**:
+
+- **окремий агент-верифікатор, чия мета — спростувати знахідку** (а не «ще раз похвалити»; A4, A5, B1);
+- **виконання коду/тесту як арбітр** замість LLM-судді (B1; суддю на тій же моделі прямо названо «сліпим штампом» — «on the reviewer's own model it agrees with itself, so the pass goes inert while still reporting success»);
+- **крос-вендорний гейт/головуючий з іншого сімейства** (A3, A12, A13).
+
+Водночас **доказова база поки слабка**: це переважно самозвіти творців інструментів; один чесний вимір (B1–B4) дає найкращому одиничному рев'юеру ~третину проходження тестів, а промисловий польовий вимір (B5) — більше половини відхилених коментарів. Тобто мультиагентність підвищує **recall/стійкість до галюцинацій**, але не усуває **хибні спрацювання, шум і нерозуміння авторського наміру** — а це головна причина, чому розробники вимикають AI-рев'ю.
+
+---
+
+## Рекомендація (рекомендація — не факт)
+
+Якщо ви хочете спробувати це практично:
+
+1. **Не робіть це «на кожен коміт».** Самі автори інструментів називають це «pre-release audit, not a per-commit check» (dsh-review) через ціну в агентах і токенах.
+2. **Беріть не «другу думку взагалі», а верифікатора на кожну знахідку**, чия явна інструкція — спростувати, і який має право читати код і запускати тести (патерн A4/B1).
+3. **Суддя/головуючий — з іншого вендора, ніж рев'юер** (A3 `min_vendors=2`, A12 «non-Claude chair», A13 «blind verdict»). Це найдешевше з доступних запобіжників проти самопідтвердження.
+4. **Якщо бюджет дозволяє — вимірюйте у себе, а не в лідерборді.** Метод c-CRAB переноситься: візьміть свої змерджені PR, де були реальні зауваження, напишіть тест, який падає до правки й проходить після (fail-then-pass), і перевіряйте свого рев'юера на ньому.
+5. **Інструменти-кандидати для старту:** Claude Code + `ask-llm` або `deliberation-mcp` (швидка друга думка), `ai-jury` або `amicus` (структурована рада з CI-гейтом), `parallel-adversarial-review` (якщо хочете бачити eval-фікстури й міряти recall/precision), `dsh-review` — якщо цільова платформа DeepSeek Harness.
+
+---
+
+## Чого не знайшов
+
+- **Офіційного репозиторію `openai/codex-plugin-cc`** і будь-якої офіційної документації OpenAI/Anthropic про cross-model review — я бачив лише згадку в README community-порту (A9). Первинне джерело не перевірене.
+- **Прямих A/B-вимірів «cross-model review vs single-model self-review» на коді.** Не знайшов жодного.
+- **Класичних робіт про multi-agent debate (Du et al.), CriticGPT (OpenAI), LangChain ReviewBench** — пошук обірвався на ліміті кроків, тому їх не наводжу (не хочу цитувати з пам'яті).
+- **Чи існує «DeepSeek Harness» (dsh)** як офіційний продукт DeepSeek — бачив лише плагін до нього, не первинне джерело.
+
+## Червоні прапорці
+
+1. **🔴 Назви моделей у знайдених джерелах виглядають недостовірними.** У тих самих README/статтях фігурують `gpt-5.6-sol`, `claude-fable-5`, `Opus 5.5`, `gemini-3.1-pro-preview`, `deepseek-v4-pro`, `gpt-6-astra`, `kimi-k3`. Якщо це не справжні моделі — **весь шар «інструментів» може бути частково згенерованим/синтетичним контентом**, і покладатися на конкретні версії з цих README не можна. Це найсерйозніше застереження до всього звіту.
+2. **🔴 Дати в майбутньому** (2026-06, 2026-09, «last updated 2026-03-02»). Або індекс містить датовані наперед матеріали, або джерела нереальні. Ставтеся до дат як до наведених, а не підтверджених.
+3. **🟠 Самооцінка майже без винятків.** Переважна більшість інструментів — проєкти з 1 мейнтейнером, 8–10 завантажень на тиждень, і метрики в README ніким не відтворені. Єдиний, хто прямо це визнає, — dsh-review (A6).
+4. **🟠 Числа з блогу, а не зі статті.** Ключові цифри c-CRAB, CodeRabbit і BitsAI-CR я взяв із переказів (orcarouter, tencent cloud), а не з PDF. Саму таблицю результатів c-CRAB я не відкривав.
+5. **🟠 «84% корисних коментарів»** — вибірка 92 коментарі з 6 PR; автор c-CRAB-аналізу сам називає її малою. Не узагальнюйте.
+6. **🟠 Self-validation у дослідженні диспозицій (B10):** «The comparison … was performed by the author alone; no independent rater participated… The false-positive rate of 0% is particularly vulnerable.»
+
+## [не перевірено]
+
+- Усі цифри c-CRAB (32.1/24.8/23.1/20.1/41.5%) — тільки з блогу-переказу.
+- Твердження `adversarial-ai-review` про «~7% false positive rate vs 30-60% from single-pass tools across 500+ production PRs» — **незалежно не підтверджено**, метод вибірки не показано.
+- Числа CodeRabbit-дослідження (36.4/7.3/56.3/43.3%) — з китайського огляду, що посилається на arXiv:2607.03316.
+- Дані BitsAI-CR (26.7% outdated rate, WAU 12k, retention 61.64%) — з того ж огляду.
+- Ступінь офіційності `openai/codex-plugin-cc`.
+
+---
+
+*Якщо це питання ви будете ставити регулярно — варто завести одну сторінку-трекер: «патерн → репо → хто міряв → проти чого міряв», бо поле змінюється щотижня і більшість «результатів» у ньому поки що самозвітні.*
+
+== Джерела (40):
+- GitHub - LCV-Ideas-Software/cross-review: Full-API MCP server for multi-model cross-review with unanimous convergence gates. · GitHub — https://github.com/LCV-Ideas-Software/cross-review#1
+- GitHub - 99xAgency/GodModeSkill: Multi-LLM cross-review workflow for Claude Code. /work orchestrates plan/implement/bug-fix with 3 different model families voting on every gate. · GitHub - GitHub - 99xAgency/GodModeSkill: Multi-LLM cross-review workflow for Claude Code. /work orchestrates plan/implement/bug-fix with... — https://github.com/99xAgency/GodModeSkill#1
+- brainstorm-mcp - ⚠️ — https://www.npmjs.com/package/brainstorm-mcp#1
+- @lcv-ideas-software/cross-review - npm Package Security Anal... - New:Microsoft Teams Notifications Are Now Available in Socket — https://socket.dev/npm/package/@lcv-ideas-software/cross-review/overview/4.5.0#1
+- @lcv-ideas-software/cross-review-v1 - npm Package Security A... - 🚀 Socket Launch Week Day 5:Introducing Repository Access Permissions and Custom Roles — https://socket.dev/npm/package/@lcv-ideas-software/cross-review-v1#1
+- <img src="website/favicon.svg" alt="" height="30" align="top"> ai-jury — https://raw.githubusercontent.com/berkayturanci/ai-jury/main/README.md#1
+- ai-jury — Universal Multi-Agent AI Code Review Jury - Local-first · stdlib-only Python · MIT — https://raw.githubusercontent.com/berkayturanci/ai-jury/5b1bd01b6db41d4be6addc41a975c253c5e3dce2/website/index.html#1
+-  — https://raw.githubusercontent.com/zhjai/agent-arena/main/skills/agent-arena/SKILL.md#1
+- blackboard-web - npm Package Security Analysis - Socket - New:Microsoft Teams Notifications Are Now Available in Socket — https://socket.dev/npm/package/blackboard-web#1
+- spyrae/claude-concilium — MCP Servers — https://enterprisedna.co/directories/mcp/spyrae-claude-concilium/
+- GitHub - gaurav-yadav/adversarial-ai-review · GitHub - GitHub - gaurav-yadav/adversarial-ai-review · GitHub — https://github.com/gaurav-yadav/adversarial-ai-review#1
+- GitHub - Viger1/dsh-review: Packaged multi-agent adversarial code review for DeepSeek Harness — parallel finders, then a verifier per finding, so only confirmed defects survive. · GitHub - GitHub - Viger1/dsh-review: Packaged multi-agent adversarial code review for DeepSeek Harness — parallel finders, then a verifie... — https://github.com/Viger1/dsh-review#1
+- cca-audit - CCA-Audit — https://pypi.org/project/cca-audit/0.8.0/#files#1
+- GitHub - prime-radiant-inc/parallel-adversarial-review: Two Claude Code skills for adversarial code review (single-model PAR and multi-model MMAR with cross-critique to catch hallucinations), plus a fixture-based eval suite. · GitHub - GitHub - prime-radiant-inc/parallel-adversarial-review: Two Claude Code skills for adversarial code review (single-model PAR and... — https://github.com/prime-radiant-inc/parallel-adversarial-review#1
+- kuang - blackice — https://pypi.org/project/kuang/#1
+- dsh-review - ⚠️ — https://www.npmjs.com/package/dsh-review#1
+- openspec-adversarial-multi-agent - ⚠️ — https://www.npmjs.com/package/openspec-adversarial-multi-agent?activeTab=code#1
+- multi-agent-review - ⚠️ — https://www.npmjs.com/package/multi-agent-review/v/0.1.0?activeTab=dependents#1
+- dsh-review - npm Package Security Analysis - Socket — https://socket.dev/npm/package/dsh-review#1
+- app.py · Architect8999/rhodawk-ai-devops-engine at 3ad943e174b2dc2927e2fa1ea982b1df3a361d29 - """ — https://huggingface.co/spaces/Architect8999/rhodawk-ai-devops-engine/blob/3ad943e174b2dc2927e2fa1ea982b1df3a361d29/app.py#1
+- {"n":1,"url":"https://arxiv — https://raw.githubusercontent.com/Laoujin/Atlas/refs/heads/main/research/2026-06-09-ai-assisted-code-review-in-2026-landscape-tools-evidence-and-limits/risks-limitations-and-adoption-barriers/citations.jsonl#1
+- Atlas/research/2026-06-09-ai-assisted-code-review-in-2026-landscape-tools-evidence-and-limits/risks-limitations-and-adoption-barriers/citations.jsonl at main · Laoujin/Atlas · GitHub - {"n":1,"url":"https://arxiv — https://github.com/Laoujin/Atlas/blob/main/research/2026-06-09-ai-assisted-code-review-in-2026-landscape-tools-evidence-and-limits/risks-limitations-and-adoption-barriers/citations.jsonl#1
+- 2505/2505.20206.md · huggingchat/papers-content - ![Image 8: Refer to caption](https://arxiv.org/html/2505.20206v1/extracted/6480883/images/gt_regression_rates.png) 
+Figure 9: Re — https://huggingface.co/buckets/huggingchat/papers-content/tree/2505/2505.20206.md?code=true#3
+- Measuring and Exploiting Contextual Bias in LLM-Assisted Security Code Review — https://browse-export.arxiv.org/pdf/2603.18740#8#2#6#1
+- Philosophical Dispositions as Behavioral Constraints for AI-Assisted Code Review: An Empirical Study - Internal enterprise repositories are hosted on a private GitHub Enterprise instance and are not present in any public LLM traini... — https://arxiv-org.ezproxy.obspm.fr/html/2605.23108v1#2
+- Table 2 from Measuring Determinism in Large Language Models for Software Code Review | Semantic Scholar - Measuring Determinism in Large Language Models for Software Code Review — https://www.semanticscholar.org/paper/Measuring-Determinism-in-Large-Language-Models-for-Klishevich-Denisov-Blanch/1f1d2be9e871f9ecd13e83354637b436a0ee7d87/figure/1#1
+- Merged, Not Measured: An Empirical Study of Performance Issues Fixed by Coding Agents — https://export.arxiv.org/pdf/2609.37985#11#1
+- How to Evaluate a Code Review Agent: the c-CRAB Playbook — https://www.orcarouter.ai/blog/code-review-agent-benchmark
+- 【CR06】辅助派、终结论、实证派：AI Code Review 的三种真相 - 温昱 — https://cloud.tencent.com.cn/developer/article/2748614#1
+- c-CRAB 基準：程式碼審查代理究竟如何評分 — https://www.orcarouter.ai/zh-TW/blog/c-crab-benchmark
+- agenthub-gateway - AgentHub — https://pypi.org/project/agenthub-gateway/1.2.0/#1
+- crossagent - crossagent — https://pypi.org/project/crossagent/0.1.1/#files#1
+- @antonbabenko/deliberation-mcp - npm Package Security Analys... - 🎩 You're Invited:Meet the Socket team at Black Hat in Las Vegas, August 3-6.RSVP → — https://socket.dev/npm/package/@antonbabenko/deliberation-mcp#1
+- owlex/README.md at main · agentic-box/owlex - Skip to content — https://github.com/agentic-box/owlex/blob/main/README.md#1
+- Using Codex for a Second Opinion in Claude Code | Steve Kinney — https://stevekinney.com/writing/codex-as-a-second-opinion
+- GitHub - ghiaog123/opencode-plugin-cc: Run OpenCode as a subagent inside Claude Code for independent code reviews, adversarial feedback, and delegated background tasks. · GitHub - GitHub - ghiaog123/opencode-plugin-cc: Run OpenCode as a subagent inside Claude Code for independent code reviews, adversarial f... — https://github.com/ghiaog123/opencode-plugin-cc#1
+- amicus — https://www.npmjs.com/package/amicus?activeTab=readme#1
+- amicus - ⚠️ — https://www.npmjs.com/package/amicus?activeTab=versions#1
+- amicus - npm Package Security Analysis - Socket - New:Socket for Asana Is Now Available — https://socket.dev/npm/package/amicus/overview/3.2.3#1
+- GitHub - Lykhoyda/ask-llm: MCP server for AI-to-AI collaboration — bridge Claude with Gemini, Codex, and other LLMs for code review, second opinions, and plan debate · GitHub - GitHub - Lykhoyda/ask-llm: MCP server for AI-to-AI collaboration — bridge Claude with Gemini, Codex, and other LLMs for code rev... — https://github.com/Lykhoyda/ask-llm#1
+
+== Розмова: 20261012-150202 | вх 58964 (з кешу 62848) | вих 10145 | пошуків 8
+== Ціна ≈$0.0151 (не пік; без вартості пошуків)
