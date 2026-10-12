@@ -185,3 +185,20 @@
 - Статус змінився (2026-10-09): повернуто — `mv .trash/llm-council-2026-10-09 .claude/skills/llm-council`
   після повної перевірки (TROUBLES.md «Скіл LLM Council…»), з правкою :467 за PR #5. Рішення
   користувача: «повертай з виправленням рядка 467». — [claude-code, 2026-10-09]
+
+### 2026-10-09 — .claude/hooks/tree-focus-hook.py.bak-20261003 → .trash/tree-focus-bak-2026-10-09/
+— [claude-code, 2026-10-09]
+- Що: бекап хука tree-focus (11 294 Б, 30.09, md5 6603fa02…) → .trash/tree-focus-bak-2026-10-09/.
+- Чому: байт у байт = git e9275dd (версія до патча 5777421); патч M11.1 перевірено — живий хук == HEAD,
+  імітація SessionStart дає «Як застосовувати», hooks-smoke ✅, на старті сесії 749715e0 секція прийшла.
+  baton-diff #27→#29 п.1; рішення користувача «перевірити ідею… працює без нього?» → «так, переноси».
+- Відновлюване: так — `mv .trash/tree-focus-bak-2026-10-09/tree-focus-hook.py.bak-20261003 .claude/hooks/`
+  або `git show e9275dd:.claude/hooks/tree-focus-hook.py`.
+
+### 2026-10-12 — tools/cost-report.py.bak-20261008-globaldedup → .trash/cost-report-bak-2026-10-12/
+— [claude-code, 2026-10-12]
+- Що: бекап cost-report.py (48 992 Б, 07.10 18:02) перед правкою «наскрізний дедуп» (e4f5a57).
+- Чому: md5 a07dd277… = `git show ae9e97b:tools/cost-report.py` байт у байт — git уже береже те саме;
+  файл під git, .bak за RULES «Бекап поза git» не потрібен. Рішення користувача: «Так, перенось».
+- Відновлюване: так — `mv .trash/cost-report-bak-2026-10-12/cost-report.py.bak-20261008-globaldedup tools/`
+  або `git show ae9e97b:tools/cost-report.py`.
