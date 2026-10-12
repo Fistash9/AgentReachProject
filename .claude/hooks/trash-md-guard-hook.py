@@ -24,6 +24,7 @@ FRESH_SECONDS = 300  # 5 хвилин
 
 HEREDOC_START_RE = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?")
 SEPARATORS = {";", "&&", "||", "&", "|", "(", ")", "\n"}
+SHELLS = {"sh", "bash", "dash", "zsh"}
 
 SAFE_PREFIXES = (
     "/data/data/com.termux/files/usr/tmp/",
@@ -92,6 +93,19 @@ def rm_arg_tokens(command):
                 continue
         at_start = False
         i += 1
+
+    # Вкладена оболонка: `sh -c '<скрипт>'`, `bash -lc …`, зокрема після
+    # `proot-distro login ubuntu --`. Рядок після -c — один токен у лапках,
+    # тож rm у ньому вище не видно (TROUBLES «trash-md-guard не бачить rm
+    # усередині sh -c», 2026-10-12). Розбираємо його тією ж функцією.
+    # `echo "rm …"` не зачіпає: echo — не оболонка.
+    for k in range(len(tokens) - 2):
+        if (os.path.basename(tokens[k]) in SHELLS and tokens[k + 1].startswith("-")
+                and "c" in tokens[k + 1]):
+            inner = rm_arg_tokens(tokens[k + 2])
+            if inner is not None:
+                found = True
+                combined_args.extend(inner)
     return combined_args if found else None
 
 
