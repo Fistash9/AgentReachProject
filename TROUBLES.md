@@ -4411,3 +4411,9 @@ TAGS: doctor, claude-code-termux, update, skillOverrides, npm, jq
   skillOverrides / defaultMode — без змін. Також: `/doctor prompt-audit` з'явився в 2.1.283 (відкрите питання
   батона закрито). Після: claude --version; /mcp; python3 tools/hooks-smoke.py; список скілів (skillOverrides).
   — [claude-code, 2026-10-12]
+- Статус змінився (2026-10-12, спроба оновлення): команда `claude-code-termux install 2.1.296.` (з крапкою в
+  кінці аргументу, скопійована з чату) НЕ оновила — інсталятор мовчки впав на поточну закріплену 2.1.273
+  («Fetching @anthropic-ai/claude-code-linux-arm64@2.1.273»), без помилки про невалідну версію. `claude --version`
+  після — 2.1.273, без змін. Клас: невалідний аргумент версії → тихий fallback на поточну, не помітний без
+  ручної перевірки claude --version після. Рецепт: аргумент версії — рівно `2.1.296`, без пробілів/крапки після;
+  копіювати з інлайн-коду, не з кінця речення. — [claude-code, 2026-10-12]
