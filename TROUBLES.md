@@ -4400,3 +4400,14 @@ TAGS: doctor, claude-code-termux, update, skillOverrides, npm, jq
   поза Claude. Бінарник іде через ld.so (mmap, не exec) — ETXTBSY, ймовірно, не буде, а перезапис під
   працюючою сесією може її обвалити [не перевірено]. Висновок той самий: оновлювати після виходу, як 23.09.
   — [claude-code, 2026-10-12]
+- Перед оновленням 2.1.280 → 2.1.296 (питання користувача «що може піти не так перевірив?»): CHANGELOG.md
+  (raw.githubusercontent.com/anthropics/claude-code, 1 517 рядків 2.1.281–296, grep за нашими темами). Ламаючих
+  для нас немає; ризики й перевірка ПІСЛЯ: (1) MCP на новому протоколі (2.1.287: «If a server no longer connects
+  after this update, add "bareElicitationCapability": true») → /mcp, усі 7 локальних підключені; (2) DeepSeek-
+  сесії: зміни збереження thinking (2.1.282/2.1.288), 1M вікно за ANTHROPIC_BASE_URL (2.1.285), structured
+  outputs на шлюзах — нова CLAUDE_CODE_DISABLE_STRUCTURED_OUTPUTS (2.1.288) → короткий прогін claude-deepseek.sh
+  (проксі reasoning_content); (3) новий бінарник не стартує під glibc → відкат .bak-2.1.280 / install 2.1.280.
+  Не зачепить: <system-reminder> у виводі хуків екранується з 2.1.292 — наші хуки його не пишуть (grep 0);
+  skillOverrides / defaultMode — без змін. Також: `/doctor prompt-audit` з'явився в 2.1.283 (відкрите питання
+  батона закрито). Після: claude --version; /mcp; python3 tools/hooks-smoke.py; список скілів (skillOverrides).
+  — [claude-code, 2026-10-12]
