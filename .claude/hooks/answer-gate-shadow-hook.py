@@ -12,7 +12,8 @@
   queue   — у тексті ходу немає слова «черга» (хук tree-focus: «після відповіді
             покажи чергу»).
   verify  — хід закінчується пропозицією змінити файли (питання + слово зміни),
-            а в ході не було ні Skill verify-before-show, ні delegate.
+            а в ході не було ні Skill verify-before-show, ні delegate. Дописування
+            запису й коміт показаного — не план (RULES.md:52–53), не рахуються.
   nudge   — у ході була підказка хука (делегувати / request-brief), а текст ходу
             не називає ні виконання, ні причини відмови.
 Розбір журналу — iter_turns з number-claim-shadow-hook.py (той самий «хід»),
@@ -32,8 +33,11 @@ LOG = os.path.join(ROOT, ".claude", "logs", "answer-gate-shadow.jsonl")
 LOG_MAX = 2_000_000
 
 RE_QUEUE = re.compile(r"черг", re.I)
-RE_CHANGE = re.compile(r"\b(змін\w*|правк\w*|правлю|дописа\w*|допишу|зареєстр\w*|"
-                       r"пишу|напишу|додам|комі\w*|переношу|видал\w*|створ\w*)", re.I)
+# Без «дописати»/«закомітити»: RULES.md:52–53 (2026-10-12) — дописати запис у картку/журнал
+# або закомітити показане — не план. «змінився» (опис стану) — теж не план.
+RE_CHANGE = re.compile(r"\b(зміню|змінюю|змінити|правк\w*|правлю|підганя\w*|зареєстр\w*|"
+                       r"реєстру\w*|пишу|напишу|додам|переношу|видал\w*|створ\w*)", re.I)
+RE_PLAN_Q = re.compile(r"план\w*", re.I)  # «Роблю за цим планом?» без слова зміни
 RE_DELEG_HINT = re.compile(r"Делегуй", re.I)
 RE_DELEG_ANS = re.compile(r"делег|delegate|підказк\w* хука", re.I)
 RE_BRIEF_HINT = re.compile(r"request-brief", re.I)
@@ -95,8 +99,9 @@ def check(turn):
     last = turn["texts"][-1].strip()
     if not RE_QUEUE.search(text):
         misses.append("queue")
-    tail = last[-400:]
-    if last.endswith("?") and RE_CHANGE.search(tail):
+    tail = last  # уся остання відповідь: план часто вище за підсумкове питання
+    qline = last.splitlines()[-1] if last else ""
+    if last.endswith("?") and (RE_CHANGE.search(tail) or RE_PLAN_Q.search(qline)):
         ok = any(n == "Skill" and s == "verify-before-show" or n in VERIFY_TOOLS
                  for n, s in turn["tools"])
         if not ok:
