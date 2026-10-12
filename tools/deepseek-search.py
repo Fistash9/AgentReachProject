@@ -164,7 +164,24 @@ def main():
     ap.add_argument("-c", "--continue", dest="sid")
     ap.add_argument("--uses", type=int, default=5)
     ap.add_argument("--raw", action="store_true", help="без дисципліни SYSTEM")
+    # 2026-10-12 (T8): експорт сесії 300–740 КБ не лізе аргументом, а DeepSeek не
+    # приймає текстових файлів (document — Not Supported, Files API — лише
+    # картинки) → вміст вставляється в повідомлення. Без цих прапорців тіло
+    # запиту те саме, що й раніше.
+    ap.add_argument("--file", action="append", default=[], metavar="ШЛЯХ",
+                    help="вставити вміст файлу в питання (можна кілька разів)")
+    ap.add_argument("--no-search", action="store_true",
+                    help="без web_search (рецензія файлу, не пошук)")
     a = ap.parse_args()
+
+    attached = []
+    for p in a.file:  # читаємо ДО мережі: немає файлу — немає витрат
+        try:
+            with open(p, encoding="utf-8", errors="replace") as f:
+                attached.append(f'<file name="{os.path.basename(p)}">\n{f.read()}\n</file>')
+        except OSError as e:
+            sys.exit(f"deepseek-search: не читається файл {p}: {e}")
+    question = "\n\n".join(attached + [a.question]) if attached else a.question
 
     os.makedirs(HIST_DIR, exist_ok=True)
     sid = a.sid or time.strftime("%Y%m%d-%H%M%S")
@@ -175,7 +192,7 @@ def main():
             sys.exit(f"deepseek-search: немає розмови {sid}")
         with open(path, encoding="utf-8") as f:
             messages = json.load(f)
-    messages.append({"role": "user", "content": a.question})
+    messages.append({"role": "user", "content": question})
 
     body = {
         "model": MODEL, "max_tokens": 32000, "messages": messages,
@@ -183,6 +200,8 @@ def main():
                    "max_uses": a.uses}],
         "thinking": {"type": "enabled"},
     }
+    if a.no_search:
+        del body["tools"]
     if not a.raw:
         body["system"] = system_prompt()
     resp = call(body, get_key())
