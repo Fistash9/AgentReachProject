@@ -366,8 +366,19 @@ tree-focus читає [ ] згори вниз). Нове питання → ву
     — [dsh, 2026-10-03, a-mech-2026-10-03.md]
   - [ ] M11.2 Ворота 2 «результат команди»: troubles-grep 1–2 рядки з шлях:рядок (зв'язок: Q4)
     done when: ≤2 вкидань за сесію, ≥1 з шлях:рядок
-  - [ ] M11.3 Ворота 3 «перед правкою»: verify-nudge + How to apply + предмет норми, request-brief
+  - [>] M11.3 Ворота 3 «перед правкою»: verify-nudge + How to apply + предмет норми, request-brief @claude-code
     влити (зв'язок: Q3) — done when: правка тригер-файлу → вкидання з «How to apply:»
+    ЗРОБЛЕНО (2026-10-12, сесія e3a33280; користувач «так, роби за планом» → «виправляй зразу те що
+      знаходиш, але перевіряй історію»): .claude/hooks/edit-gate-hook.py — PreToolUse, НЕ блокує, раз на
+      ключ за сесію, лог .claude/logs/edit-gate.log: read (Edit/Write tools|hooks|skills без повного Read/cat
+      або без grep назви), movers (mv/rm файлу проєкту без grep назви), passport (новий вузол trees без
+      ціль/звідки/зв'язок/UP). Бектест e3a33280: 3 нагадування (project-audit.py, pass-36, pass-38) — усі
+      справжні, 0 на новий файл і дописи; історія trees з 01.10: 5 з 51 нового вузла без паспорта.
+      Межа: Bash-правки (python/sed) не бачить. Реєстрація — settings.local.json (.bak-20261012-editgate).
+      verify-nudge: RULES.md:44 → :49. Попутно: tree-focus шукав trees/ у cwd запиту → після cd у підтеку
+      хибне «Жоден вузол не в роботі»; тепер project_root() іде вгору до теки з trees/ (перевірено з
+      проєкту, .claude/hooks і ~; hooks-smoke 27/0). Критерій done when («How to apply» у вкиданні) — НЕ
+      виконано: нагадування називає правило RULES.md, а не How to apply пам'яті. — [claude-code, 2026-10-12]
   - [ ] M11.4 Ворота 4 «перед відповіддю»: Stop-хук на зміст — ПІСЛЯ виміру ціни (зв'язок: M11
     done when вище, TROUBLES «Хук, що перевіряє ВІДПОВІДЬ») — done when: «перевір все» → block,
     звичайний промпт → 0 блоків

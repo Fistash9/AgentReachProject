@@ -1,7 +1,7 @@
 #!/data/data/com.termux/files/usr/bin/python3
 """
 PreToolUse hook (НЕ блокує): перед правкою захищеного файлу нагадує про
-скіл verify-before-show (RULES.md:44). Вузько — лише захищені файли, раз
+скіл verify-before-show (RULES.md:49). Вузько — лише захищені файли, раз
 на файл за сесію; P4 стріляє на кожну правку, і на нього перестали
 зважати.
 Причина (trees/yakist-roboty-agentiv.md, Q3, 2026-10-03): скіл вжито у 2
@@ -55,7 +55,7 @@ def main():
     with open(LOG, "a") as f:
         f.write(f"{key}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
     msg = (f"Захищений файл {r}: чи звірено план цієї правки скілом "
-           "verify-before-show (RULES.md:44)? Якщо ні — спершу звір; якщо так — "
+           "verify-before-show (RULES.md:49)? Якщо ні — спершу звір; якщо так — "
            "один рядок «Звірено перед показом: …» у відповіді.")
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse", "additionalContext": msg}}, ensure_ascii=False))

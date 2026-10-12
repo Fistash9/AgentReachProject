@@ -198,6 +198,24 @@ def howto_section():
     return "\n".join(out)
 
 
+def project_root(cwd):
+    """Тека з trees/: cwd або найближчий предок; інакше — корінь за місцем хука.
+
+    2026-10-12 (сесія e3a33280): cwd запиту = тека, куди агент зробив `cd`
+    (.claude/hooks) → glob trees/ порожній → хибне «Жоден твій вузол не в
+    роботі». Явний cwd проєкту (ручний запуск, hooks-smoke, DSH) працює як був.
+    """
+    d = os.path.abspath(cwd)
+    while True:
+        if os.path.isdir(os.path.join(d, "trees")):
+            return d
+        up = os.path.dirname(d)
+        if up == d:
+            break
+        d = up
+    return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
 def main():
     # Мовчить лише в під-сесіях-помічниках deepseek-mcp: вони завжди мають
     # CLAUDE_CODE_EFFORT_LEVEL (env.js) і entrypoint sdk-cli (перевірено
@@ -209,8 +227,8 @@ def main():
     data = json.load(sys.stdin)
     event = data.get("hook_event_name") or "UserPromptSubmit"
     start = event == "SessionStart"
-    cwd = data.get("cwd") or os.getcwd()
-    me = os.environ.get("BATON_AGENT") or "claude-code"
+    cwd = project_root(data.get("cwd") or os.getcwd())
+    me =os.environ.get("BATON_AGENT") or "claude-code"
     work, waiting, queues, others, unowned = [], [], [], {}, []
     # hits: з 5777421 (2026-10-03, M11.1) «Як застосовувати» показувалось лише при
     # активному вузлі. З d7f2fae (2026-10-06, порада DSH cc-nodeids-1) — завжди
