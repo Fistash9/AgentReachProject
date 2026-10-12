@@ -228,3 +228,12 @@
 - Перевірено (того ж дня): причина — trash-md-guard-hook.py rm_arg_tokens() для
   `proot-distro login … sh -c '<…rm…>'` повертає None (rm у лапках не бачить), напряму — ['-rf', шлях].
   Рецепт і ліки — TROUBLES «trash-md-guard не бачить rm усередині sh -c». — [claude-code, 2026-10-12]
+
+### 2026-10-12 — .baton/history/pass-36, pass-38 (2 знімки) → .trash/baton-history-2026-10-12/
+— [claude-code, 2026-10-12]
+- Що: pass-36.json pass-38.json (локальні, поза git — .baton/ у .gitignore; копія лише тут).
+- Чому: RULES.md «Baton» — старіші знімки прибирати після розбору baton-diff; розбір #36→#38 (8 з 8)
+  звірено за змістом у сесії e3a33280: 6 зроблено/закрито, M15/M16/T10 — відкриті вузли карток,
+  «DSH і AGENTS.md з ~/dsh-app» — записано НЕ ПЕРЕВІРЕНО (trees/pam-yat-proyektu.md:114). Лишено
+  pass-39.json (точка відліку). Рішення користувача: «так, переноси».
+- Відновлюване: так — `mv .trash/baton-history-2026-10-12/pass-3[68].json .baton/history/`.
