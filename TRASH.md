@@ -225,3 +225,6 @@
   `proot-distro login … sh -c` (хук бачить лише рядок команди Bash — тут він був, але в лапках sh -c).
 - Відновлюване: не потрібно — копія; оригінал на місці. Надалі тимчасові копії для proot — у
   /data/data/com.termux/files/usr/tmp/ (системний tmp, видно з proot).
+- Перевірено (того ж дня): причина — trash-md-guard-hook.py rm_arg_tokens() для
+  `proot-distro login … sh -c '<…rm…>'` повертає None (rm у лапках не бачить), напряму — ['-rf', шлях].
+  Рецепт і ліки — TROUBLES «trash-md-guard не бачить rm усередині sh -c». — [claude-code, 2026-10-12]

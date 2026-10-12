@@ -4347,3 +4347,18 @@ TAGS: deepseek-mcp, run-deepseek.sh, ENABLE_TOOL_SEARCH, env, підставни
 - Помічено, не змінено: run-deepseek.sh досі має CLAUDE_CODE_DISABLE_UNKNOWN_MODEL_WINDOW_ENFORCEMENT=1,
   який у claude-deepseek.sh прибрали, бо вимикав автокомпакт (TROUBLES «Прапорець вікна…»).
 — [claude-code, 2026-10-09]
+
+## trash-md-guard не бачить rm усередині sh -c (proot) (2026-10-12)
+TAGS: hooks, trash-md-guard, rm, proot, sh -c, shlex, видалення
+— [claude-code, 2026-10-12] (питання користувача того ж дня: «ти щось видалив тільки що…?»)
+- Симптом: `proot-distro login ubuntu -- sh -c 'rm -rf /root/cc-cost-tmp; …'` пройшов без запису в
+  TRASH.md — хук не заблокував.
+- Механізм (перевірено імітацією): rm_arg_tokens() токенізує shlex-ом; рядок після `sh -c` — один
+  токен у лапках, `rm` усередині не стає командою → None → «rm немає». Напряму `rm -rf /root/x` →
+  ['-rf', '/root/x'] → блок.
+- Клас: той самий, що «Другий той самий клас бага: аргументи rm/git-add не обмежені сегментом»
+  (2026-09-23) — розбір рядка команди не бачить вкладених оболонок (sh/bash -c, proot-distro … --).
+- Поки не виправлено: тимчасові копії для proot класти в /data/data/com.termux/files/usr/tmp/
+  (видно з proot, виняток хука), rm у proot — лише після запису в TRASH.md вручну.
+- Ліки (пропозиція, правка хука — лише з «так»): якщо токен після `-c` у sh/bash/dash — розбирати
+  його рекурсивно тим самим rm_arg_tokens(); тест — імітація цих двох рядків.
