@@ -45,7 +45,7 @@ def get_key():
 # Дисципліна пошуку (2026-10-06, T6.2): інструкція агента deepseek-search
 # (найточніший у T6) + знахідки рецензента 3.8–3.11, 3.14 (розмова
 # 20261006-152607). --raw вимикає — для порівняння.
-SYSTEM = """Ти — пошуковий дослідник. Знайди відповідь і покажи, на чому вона тримається.
+SYSTEM_FALLBACK = """Ти — пошуковий дослідник. Знайди відповідь і покажи, на чому вона тримається.
 1. Перш ніж шукати, розбий питання на 2–4 підпитання; не дублюй пошуки.
 2. Спершу першоджерела: офіційний репозиторій (raw-файли, issues, PR), офіційна
    документація, реєстри пакетів (npm, PyPI). Статті, дзеркала, форки й SEO-огляди —
@@ -75,6 +75,18 @@ def cost(u):
                + (u.get("cache_read_input_tokens") or 0) * PRICE["hit"]
                + (u.get("output_tokens") or 0) * PRICE["out"]) / 1e6
     return usd, peak
+
+
+# 2026-10-06 (T6.4): одне джерело дисципліни — agents/deepseek-search/discipline.md
+# (SYSTEM_FALLBACK + ідеї research-ops з ECC); немає файлу — запасний текст вище.
+DISCIPLINE = os.path.join(ROOT, "agents", "deepseek-search", "discipline.md")
+
+
+def system_prompt():
+    try:
+        return open(DISCIPLINE, encoding="utf-8").read().strip()
+    except OSError:
+        return SYSTEM_FALLBACK
 
 
 CHUNK_TIMEOUT = 600   # тиша між шматками потоку
@@ -172,7 +184,7 @@ def main():
         "thinking": {"type": "enabled"},
     }
     if not a.raw:
-        body["system"] = SYSTEM
+        body["system"] = system_prompt()
     resp = call(body, get_key())
 
     text, sources, keep = [], [], []

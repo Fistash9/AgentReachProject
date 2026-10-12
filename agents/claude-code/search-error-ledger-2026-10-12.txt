@@ -1,0 +1,324 @@
+deepseek-search: перший шматок 0.5 с, усе 78.1 с
+УВАГА: пошуків 8 при --uses 4 — сервер ліміт не тримає.
+Розберу питання на підпитання й пошукаю першоджерела.
+
+Підпитання:
+1. Чи існують уже опубліковані таксономії помилок AI-агентів/LLM-асистентів (академічні + практичні)?
+2. Які готові практики ведення «журналу збоїв» / postmortem для однієї людини локально (SRE-практики, шаблони)?
+3. Які локальні інструменти (без хмари) для підрахунку повторів: SQLite/CSV-ледери, трекери помилок self-hosted, CLI?Друга хвиля: шукаю конкретно «ледери збоїв», локальні трекери помилок і solo-dev практики.# Реєстр класів збоїв AI-кодових асистентів: локально, для одного розробника
+
+> Застереження щодо повноти: я вичерпав ліміт пошукових кроків після двох хвиль. Частину підпитань (практика журналу збоїв у `CLAUDE.md`, self-hosting Langfuse/Phoenix, promptfoo) я **не встиг перевірити** — позначено в розділі «Чого не знайшов». Нижче — те, що реально є в результатах.
+
+---
+
+## Коротка відповідь
+
+Готового **єдиного** продукту «failure-mode ledger для AI-кодового асистента» я не знайшов. Але є три готові шари, які складаються в таку систему локально й без хмари:
+
+1. **Таксономія** — MAST/MASFT (14 режимів, 3 категорії), опенсорсна, з готовим LLM-as-a-judge аннотатором для автоматичного розмічування трейсів. Плюс окремі таксономії саме для помилок генерації коду (класичний ODC як «прадід»).
+2. **Лічильник повторів** — будь-який self-hosted Sentry-сумісний трекер на SQLite: він групує однакові помилки за фінгерпринтом і показує `occurrence_count` + `first_seen`/`last_seen`. Є кілька одно-бінарних варіантів (Errly, errex, crashbox), частина — **MCP-ready**, тобто агент сам може писати/читати свій журнал.
+3. **Практика/формат** — blameless-postmortem шаблони + «мінімальний postmortem за 1 годину» з версіонуванням у репо. Є навіть готова **AI-skill** для генерації postmortem.
+
+Обмеження: жоден із цих інструментів не створений саме під AI-кодових асистентів; усі self-hosted трекери — загального призначення й «loading two general-purpose tools and gluing them with a taxonomy file».
+
+---
+
+## Докази
+
+### A. Готові таксономії помилок AI-агентів
+
+**A1. MAST / MASFT — 14 режимів у 3 категоріях, з відкритим датасетом і аннотатором**
+`[першоджерело]` · NeurIPS 2025 (Spotlight), arXiv:2503.13657 (березень 2025) · https://arxiv.org/abs/2503.13657 · https://sky.cs.berkeley.edu/project/mast/
+
+> «We introduce MAST-Data, a comprehensive dataset of 1600+ annotated traces collected across 7 popular MAS frameworks. ... we build the first Multi-Agent System Failure Taxonomy (MAST). ... This process identifies 14 unique modes, clustered into 3 categories: (i) system design issues, (ii) inter-agent misalignment, and (iii) task verification. To enable scalable annotation, we develop an LLM-as-a-Judge pipeline with high agreement with human annotations. ... We publicly release our comprehensive dataset (MAST-Data), the MAST, and our LLM annotator»
+> — https://proceedings.neurips.cc//paper_files/paper/2025/hash/b1041e52d3be19f0a9bc491657488e4a-Abstract-Datasets_and_Benchmarks_Track.html
+
+Канонічний розклад 5/6/3 (див. A2), при цьому:
+> «our contribution represents a pioneering effort in studying failure modes in MASs»
+> — https://ar5iv.labs.arxiv.org/html/2503.13657v1#1
+
+**A2. Перелік кодів MAST (FM-1.x / FM-2.x / FM-3.x)**
+`[не перевірено]` (конспект третьої сторони, не сама стаття) · https://github.com/tonydzi/awesome-evals/blob/main/notes/articles/mast-why-multi-agent-llm-systems-fail.md#1
+
+> «FC1 — Specification / System Design (5): FM-1.1 Disobey task specification · FM-1.2 Disobey role specification · FM-1.3 Step repetition · FM-1.4 Loss of conversation history · FM-1.5 Unaware of termination conditions. FC2 — Inter-Agent Misalignment (6): FM-2.1 Conversation reset · FM-2.2 Fail to ask for clarification · FM-2.3 Task derailment · FM-2.4 Information withholding · FM-2.5 Ignored other agent's input · FM-2.6 Reasoning-action mismatch. FC3 — Task Verification (3): FM-3.1 Premature termination · FM-3.2 No or incomplete verification · FM-3.3 Incorrect verification.»
+
+І критично важлива деталь для твого кейсу (один асистент, не мультиагент):
+> «the paper deliberately excludes generic single-LLM failures (e.g., plain text repetition) because they don't pertain specifically to MAS»
+> — там же
+
+**A3. Таксономії помилок саме генерації коду (не агентів)**
+`[першоджерело]` · ICSE 2025 (конференція 26.04–06.05.2025; додано в Xplore 23.06.2025) · https://ieeexplore.ieee.org/document/11029951
+
+> «we first employed open coding and thematic analysis to distill a comprehensive taxonomy of code generation errors. We analyzed two dimensions of error characteristics-semantic characteristics and syntactic characteristics. Our analysis revealed that LLMs often made non-trivial, multi-line code generation errors in various locations and with various root causes.»
+
+`[першоджерело]` · Science China Information Sciences 69, 112107 (2026) · https://xuanjing-huang.github.io/publication/llm-code-bug-study
+
+> «we developed a taxonomy of bugs for incorrect codes that includes three categories and ten sub-categories, and analyzed the root cause for common bug types.»
+
+`[першоджерело]` · arXiv:2512.14792 · https://ar5iv.labs.arxiv.org/html/2512.14792#3
+
+> «Dimension 2 ... classifies the type of failure inferred to have occurred within the LLM during code generation ... Factual Incorrectness ... Incompleteness ... **SD (Syntax/Dependency)**, **CRF (Compilation/Runtime Failure)**, **I (Incompleteness)**» і причини: «Knowledge Gaps, Model Limitations, and External Changes»
+
+**A4. Класичний корінь усіх таксономій — Orthogonal Defect Classification (ODC)**
+`[не перевірено]` (бачив лише цитування в списках літератури, сам папір 1992 р. не відкривав) · Chillarege et al., IEEE TSE 18(11), 1992
+
+> «R. Chillarege, I. S. Bhandari et al., "Orthogonal defect classification-a concept for in-process measurements," IEEE Transactions on software Engineering, vol. 18, no. 11, pp. 943–956, 1992.»
+> — https://dlnext.acm.org/doi/abs/10.1109/ICSE55347.2025.00180
+
+Концепція ODC («розкладати дефекти на ортогональні типи і рахувати в процесі») прямо переноситься на твій ледер.
+
+**A5. Готовий робочий файл-таксономія з локальними класами, замаплений на MAST**
+`[третя сторона]` · sou350121/Agent-Playbook, `theory/03-engineering/agent-failure-taxonomy.md` · https://raw.githubusercontent.com/sou350121/Agent-Playbook/2b1e0c8ec94bceeb801066e662d6780007fb2e16/theory/03-engineering/agent-failure-taxonomy.md#1
+
+Це найближчий до твого запиту **готовий артефакт**: файл із власними кодами T1–T7 (Scope Leak, Context Drift, … T7 Cross-Agent Context Contamination), для кожного — *визначення / ознаки виявлення / корінна причина / профілактика / відновлення*, плюс мапінг на FM-коди MAST:
+
+> «| T7 | 跨 Agent 上下文污染 | Agent A 的幻覺成為 Agent B 的事實 | 極高（全鏈污染）| FC2: FM-2.4/2.6 |»
+> (приклад структури: клас → назва → опис → ризик → відповідний код MAST)
+
+> «**識別特徵**：- diff 中出現不在 `scope.in` 清單中的文件 ... **根本原因**：... **預防**：... **恢復**：- 回滾 diff 中不在 `scope.in` 的所有變更»
+> (для T1 Scope Leak — ознаки, причини, профілактика, відкат)
+
+**A6. Систематизація: збої AI-агентів = розподілені збої + недетермінізм, переважно дизайнові**
+`[третя сторона]` (книга-чернетка) · https://github.com/Drobiazkin/ai-agent-architecture/
+
+> «The failure taxonomy (§14.4) is mostly distributed failures plus nondeterminism, predominantly design failures (MAST); they are cleared by existing discipline (idempotency, timeouts, compensations, observability, bulkhead) combined with the new discipline of probabilistic control (budgets, evals, guardrails, §14.5).»
+
+Інші описані режими `[третя сторона]`:
+> «Modo de falha 2: amplificação em cascata de erros ... Modo de falha 3: convergência homogênea ... Modo de falha 4: transferência de responsabilidade»
+> — https://github.com/bojieli/ai-agent-book/releases/download/latest/AI-Agents-in-Depth-ptbr.pdf#100#91
+
+---
+
+### B. Локальні інструменти з підрахунком повторів (без хмари)
+
+Ключовий механізм, який тобі потрібен, — **fingerprint + occurrence_count**. Він є в усіх нижче.
+
+**B1. Errly — self-hosted, Go+SQLite, один бінарник, MCP-native (агент сам читає/резолвить помилки)**
+`[першоджерело]` · дата не вказана в результатах · https://github.com/AsYourWish-ai/Errly
+
+> «Lightweight Self-Hosted Error Monitoring A minimal error monitoring system with: Backend server (Go + SQLite) — lightweight, single binary MCP server (Go) — lets AI agents query and manage errors SDKs for Go, Python, and Next.js / TypeScript»
+
+> «MCP-native — AI agents (Claude, Cursor, etc.) can list, search, read, and resolve issues directly via the Model Context Protocol»
+> — https://www.mcpworld.com/en/detail/6334c6eb71899b4a137343413795e818
+
+> «Stats bar — total / unresolved / resolved / ignored / events; Issue list with level badge, project, environment, count, last seen»
+
+**B2. errex — self-hosted Sentry-альтернатива, Rust + SQLite, групує і рахує, MCP-ready**
+`[першоджерело]` · дата не вказана · https://github.com/TheHoltz/errex
+
+> «Self-hosted error tracking in 7 MB of RAM. One 5 MB binary. Zero deps. Sentry-SDK compatible.»
+
+> «you get grouped exceptions, stack traces, occurrence counts, regression detection, and Slack / Discord / Teams alerts. ... Persistence is a single SQLite file (no Postgres, no Redis).»
+
+> «errex is also MCP-ready: an AI agent can plug straight into the daemon to triage issues, summarize stack traces, and resolve duplicates without touching the dashboard. (Stub today; the protocol surface is wired.)»
+
+Самопроголошені метрики (не підтверджені незалежно): `idle 6.9 MB · saturation 10.5 MB · 7491 RPS`.
+
+**B3. crashbox — Sentry-сумісний, один Rust-бінарник + SQLite, workflow resolve/reopen**
+`[першоджерело]` · Docker Hub, «Updated 3 months ago» · https://hub.docker.com/r/denyzhirkov/crashbox
+
+> «One Rust binary, one SQLite file, an embedded SolidJS web UI, ~40 MB distroless image. ... Crashbox accepts events from unmodified official Sentry SDKs (@sentry/node, @sentry/browser, …) by changing only the DSN.»
+
+> «Not a full Sentry replacement: no performance traces, session replay, source maps, attachments, orgs/teams. ... If you want an error inbox for your side project tonight — this is it.»
+
+> «Issue management: resolve / reopen / snooze ... auto-resolve / auto-reopen»
+
+**B4. fastapi-flare — issue-grouping з фінгерпринтом і підрахунком повторів, SQLite**
+`[першоджерело]` · PyPI 0.4.0, дата не вказана · https://pypi.org/project/fastapi-flare/0.4.0/
+
+> «Starting in 0.3.0 fastapi-flare groups semantically-equivalent errors into issues the way Sentry and Rollbar do — with occurrence counting, first/last-seen, and a resolve/reopen workflow.»
+
+> «500 identical errors → 1 issue with `occurrence_count = 500`, the latest `last_seen`, and the original `first_seen` preserved. Same `ValueError`, different call path → separate issues.»
+
+Фінгерпринт (важливо як патерн для твоєї таксономії):
+> «a 16-char blake2b hash is computed from: ... `exception_type | endpoint | top-5 frames` ... Each stack frame is normalised to `(basename(file), function_name)` — line numbers and absolute paths are dropped on purpose»
+
+**B5. Log Lens Core — «local-first log dashboard and error tracker», PHP + SQLite, фінreprint-issues**
+`[першоджерело]` · v0.3.0, 2026-09-08 · https://packagist.org/packages/cliqthemes/log-lens-core
+
+> «Fast, local-first log dashboard and error tracker for Laravel, Horizon, nginx, and console logs. ... Log data stays on the machine running the app.»
+
+> «Groups recurring events into fingerprinted issues with a workflow status, an immutable status history, tags, modules, and assignment»
+
+**B6. nahiarhdlog — SQLite, групування помилок + «top-errors ranking»**
+`[першоджерело]` · PyPI 0.4.0, березень 2024 · https://pypi.org/project/nahiarhdlog/0.4.0/#files
+
+> «Errors | Grouped by ExcType@file.py:line, full tracebacks, top-errors ranking»
+
+**B7. backtrack — локальний колектор, «Sentry-style error grouping», LLM-аналіз із твоїм ключем із localStorage**
+`[першоджерело]` · PyPI 0.1.2 · https://pypi.org/project/backtrack-route101/0.1.2/
+
+> «Sentry-style error grouping. Identical tracebacks from the same code path collapse into one row. ... Group counts, first/last seen, affected routes all shown.»
+
+> «Your key is stored in this browser's localStorage only. The backtrack collector never sees it ... The collector logs zero of this.»
+
+**B8. OtelContext — приймач OTLP, SQLite за замовчуванням + MCP-інструменти для розслідування**
+`[першоджерело]` · v0.6.1, дата не вказана · https://pkg.go.dev/github.com/RandomCodeSpace/otelcontext@v0.6.1
+
+> «Connect an MCP client to http://localhost:8080/mcp to investigate the same telemetry from an agent. The tools can: Build an anomaly timeline. ... Search logs with bounded results.»
+
+> «`DB_DRIVER` | `sqlite` | sqlite, postgres, mysql, or sqlserver»
+
+**B9. logpane — self-hosted error tracking SDK з offline SQLite-чергою (Flutter)**
+`[першоджерело]` · 0.1.0, дата не вказана · https://pub.dev/packages/logpane/versions/0.1.0/changelog
+
+> «Lightweight analytics and error tracking SDK for Flutter. Self-hosted, privacy-friendly event tracking and error monitoring. ... Event tracking with offline SQLite queue»
+
+---
+
+### C. Практики ведення журналу збоїв (postmortem/ledger) для однієї людини
+
+**C1. Готова AI-skill, що генерує postmortem за Google-SRE-шаблоном, з тегами достовірності**
+`[першоджерело]` · репозиторій, дата не вказана · https://raw.githubusercontent.com/incubyte/ai-plugins/refs/heads/main/incident-postmortem/skills/postmortem-writer/references/postmortem-template.md
+
+> «The template is **blameless**: it focuses on the system, not the people. ... The point of the postmortem is to learn what to change about the system so the same incident does not happen again.»
+
+> «Every claim carries `[VERIFIED]`, `[OBSERVED]`, `[INFERRED]`, or `[UNKNOWN]` inline. The Root Cause section is reserved for `[VERIFIED]` causes — anything else belongs in Contributing Factors.»
+
+Структура розділів (готовий каркас для запису в ледері): `Header → Summary → Impact (Customers affected / Duration / Symptoms / Business impact) → Timeline (UTC) → Root Cause → Contributing Factors`.
+
+**C2. Мінімальний postmortem, розрахований на «до 1 години», з версіонуванням у репо**
+`[третя сторона]` (Zenodo-архів блогу вендора, first published 2026-07-17, archived 2026-08-30) · https://zenodo.org/records/22174448
+
+> «**Postmortem 的份量要控制在 1 小時內能寫完。** ... 與其一個月寫出 0 篇像樣的文件，每次都留下一份粗略的記錄，後者更有價值。»
+> («Обсяг postmortem треба тримати таким, щоб його можна було дописати за годину … краще щоразу залишати чорновий запис, ніж за місяць не написати жодного пристойного документа»)
+
+> «建議把它以附日期的檔案形式，放在儲存庫中的 `docs/postmortem/` 之類的位置，與程式碼放在同一個地方進行版本管理。»
+> («Рекомендується зберігати його як файл із датою в назві, у теці на кшталт `docs/postmortem/` у репозиторії, щоб версіонувати разом із кодом»)
+
+Поля шаблону: 狀態 (лише зареєстровано / дії виконуються / завершено) · 撰寫人 · 嚴重程度 · 概要 (≤3 рядки) · 影響 (на кого/що/наскільки; період) · 時間軸 · 直接原因 · 促成因素 · 做得好的地方 · **再發防止行動 (відповідальний + дедлайн)**.
+
+**C3. Solo-dev варіант без peer-review**
+`[не перевірено]` (інженерний decision-документ стороннього проєкту) · https://raw.githubusercontent.com/letuhao/lore-weave/refs/heads/main/docs/03_planning/LLM_MMO_RPG/decisions/locked_decisions.md#13
+
+> «**V1 solo-dev pattern**: self-review + 48h-sit + post-to-empty-channel (forces articulation + future-self clarity). Emergency class skips advisory but requires 24h post-deploy review»
+
+> «**Monthly "Postmortem Hour"** (V1+30d): 60-min team reading of 1-2 postmortems; rotating author explains»
+
+**C4. Додаткові безкоштовні шаблони (для запозичення секцій)**
+- `[першоджерело]` https://github.com/ready-to-release/eac/blob/main/templates/docs/reference/operations/blameless-post-mortem.md — «What went well? / What didn't go well? / **Where did we get lucky?**» + таблиця Action | Owner | Due Date
+- `[першоджерело]` https://github.com/laugiov/scambuster/blob/main/docs/runbooks/post-mortem-template.md — SEV1–3, timeline UTC, 5 Whys, «Type: prevent / detect / mitigate»
+- `[першоджерело]` https://github.com/kalyvask/pm-evaluation-framework/blob/main/templates/blameless-postmortem.md — «Length: usually 1–3 pages. Longer postmortems are usually defensive narratives in disguise.»
+- `[третя сторона]` Notion-маркетплейс Incident Postmortem & RCA: «Root cause category across 9 buckets» + «the checkbox that matters most: **Verified Effective**. Shipping a fix isn't the same as confirming it works.» https://www.notion.com/zh-TW/templates/incident-postmortem-rca
+- `[третя сторона, вендор]` Rootly: «Concise Incident Retrospective Template» + AI-промпти для комунікацій https://webflow.rootly.com/blog/streamlined-incident-post-mortems-a-concise-template-ai-prompts-for-artefacts
+
+---
+
+## Суперечності та неузгодженості
+
+1. **MAST vs. «дефект-таксономії коду» не покривають один одного.** MAST явно **виключає** одиночні LLM-збої (A2), а ODC-похідні таксономії (A3, A4) описують продукт-код, а не поведінку агента. Тобто **жодна одна готова таксономія не покриває твій кейс цілком** — потрібна гібридна.
+2. **Розбіжність у складі категорій.** arXiv v1 називає таксономію `MASFT`, а фінальна — `MAST`; у проєктній сторінці Berkeley зазначено 200 трейсів і 7 фреймворків, у статті — 150 трейсів у первісному аналізі й 1600+ у MAST-Data; у проєктній сторінці згадано «ChatDev achieves only 33.33% correctness», чого немає в анотації статті. Не усереднюю — це різні зрізи одного дослідження.
+3. **Кількісні метрики трекерів — самопроголошені.** errex подає «7 MB RAM / 7500 events/s» у власному README (B2), незалежного бенчмарку не знайдено.
+4. **Підозріло «свіжі» arXiv-ID** (`2604.26923`, `2608.00661`) траплялися в результатах; я не підтвердив їх існування — див. Червоні прапорці.
+
+---
+
+## Висновок (висновок, не факт із джерела)
+
+Готового «батарейкою-включно» рішення для **реєстру класів збоїв AI-кодового асистента з підрахунком повторів, локально, на одну людину** — немає. Але складання з трьох існуючих частин майже тривіальне, і саме тому я вважаю цей шлях основним:
+
+- **Довідник класів** → взяти 14 кодів MAST (A1/A2) як основу, додати 3–10 категорій із таксономій генерації коду (A3: Factual Incorrectness, Incompleteness, Syntax, Schema/Argument, Runtime, Version) і ODC-логіку (A4). Формат файлу — як в A5 (клас → ознаки → причина → профілактика → відкат → мапінг на код MAST).
+- **Лічильник** → локальний трекер із фінгерпринт-групуванням (B1–B8). Ключове: усі вони дають `count` + `first_seen`/`last_seen`; Errly/errex ще й MCP, тобто **сам агент стає клієнтом свого ледера**.
+- **Форма запису** → мінімальний postmortem за 1 годину (C2) у `docs/postmortem/`, з полями C1 + «recurrence-prevention action» з дедлайном.
+
+Слабке місце всього підходу: self-hosted Sentry-трекери рахують **винятки** (tracebacks), а не **класи збоїв агента** (типу «context drift» або «scope leak»). Щоб рахувати саме класи, треба або сварувати власний `code` через API-тег, або використати MAST-аннотатор як LLM-as-a-judge — а це вже не «готовий інструмент», а інтеграційна робота.
+
+---
+
+## Рекомендація
+
+> Це рекомендація (моя), а не знайдений факт.
+
+**Мінімальний стек на вихідні, без хмари й без Postgres/Redis:**
+
+1. **Репозиторій = ледер.** Тека `agent-failures/` з трьома файлами: `taxonomy.md` (коди + ознаки), `log.md` або `log.csv` (по одному рядку на фейл), `_postmortem_template.md`. Плюс git-хук, що вимагає, аби в записі був код класу й посилання на diff/коміт.
+2. **Схема рядка (CSV/SQLite/SQLite-like):**
+   `date | code (MAST FM-x.y або власний T-x) | agent+model+version | task_type | symptom | trigger (implicit: prompt/file scope) | detected_by (self/test/lint/user) | repeat_of (id першого випадку) | cost/tokens | prevention_action | status`
+3. **Підрахунок повторів — дві опції:**
+   - *Мінімум:* `sqlite3` або `sqlite-utils` + один SQL-запит `GROUP BY code ORDER BY COUNT(*) DESC`. Плюс `repeat_of`, щоб відрізняти «новий екземпляр того ж класу» від «рецидив невиправленого».
+   - *З UI і само-доступом для агента:* Errly (Go+SQLite+MCP, B1) або errex (Rust+SQLite+MCP-стаб, B2). Записувати свої класи як `code`-тег/`project`-name; використовувати `occurrence_count` як лічильник.
+4. **Тригер порогового правила:** якщо клас повторився 3-й раз — він з `log` переїжджає в окремий постійний пункт у твоєму агент-інструкційному файлі (аналог `CLAUDE.md`/`AGENTS.md`/`AGENT_CONSTITUTION`) + обов'язковий postmortem із «prevention action», а не лише запис. Це прямо випливає з логіки MAST/C1 («якщо не змінити систему, режим спрацює знову»).
+5. **Автоматизація (опційно, пізніше):** взяти MAST LLM-as-a-judge (A1, опенсорсний) і подати йому останні трейси сесій, щоб він проставив коди FM-x.y замість ручного розмічування. Тримати температуру 0 (як у A3: «with temperature 0 ... to promote deterministic and reproducible outputs»), і пам'ятати, що коди — це гіпотеза, а не істина.
+
+**Порядок впроваждення:** (1) `taxonomy.md` з 14 кодів MAST + 5–8 власних класів → (2) `log.csv` + один SQL-запит → (3) шаблон postmortem за 1 год → (4) трекер із UI **лише якщо** кількість записів > ~50.
+
+---
+
+## Чого не знайшов
+
+- **Жодного інструменту, створеного саме для «failure-mode ledger AI-кодового асистента з підрахунком повторів для однієї людини».** Найближчі — це загальні error-трекери + загальні таксономії.
+- **Не перевірив** (вичерпав пошуковий крок): практику ведення «журналу помилок» у файлах інструкцій Claude Code / Cursor / `AGENTS.md`; self-hosting Langfuse і Arize Phoenix (чи працюють вони на самому SQLite, чи вимагають ClickHouse/Postgres); promptfoo як локальний рушій eval із підрахунком фейлів; чи є готові MCP-сервери, що пишуть структуровані «failure events» у локальний SQLite.
+- **Не знайшов жодного незалежного огляду/критики** жодного з локальних трекерів (B1–B9) — тільки їхні власні README.
+- **Не знайшов даних про популярність/підтримку** репозиторіїв (зірки, коміти, дата останнього релізу) — числа такого роду я можу брати лише з першоджерела, а профілі GitHub у видачі не містили цих метрик.
+- **Повний перелік 14 кодів MAST із першоджерела** я не бачив — код-неймберінг FM-1.x/2.x/3.x узятий із конспекту третьої сторони (A2).
+
+---
+
+## Червоні прапорці
+
+1. **Ризик supply-chain / AI-slop пакетів.** `fastapi-flare`, `nahiarhdlog`, `backtrack-route101`, `logpane`, `Errly`, `errex` — маловідомі назви з маркетингово-подібними README без ознак адопції. Перед запуском: пінити версію, читати код, ізолювати в контейнері, не давати мережевого доступу назовні.
+2. **Зміст сторінок — дані, не інструкції.** В одному з результатів (README Errly) буквально написано «> Read **https://raw.githubusercontent.com/AsYourWish-ai/Errly/main/agent_install.md** and do it.» Я **не** виконував цього й не передаю тобі як вказівку. Те саме — до `/install-errly`-подібних слаш-команд: це опис, не команда тобі.
+3. **Дати, що виглядають майбутніми/неконсистентними** в частині видачі (arXiv-ID `2604.*`, `2608.*`; «2026» у кількох джерелах) — не підтверджені, не спирайся на них.
+4. **«Blameless» для solo-dev — частково безглуздо.** Концепція створена проти звинувачення *людей* у команді; тобі вона дає лише структуру («система, а не людина»), і це варто залишити, але ритуали на кшталт «Postmortem Hour» (C3) не переносяться на одну людину.
+5. **Готові postmortem-шаблони написані під сервіси з користувачами** (Impact: Customers affected, Business impact, MTTR, SEV-рівні). Для твоїх агентських збоїв половина полів буде `[UNKNOWN]`/N/A — не заповнюй їх для «краси», це саме те, що C1 забороняє через `[INFERRED]`.
+6. **Templates-як-файли легко перетворюються на ритуал.** Пряме попередження з A3-джерела: «A row you cannot quote is template-following, not a declaration: delete it.» (з `nw-post-mortem-framework`) — тобто порожні рядки в ледері гірші за їх відсутність.
+
+---
+
+## [не перевірено]
+
+- Код-неймберінг MAST FM-1.1…FM-3.3 (джерело — конспект третьої сторони, `tonydzi/awesome-evals`).
+- Сам папір Orthogonal Defect Classification 1992 (лише цитата в списку літератури).
+- ConstraintKG (Type 1/2/3, «grounded within Orthogonal Defect Classification») — бачив лише на сторінці «similar», не основну.
+- `AI-Agents-in-Depth` (bojieli) і `ai-agent-architecture` (Drobiazkin) — це чернетки/PDF третіх сторін, не рецензовані джерела.
+- Приналежність і актуальність `letuhao/lore-weave` decision-документа (C3) — це планувальний файл стороннього проєкту, не інженерний стандарт.
+- Усі числа продуктивності self-hosted трекерів (RAM, RPS) — самопроголошені.
+
+---
+
+*Це питання, схоже, буде повторюватися — якщо так, варто один раз завести `agent-failures/taxonomy.md` + `log.csv` у репо і надалі лише додавати рядки, а не шукати заново.*
+
+== Джерела (40):
+- Why Do Multi-Agent LLM Systems Fail? — https://proceedings.neurips.cc//paper_files/paper/2025/hash/b1041e52d3be19f0a9bc491657488e4a-Abstract-Datasets_and_Benchmarks_Track.html
+- NeurIPS Poster Why Do Multi-Agent LLM Systems Fail? — https://neurips.cc/virtual/2025/loc/san-diego/poster/121528
+- Why Do Multi-Agent LLM Systems Fail? - Why Do Multi-Agent LLM Systems Fail? — https://ar5iv.labs.arxiv.org/html/2503.13657v1#1
+- Os sistemas multiagente introduzem modos de falha que não existem em sistemas com um único agente — https://github.com/bojieli/ai-agent-book/releases/download/latest/AI-Agents-in-Depth-ptbr.pdf#100#91
+- Failures of agent systems can be cataloged systematically — https://github.com/Drobiazkin/ai-agent-architecture/blob/c81bfd76a7574405cf5ae1a0e85062c6457112b1/ai-agent-architecture-book.pdf?_x_output_type_b6db407c4_=embedded_pdf#44#28
+- Why Do Multi-Agent LLM Systems Fail? — https://arxiv-org.ezproxy.obspm.fr/html/2503.13657v3#2
+-  — https://raw.githubusercontent.com/sou350121/Agent-Playbook/2b1e0c8ec94bceeb801066e662d6780007fb2e16/theory/03-engineering/agent-failure-taxonomy.md#1
+- Agent 失效分類學 (Agent Failure Taxonomy) — https://raw.githubusercontent.com/sou350121/Agent-Playbook/0d787c6b9e350d03390d491034094796af39fe25/theory/03-engineering/agent-failure-taxonomy.md#1
+- MAST — https://sky.cs.berkeley.edu/project/mast/
+- awesome-evals/notes/articles/mast-why-multi-agent-llm-systems-fail.md at main · tonydzi/awesome-evals - Skip to content — https://github.com/tonydzi/awesome-evals/blob/main/notes/articles/mast-why-multi-agent-llm-systems-fail.md#1
+- ClassEval-Pro: A Cross-Domain Benchmark for Class-Level Code Generation - Concretely, Syntax Errors capture low-level code invalidity such as unresolved names or malformed symbol references; Dependency ... — https://ar5iv.labs.arxiv.org/html/2604.26923#4
+- IaC Generation with LLMs: An Error Taxonomy and A Study on Configuration Knowledge Injection - Dimension 2, reported in Table 3 and 5, classifies the type of failure inferred to have occurred within the LLM during code gene... — https://ar5iv.labs.arxiv.org/html/2512.14792#3
+- 2) Taxonomy: Our goal is not to propose a new taxonomy, but to operationalize and validate existing taxonomies for LLM-generated... — https://export.arxiv.org/pdf/2608.00661#6#2
+- Towards Understanding the Characteristics of Code Generation Errors Made by Large Language Models — https://dlnext.acm.org/doi/abs/10.1109/ICSE55347.2025.00180#core-collateral-purchase-access#1
+- ConstraintKG: Knowledge Graph-Grounded Detection and Repair of Structured Output Hallucinations in LLMs — https://ieeexplore.ieee.org/document/11676795/similar#similar
+- Towards Understanding the Characteristics of Code Generation Errors Made by Large Language Models — https://ieeexplore.ieee.org/document/11029951#1
+- <table><tr><td>Error Category</td><td>Error Sub-Category</td><td>Atomic Error</td><td>GPT-4o</td></tr><tr><td rowspan="3">Intent... — https://dlnext.acm.org/doi/pdf/10.1145/3817608?download=true&__cf_chl_tk=gaZbrMiR6taint7cdaAIAnzP9Nars1gME0vtP0E17XA-1784655687-1.0.1.1-3t92NB_2nSnVi96xs8XJqsoDy.a8KBEJXpux0LbpBYE&_x_output_type_b6db407c4_=embedded_pdf#10#3
+- RepoAI: Automated code refactoring through multi-agent LLM orchestration and retrieval-augmented generation — https://www.sciencedirect.com/science/article/abs/pii/S0167642326000432?via%3Dihub#1
+- Towards Understanding the Characteristics of Code Generation Errors Made by Large Language Models - 2025 IEEE/ACM 47th International Conference on Software Engineering (ICSE) — https://www.computer.org/csdl/proceedings-article/icse/2025/056900a717/251mH51B1AY#6f4c2d86-81c6-459f-8e4d-6d8ed605f6e2#1
+- What is wrong with your code generated by large language models? An extensive study — https://xuanjing-huang.github.io/publication/llm-code-bug-study
+- fastapi-flare - What is fastapi-flare? — https://pypi.org/project/fastapi-flare/0.4.0/#1
+- nahiarhdlog - nahiarhdlog — https://pypi.org/project/nahiarhdlog/0.4.0/#files#1
+- backtrack-route101 - ┌──────────────────┐    HTTP POST    ┌────────────────────────┐    poll    ┌───────────────┐ — https://pypi.org/project/backtrack-route101/0.1.2/#1
+- otelcontext - otelcontext — https://pkg.go.dev/github.com/RandomCodeSpace/otelcontext@v0.6.1#1
+- logpane 0.1.0 changelog | Flutter package — https://pub.dev/packages/logpane/versions/0.1.0/changelog
+- GitHub - AsYourWish-ai/Errly: Lightweight Self-Hosted Error Monitoring A minimal error monitoring system with:  Backend server (Go + SQLite) — lightweight, single binary MCP server (Go) — lets AI agents query and manage errors SDKs for Go, Python, and Next.js / TypeScript · GitHub — https://github.com/AsYourWish-ai/Errly#1
+- denyzhirkov/crashbox repository overview — https://hub.docker.com/r/denyzhirkov/crashbox#1
+- cliqthemes/log-lens-core — https://packagist.org/packages/cliqthemes/log-lens-core#1
+- GitHub - TheHoltz/errex: Lightweight, self-hosted Sentry alternative. Rust + SQLite, ~10 MB RAM. Sentry-SDK compatible ingest, fast SvelteKit dashboard, MCP-ready for AI agents. · GitHub — https://github.com/TheHoltz/errex#1
+- Errly - Lightweight Self-Hosted Error Monitoring - MCP Service — https://www.mcpworld.com/en/detail/6334c6eb71899b4a137343413795e818
+- ai-plugins/incident-postmortem/skills/postmortem-writer/references/postmortem-template.md at main · incubyte/ai-plugins - Skip to content — https://github.com/incubyte/ai-plugins/blob/main/incident-postmortem/skills/postmortem-writer/references/postmortem-template.md#1
+- pm-evaluation-framework/templates/blameless-postmortem.md at main · kalyvask/pm-evaluation-framework - Skip to content — https://github.com/kalyvask/pm-evaluation-framework/blob/main/templates/blameless-postmortem.md#1
+- | SR4-D1 | Canonical postmortem template | 2026-04-24 | `docs/sre/postmortems/TEMPLATE — https://raw.githubusercontent.com/letuhao/lore-weave/refs/heads/main/docs/03_planning/LLM_MMO_RPG/decisions/locked_decisions.md#13
+- eac/templates/docs/reference/operations/blameless-post-mortem.md at main · ready-to-release/eac — https://github.com/ready-to-release/eac/blob/main/templates/docs/reference/operations/blameless-post-mortem.md
+- Postmortem Template (Google-SRE-style, blameless) — https://raw.githubusercontent.com/incubyte/ai-plugins/refs/heads/main/incident-postmortem/skills/postmortem-writer/references/postmortem-template.md#1
+-  — https://raw.githubusercontent.com/laugiov/scambuster/refs/heads/main/docs/runbooks/post-mortem-template.md
+- Streamlined Incident Post‑Mortems: A Concise Template + AI prompts for artefacts | Rootly — https://webflow.rootly.com/blog/streamlined-incident-post-mortems-a-concise-template-ai-prompts-for-artefacts?b9e754a1_page=1
+- 故障處理不止於復原 ── 給小型開發團隊的 Postmortem(再發防止)實務範本 (archived 2026-08-30) - Zenodo is currently experiencing slowness and intermittent outages due to heavy automated traffic from bots and AI crawlers — https://zenodo.org/records/22174448#1
+- 由 Hafidz Noor Fauzi 建立的 Incident Postmortem & RCA 範本 | Notion Marketplace — https://www.notion.com/zh-TW/templates/incident-postmortem-rca
+- nw-post... | nWave-/nWave-exp~0w8vil2 Agent Skill | SkillsMP — https://skillsmp.com/creators/nwave-ai/nwave-experimental/nwave-skills-nw-post-mortem-framework
+
+== Розмова: 20261012-142418 | вх 34617 (з кешу 38400) | вих 13124 | пошуків 8
+== Ціна ≈$0.0132 (не пік; без вартості пошуків)
