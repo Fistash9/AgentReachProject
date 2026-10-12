@@ -19,6 +19,7 @@ MAX_LINES = 30
 
 HEREDOC_START_RE = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?")
 SEPARATORS = {";", "&&", "||", "&", "|", "(", ")", "\n"}
+SHELLS = {"sh", "bash", "dash", "zsh"}
 
 
 def strip_heredocs(command):
@@ -88,6 +89,18 @@ def git_add_arg_tokens(command):
                     continue
         at_start = False
         i += 1
+
+    # Вкладена оболонка: `sh -c '<скрипт>'`, `bash -lc …`, зокрема після
+    # `proot-distro login ubuntu --` — рядок після -c один токен у лапках,
+    # git add у ньому вище не видно. Розбираємо тією ж функцією (TROUBLES
+    # «trash-md-guard не бачить rm усередині sh -c», 2026-10-12 — той самий клас).
+    for k in range(len(tokens) - 2):
+        if (tokens[k].rsplit("/", 1)[-1] in SHELLS and tokens[k + 1].startswith("-")
+                and "c" in tokens[k + 1]):
+            inner = git_add_arg_tokens(tokens[k + 2])
+            if inner is not None:
+                found = True
+                combined_args.extend(inner)
     return combined_args if found else None
 
 
