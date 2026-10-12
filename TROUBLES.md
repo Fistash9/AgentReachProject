@@ -4379,3 +4379,18 @@ TAGS: deepseek-search, пошук, червоні прапорці, knowledge cu
 - Окремо: за 2 пошуки 12.10 — по 1 цитаті, якої немає в названому джерелі («pioneering effort…»,
   «agrees with itself»); інші 5 знайдено. Звірка цитат grep-ом після кожного пошуку — обов'язкова
   (SKILL.md deepseek-search, «Після виклику»).
+
+## /doctor 12.10: що в Termux НЕ застосовувати і як оновлювати Claude Code (2026-10-12)
+TAGS: doctor, claude-code-termux, update, skillOverrides, npm, jq
+— [claude-code, 2026-10-12] (/doctor; рішення користувача «Прибрати все»)
+- npm-пакет @anthropic-ai/claude-code — НЕ залишок: лончер ~/.local/bin/claude запускає його bin/claude-native.
+  Поради doctor «видалити npm» / «claude install» / «claude update» тут ламають встановлення. jq у Termux немає —
+  перевірки JSON робити python3.
+- Оновлення: `~/.local/share/claude-code-termux/claude-code-termux install <версія>` (НЕ `update` — він
+  відкочує до версії npm-пакета, TROUBLES 2026-09-23). Робити ПІСЛЯ виходу з сесії: cp поверх бінарника, що
+  виконується, — «Text file busy»; а якщо новий не стартує, менеджер зупиняється вже після заміни. Бекап
+  перед 2.1.296: bin/claude-native.bak-2.1.280 (cmp ідентичний); відкат — cp назад або `install 2.1.280`.
+- Вимкнено skillOverrides у .claude/settings.local.json (бекап .bak-20261012-doctor): 8 синхронізованих
+  anthropic-skills (docx, pptx, xlsx, pdf, docs, google-workspace, morning, import-memory; 0 використань за весь
+  час) + grilling (дубль grill-me). Чи діє skillOverrides на синхронізовані — перевірити в новій сесії списком
+  скілів (M5.2 «[не перевірено]»).
