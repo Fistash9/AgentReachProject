@@ -202,3 +202,11 @@
   файл під git, .bak за RULES «Бекап поза git» не потрібен. Рішення користувача: «Так, перенось».
 - Відновлюване: так — `mv .trash/cost-report-bak-2026-10-12/cost-report.py.bak-20261008-globaldedup tools/`
   або `git show ae9e97b:tools/cost-report.py`.
+
+### 2026-10-12 — .baton/history/pass-24…pass-34 (9 знімків) → .trash/baton-history-2026-10-12/
+— [claude-code, 2026-10-12]
+- Що: pass-24.json pass-25.json pass-27.json pass-29.json pass-30.json pass-31.json pass-32.json pass-33.json pass-34.json (локальні, поза git — .baton/ у .gitignore; копія лише тут).
+- Чому: RULES.md «Baton» — старіші знімки прибирати після розбору baton-diff; розбір 42 з 42 закрито
+  (trees/pam-yat-proyektu.md M3.3, коміт 3041183). Лишено pass-36.json (точка відліку), HANDOFF-pre-*
+  і archive-2026-09-28/ (про них рішення не було). Рішення користувача: «У .trash/, останній лишити».
+- Відновлюване: так — `mv .trash/baton-history-2026-10-12/pass-*.json .baton/history/`.
