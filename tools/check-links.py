@@ -57,11 +57,13 @@ def main():
     #    Виняток: PROTOCOL.md — ЗОВНІШНІЙ документ baton (The Baton Protocol v0.1),
     #    а не файл проєкту; RULES-WHY.md:200,229 цитує його як джерело, і це правда.
     #    Тому лагодимо перевірку, а не текст: множина токенів мінус {"PROTOCOL.md"}.
+    #    SKILL.md лежить у .claude/skills/<скіл>/ — RULES-WHY.md:336,342 (2026-10-13).
     EXTERNAL_DOCS = {"PROTOCOL.md"}
     for src, text in (("RULES.md", rules), ("RULES-WHY.md", why)):
         tokens = set(re.findall(r"\b([A-Z][A-Z_]+(?:-[A-Z]+)?\.md)\b", text)) - EXTERNAL_DOCS
         for name in sorted(tokens):
-            found = glob.glob(name) + glob.glob("*/" + name)
+            found = (glob.glob(name) + glob.glob("*/" + name)
+                     + glob.glob(".claude/skills/*/" + name))
             chk(bool(found), f"{src}: файл {name} не знайдено")
 
     # 3. шляхи в `лапках` у RULES.md (крім системних tmp і .trash/, що
