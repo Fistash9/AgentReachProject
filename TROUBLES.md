@@ -4613,3 +4613,25 @@ TAGS: classify-task.sh, deepseek-search, пошук, рецензія, askuserqu
 - tools/memory-audit.py:67 `DESC_MAX = 300` — уже правильно, правки не треба. Мінімізовані імена
   (`OZe` у 13.10-записі bbc83848, `aAt` тепер) міняються з версією — шукати за `long_description`.
 — [claude-code, 2026-10-13]
+
+## Grep/Glob у сесіях Claude Code мовчки «нічого не знайдено» — вбудований ripgrep не стартує (2026-10-13)
+- Служить: T11 (чесний іспит перевіряльників cases-v3 → вибір ланцюжка T8). Знайдено на прогоні
+  run_claude_v3.py: Opus на E6 — «файл claude-model-config-thinking.md у поточній теці не знайдено»,
+  хоча файл був (ls). Журнали під-сесій: Grep/Glob викликали 12 сесій Haiku з 34 і 3 Opus з 7 —
+  УСІ 15 отримали «No files found»/«No matches found»; хто брав Read — читав нормально.
+- Причина (debug-file під-сесії): `Ripgrep first use test: FAILED (mode=embedded,
+  path=…/usr/glibc/lib/ld-linux-aarch64.so.1)` — вбудований rg запускається через process.execPath,
+  а в нашій Termux-обгортці це завантажувач glibc; системного `rg` не було. Код 2.1.296 (strings):
+  `USE_BUILTIN_RIPGREP` → `{mode:"system",command:<шлях rg>}`. Близьке: claudeissues #13021 (Termux,
+  arm64-android, «fails silently»), #6415 (змінну колись ігнорували — resolved).
+- Лікування (рішення користувача 13.10 «лагодити — поставити ripgrep», «глобально»):
+  `pkg install ripgrep` (15.2.0, @termux; підтягнув lz4) + `~/.claude/settings.json`
+  `"env": {"USE_BUILTIN_RIPGREP": "0"}` (бекап settings.json.bak-20261013-ripgrep).
+  Перевірено пробами Glob у теці verifier-v3: лише rg без змінної — досі FAILED/«No files found»
+  (запасна гілка коду не спрацювала); зі змінною — `PASSED (mode=system, path=…/usr/bin/rg)`,
+  11 файлів; через settings.json без змінної в команді — PASSED. Проби ≈$0.008.
+- Наслідок: результати Haiku (32) і Opus (8) до лікування — tools/verifier-backtest/
+  results-claude-*-grepbroken.jsonl, у порівняння не йдуть. Не перевірено: чи головна сесія
+  проєкту теж мала зламаний Grep/Glob (у ній ці інструменти не показані).
+- Відкат: cp ~/.claude/settings.json.bak-20261013-ripgrep ~/.claude/settings.json; pkg uninstall ripgrep.
+— [claude-code, 2026-10-13]

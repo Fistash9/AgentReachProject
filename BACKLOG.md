@@ -727,6 +727,23 @@
   компʼютерному зору macOS. Проба — у пісочниці ~/tmp/<назва>, поза проєктом.
 - Витрати: ключ OpenAI платний (автор: центи за ролик) — лише після «так».
 
+### FilmCraft (storytold) — монтаж відео агентом через MCP (2026-10-13)
+- Звідки: рілс Decer5lte1H («Женя про AI», 13.10.2026; розібрано лише опис з yt-dlp
+  info.json — звук і кадри ні). Рілс каже «ArtCraft — заміна Adobe»; насправді ArtCraft —
+  IDE для ІІ-зображень/відео, а аналоги Adobe — окремі репо storytold/* (PhotoCraft,
+  FilmCraft = Premiere, EffectCraft = After Effects…), Apache-2.0.
+- Мета (користувач 13.10: «розібрати для відео каналів»): монтаж для каналів агентом.
+  Пов'язано з «Скіл монтажер у стилі блогера» вище.
+- Що вже видно (docs/agents.md, docs/transcripts.md, gh api 13.10): `filmcraft-cli mcp` —
+  headless (без вікна) і bridge; інструменти media_import, sequence_inspect, command_run/
+  command_batch, render_frame (PNG-прев'ю), undo; монтаж за транскриптом (`transcript.*`:
+  вирізати за словами, прибрати паразити й паузи, субтитри). Реліз v0.7.2 (12.10) має
+  linux-aarch64 (deb/AppImage/tar.gz).
+- Не перевірено: «навайбкоджено Opus 5.5» (з рілса); чи запускається на телефоні (proot
+  Ubuntu, headless); якість і стабільність (v0.x). Проба — у пісочниці поза проєктом,
+  перед встановленням — 4 кроки RULES «Перед ВСТАНОВЛЕННЯМ».
+— [claude-code, 2026-10-13]
+
 ### DeepSeek Harness — ідеї для «роїння» й голограми (2026-09-27)
 - deepseek.com/harness: «Everything is a plugin. Every run is traceable.»;
   плагіни — моделі, інструменти, скіли, пам'ять, субагенти; журнал усього,
