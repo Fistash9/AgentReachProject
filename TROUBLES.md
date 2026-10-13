@@ -4599,3 +4599,17 @@ TAGS: classify-task.sh, deepseek-search, пошук, рецензія, askuserqu
   Termux не знижує кирилицю — lower() через python.
 - Відкат: cp ~/.claude/hooks/classify-task.sh.bak-20261013 ~/.claude/hooks/classify-task.sh.
 — [claude-code, 2026-10-13]
+
+## Поріг опису пам'яті: 300, не 1500 (2026-10-13)
+- Питання з естафети (#39–#41, випало в #41→#42): «котрий поріг опису діє для пам'яті — 300 чи 1500
+  (обидва є в коді)». Служить: memory-audit.py перевіряє правильне число (G2, пам'ять проєкту).
+- Відповідь — 300. Claude Code 2.1.296, рядки з бінарника (`strings` у файл, потім python —
+  `grep -oE '.{0,200}…'` по бінарнику не вкладається в 120 с): `if(D.length>aAt)return{kind:"lint",
+  lint:"long_description",text:"…shorten it to one specific line (about ${aAt/2} characters)…"}`,
+  `aAt=300` — одне визначення. Тобто лінт — понад 300, порада — ~150 символів.
+- 1500 поруч із «memory»+«description» не знайдено жодного разу. Знайдене 1500 — в екрані опису
+  MCP-інструмента («The model receives only about the first … characters»); ім'я змінної там
+  мінімізоване й має 15 значень у бінарнику — що саме там 1500, не перевірено. До пам'яті не стосується.
+- tools/memory-audit.py:67 `DESC_MAX = 300` — уже правильно, правки не треба. Мінімізовані імена
+  (`OZe` у 13.10-записі bbc83848, `aAt` тепер) міняються з версією — шукати за `long_description`.
+— [claude-code, 2026-10-13]
