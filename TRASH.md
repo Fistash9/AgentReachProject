@@ -237,3 +237,9 @@
   «DSH і AGENTS.md з ~/dsh-app» — записано НЕ ПЕРЕВІРЕНО (trees/pam-yat-proyektu.md:114). Лишено
   pass-39.json (точка відліку). Рішення користувача: «так, переноси».
 - Відновлюване: так — `mv .trash/baton-history-2026-10-12/pass-3[68].json .baton/history/`.
+
+### 2026-10-13 — tools/verifier-backtest/sources-v3/__pycache__/ (rm)
+— [claude-code, 2026-10-13]
+- Що: кеш байткоду, який створив мій `python3 -m py_compile` (перевірка, що історична версія
+  request-brief-reminder-hook.py синтаксично валідна, кейс cases-v3). Власний щойно створений артефакт.
+- Відновлюване: не потрібно — повторний py_compile створить знову.

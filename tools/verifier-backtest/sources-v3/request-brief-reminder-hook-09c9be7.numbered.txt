@@ -1,0 +1,156 @@
+  1: #!/data/data/com.termux/files/usr/bin/python3
+  2: """
+  3: PreToolUse hook: нагадує про критерії скіла request-brief ПЕРЕД
+  4: нетривіальною правкою (Edit/Write), коли повідомлення користувача,
+  5: що передувало правці, коротке/неоднозначне.
+  6: 
+  7: P4 з постмортему (TROUBLES.md, "Прогін сценариста..."): request-brief
+  8: не мав жодного автоматичного тригера, на відміну від делегатора
+  9: DeepSeek (UserPromptSubmit-хук), тому регулярно пропускався.
+ 10: 
+ 11: Евристика для Edit/Write (без LLM, нічого не блокує):
+ 12: - бере останній людський запит з transcript_path (запис "last-prompt",
+ 13:   формат JSONL — перевірено на реальному транскрипті цієї сесії)
+ 14: - короткий/неоднозначний: <=12 слів і НЕ голе підтвердження вже
+ 15:   запропонованого ("так", "роби", "коміть" тощо)
+ 16: - нетривіальна правка: >300 символів нового тексту або >5 нових рядків
+ 17: 
+ 18: Друга евристика, для Bash (додано 2026-09-23, TROUBLES.md
+ 19: "Додатковий урок про методологію тестування"): спрацьовує, коли
+ 20: команда має ознаки "ручного відтворення поведінки іншого
+ 21: скрипта/процесу без звірки з джерелом" — 2+ `export VAR=` разом із
+ 22: викликом `claude`. Саме цей патерн сьогодні дав хибну впевненість
+ 23: "перевірено живим тестом" (ручний тест не мав `--model`, а реальний
+ 24: скрипт його теж не передає — але це з'ясувалось випадково, не через
+ 25: нагадування).
+ 26: 
+ 27: НЕ вміє: розпізнати, що асистент сам мовчки звузив варіанти в
+ 28: попередній рекомендації (це семантичне судження, не текстовий
+ 29: паттерн) — окрема проблема, вже записана в пам'ять асистента, не
+ 30: автоматизована тут.
+ 31: """
+ 32: import sys
+ 33: import json
+ 34: import re
+ 35: 
+ 36: WORD_LIMIT = 12
+ 37: CHAR_THRESHOLD = 300
+ 38: LINE_THRESHOLD = 5
+ 39: EXPORT_THRESHOLD = 2
+ 40: 
+ 41: CONFIRM_WORDS = {
+ 42:     "так", "yes", "ok", "окей", "ок", "да", "давай", "го", "добре",
+ 43:     "роби", "зроби", "коміть", "закомить", "пуш", "запуш",
+ 44:     "згоден", "згодна", "підтверджую", "продовжуй", "нехай",
+ 45: }
+ 46: 
+ 47: EXPORT_RE = re.compile(r"(?:^|\n|;)\s*export\s+\w+=")
+ 48: CLAUDE_INVOCATION_RE = re.compile(r"(?:^|[\s;&|])claude(?:\s|$)")
+ 49: 
+ 50: 
+ 51: def bash_verification_risk(command):
+ 52:     """True, якщо команда виглядає як ручне відтворення поведінки
+ 53:     іншого скрипта/процесу (кілька export + виклик claude) —
+ 54:     сигнал звірити аргументи з реальним кодом джерела, не з пам'яті."""
+ 55:     if not command:
+ 56:         return False
+ 57:     export_count = len(EXPORT_RE.findall(command))
+ 58:     return export_count >= EXPORT_THRESHOLD and bool(CLAUDE_INVOCATION_RE.search(command))
+ 59: 
+ 60: 
+ 61: def last_user_prompt(transcript_path):
+ 62:     try:
+ 63:         with open(transcript_path, encoding="utf-8") as f:
+ 64:             lines = f.readlines()
+ 65:     except (FileNotFoundError, OSError, TypeError):
+ 66:         return None
+ 67:     for line in reversed(lines):
+ 68:         line = line.strip()
+ 69:         if not line:
+ 70:             continue
+ 71:         try:
+ 72:             entry = json.loads(line)
+ 73:         except json.JSONDecodeError:
+ 74:             continue
+ 75:         if entry.get("type") == "last-prompt":
+ 76:             return entry.get("lastPrompt")
+ 77:     return None
+ 78: 
+ 79: 
+ 80: def is_bare_confirmation(text):
+ 81:     words = re.findall(r"[a-zA-Zа-яіїєА-ЯІЇЄ]+", text.lower())
+ 82:     if not words or len(words) > 4:
+ 83:         return False
+ 84:     return all(w in CONFIRM_WORDS for w in words)
+ 85: 
+ 86: 
+ 87: def edit_size(tool_name, tool_input):
+ 88:     if tool_name == "Edit":
+ 89:         new = tool_input.get("new_string", "")
+ 90:     elif tool_name == "Write":
+ 91:         new = tool_input.get("content", "")
+ 92:     else:
+ 93:         return 0, 0
+ 94:     return len(new), new.count("\n")
+ 95: 
+ 96: 
+ 97: def main():
+ 98:     try:
+ 99:         data = json.load(sys.stdin)
+100:     except (json.JSONDecodeError, ValueError):
+101:         return
+102: 
+103:     tool_name = data.get("tool_name")
+104: 
+105:     if tool_name == "Bash":
+106:         command = data.get("tool_input", {}).get("command", "")
+107:         if not bash_verification_risk(command):
+108:             return
+109:         context = (
+110:             "Ручне відтворення поведінки іншого скрипта/процесу (кілька "
+111:             "export + виклик claude) — перед тим як вважати це "
+112:             "'перевіреним живим тестом', звір аргументи виклику з "
+113:             "РЕАЛЬНИМ кодом джерела (grep реального скрипта), не з "
+114:             "пам'яті. TROUBLES.md: 'Додатковий урок про методологію "
+115:             "тестування' (2026-09-23)."
+116:         )
+117:         print(json.dumps({
+118:             "hookSpecificOutput": {
+119:                 "hookEventName": "PreToolUse",
+120:                 "additionalContext": context,
+121:             }
+122:         }))
+123:         return
+124: 
+125:     if tool_name not in ("Edit", "Write"):
+126:         return
+127: 
+128:     chars, newlines = edit_size(tool_name, data.get("tool_input", {}))
+129:     if chars < CHAR_THRESHOLD and newlines < LINE_THRESHOLD:
+130:         return  # тривіальна правка
+131: 
+132:     prompt = last_user_prompt(data.get("transcript_path", ""))
+133:     if not prompt:
+134:         return
+135: 
+136:     words = prompt.split()
+137:     if len(words) > WORD_LIMIT or is_bare_confirmation(prompt):
+138:         return  # достатньо розгорнутий запит або голе підтвердження
+139: 
+140:     context = (
+141:         "P4 (постмортем): останній запит користувача короткий/можливо "
+142:         "неоднозначний, а правка нетривіальна. Перевір критерії скіла "
+143:         "request-brief (мета, межі, критерій готовності) перед тим, як "
+144:         "продовжити — або явно поясни в тому ж повідомленні, чому це "
+145:         "не потрібно."
+146:     )
+147:     print(json.dumps({
+148:         "hookSpecificOutput": {
+149:             "hookEventName": "PreToolUse",
+150:             "additionalContext": context,
+151:         }
+152:     }))
+153: 
+154: 
+155: if __name__ == "__main__":
+156:     main()

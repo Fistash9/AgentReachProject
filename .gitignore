@@ -46,3 +46,8 @@ tools/verifier-backtest/sources/freellmapi-README.md
 
 # бекапи локальних налаштувань перед зміною скриптом (2026-09-25)
 .claude/*.bak-*
+# cases-v3 (2026-10-13): чужі тексти; як скачати — tools/verifier-backtest/sources-v3/README.md
+tools/verifier-backtest/sources-v3/*.txt
+tools/verifier-backtest/sources-v3/claude-*.md
+!tools/verifier-backtest/sources-v3/ls-hooks-tests-2026-10-07.txt
+!tools/verifier-backtest/sources-v3/*.numbered.txt

@@ -1,0 +1,18 @@
+$ git ls-tree -r --name-only 603a9fd | grep -E '^(tests/|\.claude/hooks/)'   # стан на 2026-10-07
+.claude/hooks/baton-reminder-hook.py
+.claude/hooks/delegate-outcome-logger-hook.py
+.claude/hooks/delegate-prompt-improver-hook.py
+.claude/hooks/git-add-status-hook.py
+.claude/hooks/node-label-shadow-hook.py
+.claude/hooks/number-claim-shadow-hook.py
+.claude/hooks/request-brief-reminder-hook.py
+.claude/hooks/rules-why-guard-hook.py
+.claude/hooks/statusline-cost.py
+.claude/hooks/tests/check-bash-negative.mjs
+.claude/hooks/tests/check-bash-positive.mjs
+.claude/hooks/tests/check-settings-wiring.mjs
+.claude/hooks/trash-md-guard-hook.py
+.claude/hooks/tree-focus-hook.py
+.claude/hooks/troubles-grep-hook.py
+.claude/hooks/verify-nudge-hook.py
+tests/test_check_links.py
