@@ -84,7 +84,7 @@ class Evidence:
             cmd = str(inp.get("command", ""))
             if re.search(r"\b(grep|rg)\b", cmd):
                 self.greps.append(cmd)
-            for m in re.finditer(r"\bcat\s+([^\s|;&>]+)", cmd):
+            for m in re.finditer(r"\bcat\s+(?:-\w+\s+)*([^\s|;&>-][^\s|;&>]*)", cmd):  # cat -n теж (13.10)
                 r = rel(m.group(1))
                 if r:
                     self.full_read.add(r)
