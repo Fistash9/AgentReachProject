@@ -47,6 +47,16 @@ RE_DELEG_HINT = re.compile(r"Делегуй", re.I)
 RE_DELEG_ANS = re.compile(r"делег|delegate|підказк\w* хука", re.I)
 RE_BRIEF_HINT = re.compile(r"request-brief", re.I)
 RE_BRIEF_ANS = re.compile(r"бриф|request-brief", re.I)
+# «не перевірено» без названих спроб/причини (2026-10-13, користувач: «не можу перевірити — це
+# найпростіше і не відповідь… шукай обхідні шляхи»). Лише тінь. Виняток — підсумки й мета-мова.
+RE_UNV = re.compile(r"не перевірено|не можу перевірити|НЕ ПЕРЕВІРЕНО|\[unverified\]|не звірено", re.I)
+RE_UNV_SKIP = re.compile(r"\b0 не перевірено|тепер перевірено|«не перевірено»|«не можу перевірити»|"
+                         r"\[не перевірено\]`|мітк|позначк|^\s*\|", re.I | re.M)
+RE_TRIED = re.compile(r"шукав|спробував|перевіряв|пробував|grep|curl|git log|у журнал|у записах|у доці|"
+                      r"\bбо\b|тому що|причина|неможливо в цій сесії|лише користувач|за тиждень|"
+                      r"тиждень лог|потрібн\w* (дані|тиждень|«так»)|покаже|побачимо|з'ясується|"
+                      r"наступн\w* (сесі|хід|ход)|блоку\w*|з вашого «так»|з твого «так»|лише після|"
+                      r"приклад|чек", re.I)
 VERIFY_TOOLS = ("mcp__delegate__delegate", "mcp__delegate__deepseek")
 
 
@@ -114,6 +124,10 @@ def check(turn):
                  for n, s in turn["tools"])
         if not ok:
             misses.append("verify")
+    for para in re.split(r"\n\s*\n|\n(?=- |\d+\. |\* )", last):
+        if RE_UNV.search(para) and not RE_UNV_SKIP.search(para) and not RE_TRIED.search(para):
+            misses.append("unverified")
+            break
     hints = "\n".join(turn["hints"])
     if RE_DELEG_HINT.search(hints) and not RE_DELEG_ANS.search(text):
         misses.append("nudge:delegate")
