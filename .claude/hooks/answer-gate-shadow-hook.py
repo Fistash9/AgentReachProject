@@ -170,6 +170,12 @@ def run(data):
         try:
             turns = list(iter_turns(current_turn_lines(tp)))
             if turns:
+                # журнал на Stop може ще не мати фінальної відповіді (доку hooks:
+                # transcript_path «may lag»; випадок 13.10 — хибний голос) →
+                # остання відповідь з last_assistant_message
+                lam = data.get("last_assistant_message")
+                if isinstance(lam, str) and lam.strip() and lam not in turns[-1]["texts"]:
+                    turns[-1]["texts"].append(lam)
                 misses = check(turns[-1])
                 if ("queue" in misses and turns[-1].get("human")
                         and not data.get("stop_hook_active")):
