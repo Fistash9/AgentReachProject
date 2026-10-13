@@ -4417,3 +4417,43 @@ TAGS: doctor, claude-code-termux, update, skillOverrides, npm, jq
   після — 2.1.273, без змін. Клас: невалідний аргумент версії → тихий fallback на поточну, не помітний без
   ручної перевірки claude --version після. Рецепт: аргумент версії — рівно `2.1.296`, без пробілів/крапки після;
   копіювати з інлайн-коду, не з кінця речення. — [claude-code, 2026-10-12]
+
+## Рілси 13.10: роутер моделей (Dd-6D7MMrrJ) і «7 репозиторіїв для агентів» (Dd4F2AkywyK) (2026-10-13)
+TAGS: instagram, рілс, роутер, effort, verify, eval, пам'ять, контекст, openviking, agentmemory
+Запит користувача: «в цьому відео є те що можна примінити… скажи що куди» (рілс 1); «це теж потрібно
+проаналізувати і записати знахідки» (рілс 2). Сесія e3a33280 (продовження).
+- Рілс 1 — Daniyar Kazi, 02.10.2026, 28 с, лише музика (whisper: «[музыка]») → розібрано 28 кадрів.
+  Чотири рівні на тих самих 6 задачах: Junior (усе Opus 5.5, effort max, $1.00 за задачу) → Middle (модель
+  вручну, effort high, $0.25) → Senior (спершу дешева модель → verify → escalate при fail, $0.14) → GOAT
+  (роутер вибирає модель І effort, verify «за ризиком» light/full, feedback «навчився», $0.09–0.11). Опис
+  автора: «Цифры в видео — симуляция, не benchmark» → доказу економії немає; гайд — за коментар.
+  Куди: наш ланцюжок перевіряльників DeepSeek → NVIDIA → Opus — Senior, але ескалація лише при ЗБОЇ ланки,
+  не при НЕПРОЙДЕНІЙ перевірці (додати); verify-before-show — «за ризиком» (grep для легкого, незалежний
+  перевіряльник для правил/хуків/чисел); бектест Opus 12.10 на всіх 8 кейсах — це Junior; логи тіней пишуть
+  рішення, але не результат (feedback). Наш вимір 26.09 (BACKLOG.md:549): «93% of your usage was at >150k
+  context» — головна економія в малому контексті оркестратора, не у виборі моделі; агент-перевіряльник 12.10
+  коштував у середньому ≈31 тис. токенів («квиток» не відокремлено — не міряно).
+- Рілс 2 — Кирилл Жильников, 29.09.2026, 54 с; назви з кадрів, звірено `gh api` 13.10:
+  browser-use/browser-use ★117 811 MIT; rohitg00/agentmemory ★29 377 Apache-2.0 (README: «Built on iii engine»,
+  `npx -y @agentmemory/agentmemory@latest` — як на кадрі); K-Dense-AI/scientific-agent-skills ★48 661 MIT;
+  cathrynlavery/diagram-design ★53 272 («Editorial diagram design…», як на кадрі); mukul975/Anthropic-
+  Cybersecurity-Skills ★34 347 Apache-2.0; ai-boost/awesome-harness-engineering ★4 808 (кадр: 4.6k, CC0; README
+  містить «Run Long-Horizon Tasks with Codex» з кадру, а walkinglabs/… — ні); volcengine/OpenViking ★39 807
+  AGPL-3.0. Ліцензія ai-boost у API — NOASSERTION (кадр CC0) — не звірено.
+  Куди: (1) OpenViking — той самий задум, що G1 «Голограма в кожній теці»: README «Read the summary before the
+  source», у кожній теці `.abstract.md` (L0, одне речення) і `.overview.md` (L1) → кандидат «готове рішення»
+  для G1; брати ІДЕЮ, не ставити (AGPL, сервер) — рішення користувача. (2) agentmemory — кандидат для пам'яті
+  (M15/Q4 проба memory MCP); ставити лише за 4 кроками перевірки стороннього; робота в Termux — не перевірено.
+  (3) awesome-harness-engineering → стаття Anthropic «Demystifying evals for AI agents» (09.01.2026, прочитано
+  через r.jina.ai): regression-набір «should have a nearly 100% pass rate»; «An eval at 100% tracks regressions
+  but provides no signal for improvement» (saturation); «20-50 simple tasks drawn from real failures is a great
+  start»; pass^k — «probability that all k trials succeed» (наш протокол «обидва прогони НІ» = pass^2).
+  → cases-v2 — це регресійний набір (усі три перевіряльники 100%), не здатнісний; друга хвиля Opus нічого не
+  розрізнить; потрібен cases-v3 зі справжніх помилок. (4) diagram-design — можливий для G2.5 (зведене дерево),
+  не досліджено. (5) browser-use, scientific, cybersecurity — не для наших задач зараз (є claude-in-chrome).
+- Третій рілс DeUONpGt5dZ (bymorozov, «Контент-завод») — вік-обмеження: yt-dlp «isn't available to everyone»,
+  Jina — «Age-restricted content… Log in» → не розібрано; потрібен файл від користувача або cookies.
+- Пошук «відео про підлизування» в архіві сесій: слова sycophan/підлиз — лише в моїх міркуваннях і пошуках
+  (18.09, 23.09, 09.10), не в посиланнях користувача; з 6 нерозібраних рілсів архіву 4 — не про це, 2
+  (DeFXZBcMlx5, DdeGN3ntnld) не відкрились → не знайдено, не «не було».
+  — [claude-code, 2026-10-13]
