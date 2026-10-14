@@ -1,0 +1,4 @@
+[1/96] E5 №1: очікую НІ → НІ (23.5 с) 
+[2/96] U4 №3: очікую НЕ МОЖУ → збій (- с) HTTP 429 b'{"error":{"message":"You have reached the daily limit of 60 free-model requests for your account (it resets at 00:00 UTC). Retry after 48953 seconds, or add credits to use the paid version (no free-ti'
+денний ліміт — зупиняю; решту запусти тим самим рядком пізніше
+результат: /data/data/com.termux/files/home/AgentReachProject/tools/verifier-backtest/results-bazaarlink-deepseek-v4-flash-0731free-v3.jsonl

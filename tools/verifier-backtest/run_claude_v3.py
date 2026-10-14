@@ -7,6 +7,7 @@
 
   python3 run_claude_v3.py --model haiku --dry-run      # показати перший промпт, без запуску
   python3 run_claude_v3.py --model haiku [--only E1,K1]  # прогін; результат — results-claude-<model>.jsonl
+  python3 run_claude_v3.py --model opus --only K4 --suffix=-repeat  # повтор розбіжних (протокол)
   python3 run_claude_v3.py --blind                       # лише зібрати сліпу теку для розмітника
 
 Тека: $TMPDIR/verifier-v3 (копії sources-v3, нічого з проєкту). Кожен кейс — окремий
@@ -91,6 +92,7 @@ def main():
     ap.add_argument("--seed", type=int, default=int(time.strftime("%Y%m%d")))
     ap.add_argument("--dry-run", action="store_true")
     ap.add_argument("--blind", action="store_true")
+    ap.add_argument("--suffix", default="", help="окремий файл, напр. --suffix=-repeat (повтор розбіжних кейсів)")
     a = ap.parse_args()
     rows = cases()
     build_dir(rows)
@@ -108,7 +110,7 @@ def main():
         print(f"тека {WORK}; кейсів {len(rows)}; seed {a.seed}; перший {r['id']}:\n")
         print(pv2.replace("{claim}", r["claim"]).replace("{context}", r["context"])[-600:])
         return
-    path = os.path.join(HERE, f"results-claude-{a.model}.jsonl")
+    path = os.path.join(HERE, f"results-claude-{a.model}{a.suffix}.jsonl")
     with open(path, "a", encoding="utf-8") as f:
         for i, r in enumerate(rows, 1):
             res = run_case(r, a.model, pv2)

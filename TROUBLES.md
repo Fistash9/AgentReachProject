@@ -4673,3 +4673,51 @@ TAGS: classify-task.sh, deepseek-search, пошук, рецензія, askuserqu
 - Хвости в наступну сесію: 17 пунктів baton-diff (рішення по кожному), переробка сліпої розмітки,
   перевірка Grep/Glob у головній сесії після рестарту.
 — [claude-code, 2026-10-14]
+
+---
+## delegate різав файли за вигаданим вікном BazaarLink: 128 000 замість 1 048 576 (2026-10-14)
+TAGS: delegate, bazaarlink, context_window, verifier-backtest, T11
+- Що: перед прогоном cases-v3 dry-run показав, що delegate НЕ надішле `claude-hooks.md`
+  (268 811 байт) у кейсах E5/K3: бюджет файлів = context_window/2×3 (src/tools.mjs,
+  readFilesWithinBudget), а в `~/.claude/delegator-providers.json` для
+  `deepseek/deepseek-v4-flash-0731free:free` стояло 128000.
+- Факт провайдера: `GET https://api.bazaarlink.ai/v1/models` → `context_length: 1048576`
+  для цієї моделі.
+- Корінь: число вписано руками при додаванні провайдера (як у шаблоні NVIDIA), а не взято
+  з /v1/models. Той самий клас уже коштував 25.09: журнал різали на шматки ≤170 КБ
+  «через ліміт delegate» → 9 хибних знахідок рецензента (запис «Зовнішня перевірка
+  сесії через DeepSeek», вище).
+- Лікування (рішення користувача «Так», 14.10): context_window → 1048576; копія
+  `delegator-providers.json.bak-20261014-132313` (відкат — повернути її).
+  `tools/verifier-backtest/run_api_v3.py` бере бюджет з того самого конфігу.
+- Рецепт: додаючи модель у delegator-providers.json — context_window з /v1/models
+  провайдера; dry-run delegate з великим файлом показує «NOT sent» у шапці.
+- НЕ ПЕРЕВІРЕНО на момент запису: чи безкоштовний тариф BazaarLink приймає запит
+  ~90 тис. токенів (покаже E5 у прогоні); чи MCP-сервер delegate бачить новий конфіг
+  без перезапуску сесії.
+— [claude-code, 2026-10-14]
+
+---
+## /ultrareview відмовила: 21 ярлик l2s у .git/objects — коміти DSH з proot (2026-10-14)
+TAGS: l2s, proot, git, dsh, ultrareview, createObject
+Запит: користувач запустив /ultrareview → «Not uploading this working tree: the objects folder… holds a
+link». Перевірка лише читанням, git не запускав (порада повідомлення).
+- Що: 21 loose-об'єкт — симлінки на `rootfs/.l2s/.l2s.tmp_obj_*0001`; битих 0; розпаковано всі —
+  SHA-1 = ім'я (21/21). Це 3 коміти з `Agent: dsh` (08.10 16:20, 08.10 16:28, 12.10 14:39) з їхніми
+  деревами й файлами; дати = mtime ярликів. Усі 3 — предки origin/main (стан на 13.10 15:58) →
+  на сервері є, втрата /.l2s історію не губить.
+- Механізм (першоджерела, не здогадка): git v2.53.0 `environment.c:74` — за замовчуванням
+  `OBJECT_CREATION_USES_HARDLINKS`; `object-file.c` finalize_object_file_flags — `link(tmpfile,
+  filename)` → `unlink_or_warn(tmpfile)`; proot-distro `site-packages/proot_distro/l2s.py`:
+  «--link2symlink extension emulates hard links by replacing the original path with a symlink…
+  <rootfs>/.l2s». У proot git 1:2.53.0-1ubuntu1, .gitconfig немає → діє типове значення.
+- Зв'язки: той самий механізм на робочих файлах (запис «Листи у вікно DSH», ~3969); 06.10 ярлик
+  26/13bb ламав `git clone --local` (запис «Відкат…», ~4093) — тепер він у pack-8375…idx (git
+  перепакував 08.10 16:19, хто запустив — не встановлено); рішення «/.l2s не чистити» (~3993);
+  прецедент заміни ярликів копіями — trees/pam-yat-proyektu.md:160.
+- Рішення користувача: прибирати НЕ треба, поки не потрібна /ultrareview («навіщо їх прибирати?»
+  → «Ні — лише записати»). Якщо знадобиться: копії замість 21 ярлика (оригінали → .trash/) або
+  `git gc` з Termux (чіпає весь репозиторій).
+- Граблі агента: спершу подав механізм як версію без джерела — користувач: «ти що придумуєш версії?».
+  Рецепт той самий, що «Знати, а не здогадуватись»: механізм — лише з кодом/докою в руках.
+— [claude-code, 2026-10-14]

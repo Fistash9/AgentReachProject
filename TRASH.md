@@ -243,3 +243,10 @@
 - Що: кеш байткоду, який створив мій `python3 -m py_compile` (перевірка, що історична версія
   request-brief-reminder-hook.py синтаксично валідна, кейс cases-v3). Власний щойно створений артефакт.
 - Відновлюване: не потрібно — повторний py_compile створить знову.
+
+### 2026-10-14 — tools/verifier-backtest/run-opus-repeat.log (rm)
+- Що: лог мого невдалого запуску `run_claude_v3.py --suffix -repeat` (argparse: «expected one
+  argument»); повтор зроблено правильно (`--suffix=-repeat`), результат — results-claude-opus-repeat.jsonl.
+  Власний щойно створений артефакт помилки.
+- Відновлюване: не потрібно — лог лише вводив би в оману.
+— [claude-code, 2026-10-14]
