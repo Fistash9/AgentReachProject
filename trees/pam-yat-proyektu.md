@@ -537,7 +537,7 @@ tree-focus читає [ ] згори вниз). Нове питання → ву
     evidence: sha256 OK; `bd version 1.3.0`; `bd init --stealth` →
       «embedded Dolt requires a CGO build»; програма пропонує
       `--proxied-server`. Побічно: bd надсилає анонімні метрики команд
-  - [?] M4.4 Вибір: проба `--proxied-server` АБО свій механізм за зразком
+  - [x] M4.4 Вибір: проба `--proxied-server` АБО свій механізм за зразком
     Beads (статус у вузлі замість вказівника, SessionStart, «що далі»)
     done when: варіанти з наслідками → рішення користувача → проба
     рішення (користувач 2026-09-29): свій механізм за зразком Beads — після
@@ -555,6 +555,7 @@ tree-focus читає [ ] згори вниз). Нове питання → ву
       DeepSeek ПЕРЕВІРЕНО раніше, ніж записано «не перевірено»: журнал 7ff9fe2f (03.10, модель deepseek,
       entrypoint cli — головна сесія) має attachment hook_success SessionStart з «В роботі» (3) і «Черга «» (2).
       Обидві умови «[?] чекає» виконано → [x] — лише за рішенням користувача. — [claude-code, 2026-10-15]
+    [x] — користувач 2026-10-15 (питання простими словами, без кодів): «Так, задачу закрити». — [claude-code, 2026-10-15]
   - [x] M4.5 Хук tree-focus мовчить у DeepSeek-сесіях (tree-focus-hook.py:31)
     evidence: fac9beb (код: tree-focus-hook.py:119-122 — мовчить лише в
       помічниках deepseek-mcp; claude-deepseek.sh знімає effort) + наживо
