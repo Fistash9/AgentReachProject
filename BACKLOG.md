@@ -755,6 +755,27 @@
   перед встановленням — 4 кроки RULES «Перед ВСТАНОВЛЕННЯМ».
 — [claude-code, 2026-10-13]
 
+### VoiceStudio (debpalash) — локальна озвучка замість ElevenLabs (2026-10-15)
+- Звідки: рілс DecQExYoCqy (kkkkkkkkati, 13.10.2026, 39 с). Whisper small: «бесплатный аналог
+  сервиса 11labs… клонирует голос, переводит на 600 языков… ИИ-дубляж»; назву сховано за
+  «кодовим словом» в коментарях → знайдено за кадрами (тека `omnivoice`, автор комітів
+  `debpalash`, коміт «add Linux ARM64 runtime support», реліз v0.5.2) і `gh api`.
+- Перевірено (gh api 15.10): github.com/debpalash/VoiceStudio — ★68 182, AGPL-3.0, Python,
+  створено 09.04.2026, останній реліз v0.5.6 (23.09), коміти щодня. Опис: «open-source,
+  fully-local ElevenLabs alternative — voice cloning, voice design, video dubbing, dictation,
+  transcription & audiobook creation in 646 languages». Рушій — k2-fsa/OmniVoice (Apache-2.0).
+  Встановлення: `curl -fsSL https://voicestudio.sh/install | sh` (macOS/Linux), Docker;
+  без GPU — «Fully usable on the CPU, slower», ~5 ГБ.
+- Мета (користувач 15.10: «збережи корисний інструмент і зв'язок де ми можемо ним
+  скористатись»). Де саме: порожня ланка конвеєра каналів — reference-analyzer → script-agent
+  (пише «текст для озвучки», AGENT.md «Блок 4: Озвучка») → **озвучка** → монтаж (записи
+  «Скіл монтажер…» і «FilmCraft» вище). Замінює платний ElevenLabs, який скіл Косолапова
+  бере «за бажанням». Ще може: дубляж готового відео іншими мовами, диктування/транскрипція.
+- Не перевірено: українська серед 646 мов і якість голосу нею; робота на телефоні (README
+  перелічує macOS/Windows/Linux/Docker, Android не згадано); вміст install-скрипта (curl | sh — прочитати до
+  запуску); відгуки. Проба — у пісочниці поза проєктом, 4 кроки RULES «Перед ВСТАНОВЛЕННЯМ».
+— [claude-code, 2026-10-15]
+
 ### DeepSeek Harness — ідеї для «роїння» й голограми (2026-09-27)
 - deepseek.com/harness: «Everything is a plugin. Every run is traceable.»;
   плагіни — моделі, інструменти, скіли, пам'ять, субагенти; журнал усього,
