@@ -35,6 +35,10 @@ TROUBLES «Beads на Termux…»): замість одного вказівни
 - під-сесії-помічники DeepSeek (адреса deepseek + effort або sdk-cli) — мовчить;
   головна DeepSeek-сесія дерево бачить (M4.5, 2026-09-29).
 - будь-яка помилка — мовчить (fail-open), нічого не блокує.
+- 2026-10-15 (G2.5.3, користувач «фокус увімкнений на глобальній цілі?»): на
+  SessionStart замість черг карток з [>] — ціль, «Зараз» (голова черги кожної
+  картки), «Чекають» і [>] поза «Зараз» з GOALS.md (goals_lines); без GOALS.md
+  чи при помилці — черги, як раніше. Старт 2616 → 2614 симв.
 """
 import glob
 import json
@@ -198,6 +202,44 @@ def howto_section():
     return "\n".join(out)
 
 
+def goals_lines(cwd, cards, mine):
+    """Ціль і напрями з GOALS.md замість черг окремих карток (G2.5.3, 2026-10-15).
+
+    Користувач 15.10: «фокус увімкнений на глобальній цілі?» — хук показував лише
+    картки з [>] (T11 з «Чекають»), а ціль і «Зараз» з GOALS.md — ніде. Для кожної
+    картки «Зараз» — голова її черги (перший відкритий вузол верхнього рівня;
+    порядок = черга, G2.6). [>] з карток поза «Зараз» — позначка для звірки.
+    cards: {relpath: (title, nodes)}; mine: [(relpath, id)]. Без GOALS.md — [].
+    """
+    sec, head, where, grab = "", "", {}, False
+    for ln in open(os.path.join(cwd, "GOALS.md"), encoding="utf-8").read().split("\n"):
+        if ln.startswith("## "):
+            sec, grab = ln[3:].split("—")[0].split("(")[0].strip(), ln.startswith("## Головна")
+            continue
+        if grab and ln.strip() and "»" not in head:
+            head = (head + " " + ln.strip()).strip()  # цитата цілі — до «»», через рядки
+        for f in re.findall(r"trees/[\w-]+\.md", ln):
+            where.setdefault(f, sec)
+    now = [f for f in cards if where.get(f) == "Зараз"]
+    wait = [f for f in cards if where.get(f) == "Чекають"]
+    heads = []
+    for f in now:
+        title, nodes = cards[f]
+        h = next((n for n in nodes if n["depth"] == 0 and n["st"] in " >?"), None)
+        heads.append(f"{title}: " + (short(f"{h['id']} {h['name']}", 60) if h else "—"))
+    if "»" in head:
+        head = head[:head.index("»") + 1]
+    out = ["Ціль: " + short(head, 150),
+           "Зараз (голова черги): " + "; ".join(heads)]
+    if wait:
+        out.append("Чекають: " + "; ".join(cards[f][0] for f in wait))
+    off = [f"{nid} («{where.get(f) or 'поза GOALS'}»: {cards[f][0]})"
+           for f, nid in mine if where.get(f) != "Зараз"]
+    if off:
+        out.append("Твій [>] поза «Зараз»: " + ", ".join(off) + " — звір з GOALS.md.")
+    return out
+
+
 def project_root(cwd):
     """Тека з trees/: cwd або найближчий предок; інакше — корінь за місцем хука.
 
@@ -235,12 +277,15 @@ def main():
     # (`if True` нижче); hits збирається, але не читається. Повернути задум
     # M11.1: `if True:` → `if hits:`.
     hits = []  # активні вузли — для секції «Як застосовувати»
+    cards, mine = {}, []  # для goals_lines (G2.5.3)
     for card in sorted(glob.glob(os.path.join(cwd, "trees", "*.md"))):
         try:
             title, nodes = parse(card)
         except Exception:
             continue  # битий файл не глушить інші картки
         paths = active_paths(nodes)
+        rel = os.path.relpath(card, cwd)
+        cards[rel] = (title, nodes)
         for path, i in paths:
             owner = path[-1]["owner"]
             if owner is None:  # без @агент — не мій: хто його робить, невідомо
@@ -259,6 +304,7 @@ def main():
                 if nxt:
                     line += f" (далі: {label(nxt)})"
             work.append(line)
+            mine.append((rel, path[-1]["id"]))
             hits.append((path[-1]["id"], path))  # лише листок: батьки не тягнуть секцію
         waiting += [label(n) if start else n["id"]
                     for n in nodes if n["st"] == "?"]
@@ -295,7 +341,11 @@ def main():
                    + more(dirty, 3) + ")"
                    + (" — перевір і закоміть або познач вузол [?]." if start else ""))
     if start:
-        out += queues
+        try:
+            goals = goals_lines(cwd, cards, mine)
+        except Exception:
+            goals = []
+        out += goals or queues  # G2.5.3: черги карток — лише запасний шлях
         if not work:
             pointer = os.path.join(cwd, ".claude", "active-tree")
             if os.path.isfile(pointer):
