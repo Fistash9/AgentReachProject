@@ -187,6 +187,38 @@ def current_turn_lines(path, chunk=262_144, max_scan=8_000_000):
         return lines[1:] if pos > 0 and lines else lines
 
 
+RE_ANSWERED = re.compile(r"\s*(?:User has answered your questions|The user answered|"
+                         r"Your questions have been answered):")
+
+
+def is_box_answer(d):
+    """Відповідь користувача у віконці AskUserQuestion (tool_result) — не «хід», але межа відрізка."""
+    if d.get("type") != "user":
+        return False
+    for b in (d.get("message") or {}).get("content") or []:
+        if isinstance(b, dict) and b.get("type") == "tool_result":
+            t = b.get("content")
+            t = t if isinstance(t, str) else " ".join(
+                x.get("text", "") for x in t or [] if isinstance(x, dict))
+            if RE_ANSWERED.match(t):
+                return True
+    return False
+
+
+def after_last_answer(lines):
+    """Рядки після останньої відповіді у віконці (2026-10-16, проблема 2 baton #50: сесія з віконцями —
+    один «хід», Stop-перевірки бачили її раз). verify-nudge і iter_turns цим НЕ користуються: там план,
+    його «так» у віконці і правка мають лишатися одним ходом."""
+    for i in range(len(lines) - 1, -1, -1):
+        try:
+            d = json.loads(lines[i])
+        except ValueError:
+            continue
+        if isinstance(d, dict) and is_box_answer(d):
+            return lines[i + 1:]
+    return lines
+
+
 QUEUE_REASON = ("Ворота 4 (голос черги, 2026-10-13): у відповіді користувачу немає черги. "
                 "Допиши в кінці рядок «Черга: <назва задачі словами> → <що далі словами>»; код задачі — "
                 "хіба в дужках після назви (2026-10-16: користувач не розуміє шифрів) (хук tree-focus: "
@@ -223,15 +255,22 @@ def run(data):
     misses, voice, reasons = [], None, []
     if isinstance(tp, str) and os.path.isfile(tp):
         try:
-            turns = list(iter_turns(current_turn_lines(tp)))
+            lines = current_turn_lines(tp)
+            turns = list(iter_turns(lines))
             if turns:
+                # Б (2026-10-16): черга/коди/звірка — лише відповідь після останнього віконця;
+                # підказки хуків (nudge) — увесь хід (вони приходять на його початку)
+                seg = list(iter_turns(after_last_answer(lines)))
+                seg = seg[-1] if seg else turns[-1]
                 # журнал на Stop може ще не мати фінальної відповіді (доку hooks:
                 # transcript_path «may lag»; випадок 13.10 — хибний голос) →
                 # остання відповідь з last_assistant_message
                 lam = data.get("last_assistant_message")
-                if isinstance(lam, str) and lam.strip() and lam not in turns[-1]["texts"]:
-                    turns[-1]["texts"].append(lam)
-                misses = check(turns[-1])
+                for t in {id(seg): seg, id(turns[-1]): turns[-1]}.values():
+                    if isinstance(lam, str) and lam.strip() and lam not in t["texts"]:
+                        t["texts"].append(lam)
+                misses = [m for m in check(seg) if not m.startswith("nudge:")] + \
+                    [m for m in check(turns[-1]) if m.startswith("nudge:")]
                 if turns[-1].get("human") and not data.get("stop_hook_active"):
                     codes = [m for m in misses if m.startswith("codes:")]
                     # 2026-10-16 (користувач «Так, голос на проігноровані підказки»): голос лише на
