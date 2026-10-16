@@ -61,6 +61,10 @@ def rm_arg_tokens(command):
     жодного такого виклику немає. Токенізація через shlex (поважає
     лапки), тому текст на кшталт 'echo "rm -rf agent.py"' НЕ
     розпізнається як виклик."""
+    # 2026-10-16: shlex з whitespace_split бачить «\n» як пробіл — команда з нового
+    # рядка ховалась (rmdir після heredoc пройшов). Той самий фікс, що 0450781 (23.09)
+    # у request-brief-reminder-hook.py; тоді до цього хука не дійшов.
+    command = command.replace("\\\n", " ").replace("\n", " ; ")
     try:
         lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
         lexer.whitespace_split = True

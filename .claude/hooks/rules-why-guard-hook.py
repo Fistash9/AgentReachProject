@@ -68,6 +68,10 @@ def strip_heredocs(command):
 def segments(command):
     """Токени shlex (поважає лапки), розбиті на окремі команди за
     роздільниками. Кожна команда — список токенів."""
+    # 2026-10-16: shlex з whitespace_split бачить «\n» як пробіл — команда з нового
+    # рядка ховалась (rmdir після heredoc пройшов). Той самий фікс, що 0450781 (23.09)
+    # у request-brief-reminder-hook.py; тоді до цього хука не дійшов.
+    command = command.replace("\\\n", " ").replace("\n", " ; ")
     lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
     lexer.whitespace_split = True
     segs, cur = [], []

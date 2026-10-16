@@ -53,6 +53,10 @@ def git_add_arg_tokens(command):
     (поважає лапки), тому 'echo "git add agent.py"' НЕ розпізнається
     як виклик — весь вміст лапок стає одним токеном-аргументом echo,
     не окремими словами git/add/agent.py."""
+    # 2026-10-16: shlex з whitespace_split бачить «\n» як пробіл — команда з нового
+    # рядка ховалась (rmdir після heredoc пройшов). Той самий фікс, що 0450781 (23.09)
+    # у request-brief-reminder-hook.py; тоді до цього хука не дійшов.
+    command = command.replace("\\\n", " ").replace("\n", " ; ")
     try:
         lexer = shlex.shlex(command, posix=True, punctuation_chars=True)
         lexer.whitespace_split = True
