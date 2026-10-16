@@ -50,6 +50,9 @@ RE_DELEG_HINT = re.compile(r"Делегуй", re.I)
 RE_DELEG_ANS = re.compile(r"делег|delegate|підказк\w* хука", re.I)
 RE_BRIEF_HINT = re.compile(r"request-brief", re.I)
 RE_BRIEF_ANS = re.compile(r"бриф|request-brief", re.I)
+# Підказка verify-nudge-hook («Захищений файл …: чи звірено план … verify-before-show») — 2026-10-16
+RE_VERIFY_HINT = re.compile(r"Захищений файл .*verify-before-show", re.I)
+RE_VERIFY_ANS = re.compile(r"verify-before-show|Звірено перед показом|звірк\w* перед показом", re.I)
 # «не перевірено» без названих спроб/причини (2026-10-13, користувач: «не можу перевірити — це
 # найпростіше і не відповідь… шукай обхідні шляхи»). Лише тінь. Виняток — підсумки й мета-мова.
 RE_UNV = re.compile(r"не перевірено|не можу перевірити|НЕ ПЕРЕВІРЕНО|\[unverified\]|не звірено", re.I)
@@ -151,6 +154,8 @@ def check(turn):
         misses.append("nudge:delegate")
     if RE_BRIEF_HINT.search(hints) and not RE_BRIEF_ANS.search(text):
         misses.append("nudge:brief")
+    if RE_VERIFY_HINT.search(hints) and not RE_VERIFY_ANS.search(text):
+        misses.append("nudge:verify")
     return misses
 
 
@@ -188,6 +193,11 @@ CODES_REASON = ("Голос «коди без назви» (2026-10-16, кори
                 "Нічого іншого не повторюй.")
 
 
+NUDGE_REASON = ("Голос «підказку хука проігноровано» (2026-10-16, примусова оцінка замість простої "
+                "підказки): у ході була підказка {which}, а у відповіді — ні виконання, ні причини. Допиши "
+                "один рядок «Підказка {which}: виконую / не виконую, бо …». Нічого іншого не повторюй.")
+
+
 def write_log(session, misses, voice=None):
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     if os.path.isfile(LOG) and os.path.getsize(LOG) > LOG_MAX:
@@ -216,12 +226,20 @@ def run(data):
                 misses = check(turns[-1])
                 if turns[-1].get("human") and not data.get("stop_hook_active"):
                     codes = [m for m in misses if m.startswith("codes:")]
+                    # 2026-10-16 (користувач «Так, голос на проігноровані підказки»): голос лише на
+                    # бриф і verify; «делегуй» — тінь (підказка глобального classify-task радить платне
+                    # на простих запитах; рішення про неї — окремо, пункт батона)
+                    nudges = [m[6:] for m in misses if m in ("nudge:brief", "nudge:verify")]
                     voice = "+".join((["queue"] if "queue" in misses else [])
-                                     + (["codes"] if codes else [])) or None
+                                     + (["codes"] if codes else [])
+                                     + (["nudge"] if nudges else [])) or None
                     if voice:
                         reasons = ([QUEUE_REASON] if "queue" in voice else []) + \
                             ([CODES_REASON.format(codes=codes[0][6:].replace(",", ", "))]
-                             if codes else [])
+                             if codes else []) + \
+                            ([NUDGE_REASON.format(which=", ".join(
+                                {"brief": "request-brief (P4)", "verify": "verify-before-show"}[n]
+                                for n in nudges))] if nudges else [])
         except OSError:
             misses = ["error:read"]
     else:
