@@ -1,6 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/python3
 """
-PreToolUse hook (НЕ блокує): перед правкою захищеного файлу нагадує про
+PreToolUse hook: перед правкою захищеного файлу нагадує про
 скіл verify-before-show (RULES.md:49). Вузько — лише захищені файли, раз
 на файл за сесію; P4 стріляє на кожну правку, і на нього перестали
 зважати.
@@ -8,11 +8,12 @@ PreToolUse hook (НЕ блокує): перед правкою захищено�
 з 48 сесій; того дня план змін ANALYZER.md і картки показано без звірки.
 Кожне спрацювання пишеться в .claude/logs/verify-nudge.log — доказ для
 воріт «доказ ужитку» (проба на 3 сесії).
-Межа: правку через Bash (python/sed) не бачить — захищені файли правити
-інструментом Edit/Write.
+З 2026-10-16 бачить і Bash-правки (python open, sed -i, >, tee, cp) і питає дозволу без звірки.
+
 Будь-яка помилка — мовчить (fail-open).
 """
 import fnmatch
+import re
 import json
 import os
 import sys
@@ -38,25 +39,97 @@ def rel(path, cwd):
     return path[len(PROJECT) + 1:]
 
 
+def _load(name):
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name.replace("-", "_"),
+                                                  os.path.join(PROJECT, ".claude", "hooks", name))
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+RE_ROOT_PROTECTED = re.compile(r"(?<![\w/.-])((?:\./)?(?:RULES|RULES-WHY|CLAUDE|AGENTS)\.md|"
+                               r"reference-analyzer/ANALYZER\.md|script-agent/AGENT\.md|"
+                               r"\.claude/settings[\w.-]*\.json)")
+
+
+def bash_targets(cmd, cwd):
+    """Захищені файли, які Bash-команда записує. Розбір — bash_written з edit-gate-hook.py (python
+    open(…,"w"), sed -i, > / >>, tee, cp), розширений на всі теки; sed -i по файлах у корені — окремо,
+    бо RE_CODEPATH edit-gate знає лише теки коду."""
+    eg = _load("edit-gate-hook.py")
+    eg.CODE_DIRS = ("",)
+    found = [r for r in eg.bash_written(cmd, cwd) if any(fnmatch.fnmatch(r, p) for p in PROTECTED)]
+    for seg in re.split(r"&&|\|\||[;|\n]", eg.RE_HEREDOC.sub(" ", cmd)):
+        if re.match(r"\s*(?:sudo\s+)?sed\s+(?:-\w*\s+)*-i", seg):
+            for c in RE_ROOT_PROTECTED.findall(seg):
+                r = rel(c, cwd)
+                if r and r not in found and any(fnmatch.fnmatch(r, p) for p in PROTECTED):
+                    found.append(r)
+    return found
+
+
+def verified_this_turn(transcript_path):
+    """Чи був verify-before-show / delegate після останнього НАБРАНОГО повідомлення користувача
+    (відповіді у віконцях хід не переривають — план і його «так» лишаються в одному ході)."""
+    ag = _load("answer-gate-shadow-hook.py")
+    lines = ag.current_turn_lines(transcript_path)
+    turn_ts = ""
+    for l in lines[:1]:
+        try:
+            turn_ts = json.loads(l).get("timestamp", "")
+        except ValueError:
+            pass
+    for t in ag.iter_turns(lines):
+        for n, s in t["tools"]:
+            if (n == "Skill" and s == "verify-before-show") or n in ag.VERIFY_TOOLS:
+                return True, turn_ts
+    return False, turn_ts
+
+
 def main():
     data = json.load(sys.stdin)
-    if data.get("tool_name") not in EDIT_TOOLS:
-        return
+    tool = data.get("tool_name")
     inp = data.get("tool_input") or {}
-    r = rel(inp.get("file_path") or inp.get("notebook_path") or "", data.get("cwd"))
-    if not r or not any(fnmatch.fnmatch(r, p) for p in PROTECTED):
+    if tool in EDIT_TOOLS:
+        r = rel(inp.get("file_path") or inp.get("notebook_path") or "", data.get("cwd"))
+        targets = [r] if r and any(fnmatch.fnmatch(r, p) for p in PROTECTED) else []
+    elif tool == "Bash":
+        targets = bash_targets(str(inp.get("command", "")), data.get("cwd"))
+    else:
+        return
+    if not targets:
         return
     sid = data.get("session_id", "?")
-    key = f"{sid}\t{r}"
     seen = open(LOG).read() if os.path.exists(LOG) else ""
-    if key + "\t" in seen:
-        return  # раз на файл за сесію
+    tp = data.get("transcript_path")
+    ok, turn_ts = verified_this_turn(tp) if isinstance(tp, str) and os.path.isfile(tp) else (False, "")
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
+    if not ok:
+        # ЗАМОК (2026-10-16, рішення користувача «Так, з Bash-правками»): сесія 0577c90b — план правки
+        # session-close показано й виконано без verify-before-show; підказка не блокувала, голос на Stop
+        # спрацював уже після коміту. Тепер — запит на дозвіл, раз на файл за хід.
+        new = [r for r in targets if f"{sid}\t{r}\task:{turn_ts}\t" not in seen]
+        if not new:
+            return
+        with open(LOG, "a") as f:
+            for r in new:
+                f.write(f"{sid}\t{r}\task:{turn_ts}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
+        reason = (f"Правка захищеного файлу ({', '.join(new)}) без незалежної звірки плану "
+                  "(verify-before-show, RULES.md:49) після вашого останнього повідомлення. "
+                  "Дозволити без звірки? «Ні» — агент спершу звірить план.")
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "PreToolUse", "permissionDecision": "ask",
+            "permissionDecisionReason": reason}}, ensure_ascii=False))
+        return
+    new = [r for r in targets if f"{sid}\t{r}\t" not in seen]
+    if not new:
+        return  # раз на файл за сесію
     with open(LOG, "a") as f:
-        f.write(f"{key}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
-    msg = (f"Захищений файл {r}: чи звірено план цієї правки скілом "
-           "verify-before-show (RULES.md:49)? Якщо ні — спершу звір; якщо так — "
-           "один рядок «Звірено перед показом: …» у відповіді.")
+        for r in new:
+            f.write(f"{sid}\t{r}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
+    msg = (f"Захищений файл {', '.join(new)}: звірку в цьому ході є — один рядок "
+           "«Звірено перед показом: …» у відповіді (RULES.md:49).")
     print(json.dumps({"hookSpecificOutput": {
         "hookEventName": "PreToolUse", "additionalContext": msg}}, ensure_ascii=False))
 
