@@ -158,11 +158,92 @@ def last_user_prompt(transcript_path):
     return None
 
 
+SYS_RE = re.compile(r"^\s*<(?:system-reminder|command-|local-command|task-notification|bash-)")
+ANSWER_RE = re.compile(r"\s*(?:User has answered your questions|The user answered|"
+                       r"Your questions have been answered):(.*)", re.S)
+# коротке пряме доручення записати / закомітити / закрити — ясне (рішення користувача 2026-10-16,
+# відступ від буквального «голе підтвердження» з SKILL.md — названо в плані)
+RECORD_WORDS = {"запиши", "записуй", "допиши", "дописуй", "коміть", "комить", "закомить",
+                "зберігай", "збережи", "закрий", "закривай", "пуш", "запуш"}
+
+
+# лише слова згоди: «зроби аналіз» — доручення, не підтвердження (тест 2026-10-16 впіймав, що з
+# CONFIRM_WORDS «зроби/роби/давай + щось» ставало «так»)
+AGREE_WORDS = {"так", "yes", "ok", "окей", "ок", "да", "добре", "згоден", "згодна", "підтверджую"}
+
+
+# Доручення вибору асистенту — двозначне за природою, хоч і довге (2026-10-16, рішення користувача «Так,
+# потім жива перевірка»): «як буде раціональніше… так і роби» мала 13 слів, поріг 12 її пропускав. Бектест
+# 63 сесій: 17 таких рішень у 13 сесіях, 14 довші за 12 слів. Межа DELEGATE_MAX_WORDS — розписані
+# завдання («КРОК 1 — …», 179 слів) уже і є брифом.
+DELEGATE_RE = re.compile(r"як (?:буде )?(?:раціональн|краще|вважаєш|правильн)|на твій розсуд|сам виріш|"
+                         r"що краще зробити|як що буде корисн|так і роби|обери раціональн", re.I)
+DELEGATE_MAX_WORDS = 60
+
+
+def last_decision(transcript_path):
+    """Останнє рішення людини: ("typed", текст) — набране повідомлення; ("option", …) — обрано
+    готовий варіант у віконці AskUserQuestion; ("free", текст) — у віконці вписано своє.
+    2026-10-16 (сесія 0577c90b, користувач: «і що з брифом повідомлення є але воно не працює»):
+    last-prompt не бачить відповідей у віконцях — хук 12 разів нагадав на «почнімо сесію», а на
+    єдину справжню потребу (вписану відповідь «як буде раціональніше… так і роби») мовчав.
+    Бектест 63 сесій: 298 → 105 нагадувань (agents/claude-code/q12-classes-2026-10-16/)."""
+    try:
+        with open(transcript_path, encoding="utf-8") as f:
+            lines = f.readlines()
+    except (FileNotFoundError, OSError, TypeError):
+        return None
+    labels, dec = {}, None
+    for line in lines:
+        try:
+            d = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if d.get("type") == "assistant":
+            for b in d.get("message", {}).get("content") or []:
+                if isinstance(b, dict) and b.get("type") == "tool_use" and b.get("name") == "AskUserQuestion":
+                    labels[b.get("id")] = {o.get("label", "").strip()
+                                           for q in b.get("input", {}).get("questions", [])
+                                           for o in q.get("options", [])}
+            continue
+        if d.get("type") != "user" or d.get("isMeta"):
+            continue
+        c = d.get("message", {}).get("content")
+        if isinstance(c, str):
+            if c.strip() and not SYS_RE.match(c):
+                dec = ("typed", c)
+            continue
+        for b in c or []:
+            if not isinstance(b, dict):
+                continue
+            if b.get("type") == "text" and b.get("text", "").strip() and not SYS_RE.match(b["text"]):
+                dec = ("typed", b["text"])
+            elif b.get("type") == "tool_result" and b.get("tool_use_id") in labels:
+                t = b.get("content")
+                t = t if isinstance(t, str) else " ".join(
+                    x.get("text", "") for x in t or [] if isinstance(x, dict))
+                m = ANSWER_RE.match(t)
+                if not m:
+                    continue
+                body = re.split(r"You can now continue|Read the answers carefully", m.group(1))[0]
+                answers = re.findall(r'"=\s*"(.*?)"(?=\s*(?:,\s*"|\.|$))', body, re.S) or [body]
+                own = [a for a in answers if a.strip() not in labels[b["tool_use_id"]]]
+                dec = ("free", " ".join(own)) if own else ("option", " / ".join(answers))
+    return dec
+
+
 def is_bare_confirmation(text):
     words = re.findall(r"[a-zA-Zа-яіїєА-ЯІЇЄ]+", text.lower())
     if not words or len(words) > 4:
         return False
     return all(w in CONFIRM_WORDS for w in words)
+
+
+def is_confirmation(text):
+    """Голе підтвердження АБО «так, <коротке доручення>» / «запиши…» (≤6 слів)."""
+    w = re.findall(r"[a-zA-Zа-яіїєґА-ЯІЇЄҐ']+", text.lower())
+    return is_bare_confirmation(text) or (
+        0 < len(w) <= 6 and (w[0] in AGREE_WORDS or w[0] in RECORD_WORDS))
 
 
 def edit_size(tool_name, tool_input):
@@ -210,13 +291,15 @@ def main():
     if chars < CHAR_THRESHOLD and newlines < LINE_THRESHOLD:
         return  # тривіальна правка
 
-    prompt = last_user_prompt(data.get("transcript_path", ""))
-    if not prompt:
-        return
+    dec = last_decision(data.get("transcript_path", ""))
+    if not dec or dec[0] == "option":
+        return  # немає рішення або обрано готовий варіант з описом (він і є бриф)
+    prompt = dec[1]
 
     words = prompt.split()
-    if len(words) > WORD_LIMIT or is_bare_confirmation(prompt):
-        return  # достатньо розгорнутий запит або голе підтвердження
+    delegated = DELEGATE_RE.search(prompt) and len(words) <= DELEGATE_MAX_WORDS
+    if not delegated and (len(words) > WORD_LIMIT or is_confirmation(prompt)):
+        return  # достатньо розгорнутий запит або підтвердження вже запропонованого
 
     context = (
         "P4 (постмортем): останній запит користувача короткий/можливо "

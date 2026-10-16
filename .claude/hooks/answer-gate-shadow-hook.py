@@ -49,7 +49,11 @@ RE_PLAN_Q = re.compile(r"план\w*", re.I)  # «Роблю за цим пла�
 RE_DELEG_HINT = re.compile(r"Делегуй", re.I)
 RE_DELEG_ANS = re.compile(r"делег|delegate|підказк\w* хука", re.I)
 RE_BRIEF_HINT = re.compile(r"request-brief", re.I)
-RE_BRIEF_ANS = re.compile(r"бриф|request-brief", re.I)
+# 2026-10-16 (сесія 0577c90b, користувач: «і що з брифом повідомлення є але воно не працює»): слово
+# «бриф» зараховувало відписку «бриф не потрібен» → тепер лише суть: «Мета: … / Готово, коли: …» або
+# посилання, де мету записано (вузол trees/…md, хеш коміту, «у вузлі»). Рішення «Так, усі 4 пункти».
+RE_BRIEF_ANS = re.compile(r"Мета:.*Готово, коли:|Готово, коли:.*Мета:|"
+                          r"бриф[^\n]{0,160}(?:trees/\S+\.md|\b[0-9a-f]{7}\b|у вузл\w*|вузол \w)", re.I | re.S)
 # Підказка verify-nudge-hook («Захищений файл …: чи звірено план … verify-before-show») — 2026-10-16
 RE_VERIFY_HINT = re.compile(r"Захищений файл .*verify-before-show", re.I)
 RE_VERIFY_ANS = re.compile(r"verify-before-show|Звірено перед показом|звірк\w* перед показом", re.I)
@@ -193,6 +197,10 @@ CODES_REASON = ("Голос «коди без назви» (2026-10-16, кори
                 "Нічого іншого не повторюй.")
 
 
+BRIEF_REASON = ("Голос «бриф без суті» (2026-10-16): у ході була підказка request-brief (P4), а у відповіді "
+                "немає ні «Мета: … / Готово, коли: …», ні посилання, де мету й критерій записано (вузол "
+                "trees/…md, коміт). Допиши ці два рядки або посилання; «бриф не потрібен» без них не рахується. "
+                "Нічого іншого не повторюй.")
 NUDGE_REASON = ("Голос «підказку хука проігноровано» (2026-10-16, примусова оцінка замість простої "
                 "підказки): у ході була підказка {which}, а у відповіді — ні виконання, ні причини. Допиши "
                 "один рядок «Підказка {which}: виконую / не виконую, бо …». Нічого іншого не повторюй.")
@@ -237,9 +245,9 @@ def run(data):
                         reasons = ([QUEUE_REASON] if "queue" in voice else []) + \
                             ([CODES_REASON.format(codes=codes[0][6:].replace(",", ", "))]
                              if codes else []) + \
-                            ([NUDGE_REASON.format(which=", ".join(
-                                {"brief": "request-brief (P4)", "verify": "verify-before-show"}[n]
-                                for n in nudges))] if nudges else [])
+                            ([BRIEF_REASON] if "brief" in nudges else []) + \
+                            ([NUDGE_REASON.format(which="verify-before-show")]
+                             if "verify" in nudges else [])
         except OSError:
             misses = ["error:read"]
     else:
