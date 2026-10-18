@@ -42,7 +42,7 @@ def main():
         reason = ("plain-ask: у питанні коди задач без назви словами: " + ", ".join(codes)
                   + ". Користувач їх не розуміє і відповідає не зрозумівши. Перепиши питання: "
                   "назва словами, код — хіба в дужках після неї (назву бери з "
-                  "python3 tools/trees-index.py <код>), і задай його знову.")
+                  "python3 tools/trees-index.py <код>; хеш коміту чи сесії — що зроблено словами, напр. «замок на обхід (b66adbf)»), і задай його знову.")
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                                  "permissionDecision": "deny",
                                                  "permissionDecisionReason": reason}},

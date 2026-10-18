@@ -322,6 +322,22 @@ def main():
     rows.append(("✅" if good else "❌", "commit-consent: М2 дозвіл на коміт", "варіант агента ≠ дозвіл", note))
     bad += not good
 
+    # Шифри в тексті користувачу (2026-10-19, «знов шифри тільки замітив»): хеш у лапках-коді й кирилична «М2» —
+    # ловляться; хеш у дужках після опису, шлях/файл з хешем — ні.
+    try:
+        import importlib.util
+        s = importlib.util.spec_from_file_location("pcodes", os.path.join(ROOT, "tools", "plain-codes.py"))
+        pcm = importlib.util.module_from_spec(s)
+        s.loader.exec_module(pcm)
+        cases = [("віддалений main = `45d5e0e`", ["45d5e0e"]), ("М2 внесено.", ["М2"]),
+                 ("Замок на обхід (b66adbf) запушено.", []), ("файл 1f94aac.py тут", [])]
+        res = [pcm.undecoded(t) == want for t, want in cases]
+        good, note = all(res), f"{sum(res)}/{len(res)} випадків"
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    rows.append(("✅" if good else "❌", "plain-codes: хеші й «М» без назви", "шифр → ловиться; з описом → ні", note))
+    bad += not good
+
     # Маска експорту сесії (2026-10-18): «task-notification» — не ключ; sk-/nvapi- — ключі.
     try:
         import importlib.util
