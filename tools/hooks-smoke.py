@@ -287,6 +287,25 @@ def main():
                  "хук є; без вузла → 1, з Q12 → 0", note))
     bad += not good
 
+    # Обхід git-хуків (2026-10-19, рецензія 1fe9acd7 п.17): --no-verify / -n / core.hooksPath → запит;
+    # текст у -m, heredoc і grep — ні. Рядки складаються з частин, щоб замок не спрацював на сам тест.
+    try:
+        import importlib.util
+        s = importlib.util.spec_from_file_location("ccons", os.path.join(ROOT, ".claude", "hooks",
+                                                                           "commit-consent-hook.py"))
+        cc = importlib.util.module_from_spec(s)
+        s.loader.exec_module(cc)
+        G, NV = "git " + "commit", "--no-" + "verify"
+        cases = [(f"{G} {NV} -m x", True), (f"{G} -qnm x", True), ("git -c core.hooksPath=/x " + "commit -m x", True),
+                 (f"{G} -m 'про {NV}'", False), (f"grep -n '{G}' f", False), (f"{G} -am x", False)]
+        res = [cc.bypass(c) == want for c, want in cases]
+        good, note = all(res), f"{sum(res)}/{len(res)} випадків"
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    rows.append(("✅" if good else "❌", "commit-consent: обхід git-хуків", "--no-verify/-n/hooksPath → так; текст → ні",
+                 note))
+    bad += not good
+
     # Маска експорту сесії (2026-10-18): «task-notification» — не ключ; sk-/nvapi- — ключі.
     try:
         import importlib.util

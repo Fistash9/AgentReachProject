@@ -14,6 +14,9 @@ PreToolUse hook (Bash): git commit без «коміт» в останньому
 Перевірку «коміт механізму без вузла» (cfd43bd) звідси прибрано 2026-10-18: за текстом команди її обходили
 git add -A / . / commit -am / pathspec і вона хибно блокувала -F файл і власний текст (аудит DSH, перевірено
 запуском). Тепер — git-хук commit-msg → tools/commit-node-check.py (фактичний індекс і повідомлення).
+ОБХІД ХУКІВ (2026-10-19, зовнішня перевірка сесії 1fe9acd7, п.17; рішення «Так, 1–3 зараз»): git commit
+--no-verify / -n / -c core.hooksPath=… вимикає і commit-msg (вузол), і pre-commit (сканування ключів) —
+запит на дозвіл, якщо в останньому рішенні користувача нема «no-verify». Тіла heredoc не перевіряються (текст).
 """
 import json
 import os
@@ -28,6 +31,24 @@ RE_YES = re.compile(r"коміт|закоміт|commit", re.I)
 RE_NO = re.compile(r"(?:не|без|ні,?)\s+(?:за)?коміт|не\s+commit|don'?t\s+commit|no\s+commit", re.I)
 RE_ANSWERED = re.compile(r"\s*(?:User has answered your questions|The user answered|"
                          r"Your questions have been answered):(.*)", re.S)
+RE_HEREDOC = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?\n(.*?)\n\1\b", re.S)
+
+
+def bypass(cmd):
+    """Чи обходить коміт git-хуки: лише сегменти, що починаються з git … commit (дозволено VAR=x перед git) (не текст у grep/heredoc);
+    -c core.hooksPath до commit, --no-verify / -n серед прапорців після commit (без тексту -m)."""
+    for seg in re.split(r"&&|\|\||;|\n", RE_HEREDOC.sub(" ", cmd)):
+        m = re.match(r"\s*(?:\w+=\S+\s+)*git((?:\s+-[Cc]\s+\S+)*)\s+commit\b(.*)", seg, re.S)
+        if not m:
+            continue
+        if "core.hooksPath" in m.group(1):
+            return True
+        tail = re.sub(r"(?:-m|--message)(?:=|\s*)(\"(?:[^\"\\]|\\.)*\"|'[^']*')", " ", m.group(2))
+        if re.search(r"--no-verify\b|(?<!\S)-[a-zA-Z]*n[a-zA-Z]*(?!\S)", tail):
+            return True
+    return False
+
+
 RE_PAIR = re.compile(r'"((?:[^"\\]|\\.)*)"\s*=\s*"((?:[^"\\]|\\.)*)"', re.S)
 
 
@@ -88,6 +109,17 @@ def main():
     if not (isinstance(tp, str) and os.path.isfile(tp)):
         return
     last = last_decision(tp)
+    if bypass(cmd) and "no-verify" not in last.lower():
+        os.makedirs(os.path.dirname(LOG), exist_ok=True)
+        with open(LOG, "a") as f:
+            f.write(f"{data.get('session_id', '?')}\tbypass-ask\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\t"
+                    f"{re.sub(r'\s+', ' ', cmd)[:120]}\n")
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "PreToolUse", "permissionDecision": "ask",
+            "permissionDecisionReason": ("Коміт з обходом git-хуків (--no-verify / -n / core.hooksPath): вимикає й "
+                                         "перевірку вузла, й сканування ключів (pre-commit). Дозволити? «Ні» — "
+                                         "агент комітить без обходу.")}}, ensure_ascii=False))
+        return
     ok = consent(last)
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     with open(LOG, "a") as f:
