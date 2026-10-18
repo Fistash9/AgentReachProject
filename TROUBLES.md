@@ -5013,3 +5013,34 @@ TAGS: verify-nudge, verify-before-show, віконця, AskUserQuestion, task-no
   059f8c3) і точніший текст запиту. Рішення «хто краще… перевір» → «Так, об'єднати»: log_keys і текст запиту DSH
   перенесено в мій хук з поміткою автора; 8 проб DSH (копія в usr/tmp/vn-bt/dsh) — усі очікувані. Різницю
   бектестів (у мене 22 застарілі, у DSH «23 правки ok→ask») не зведено.
+
+## Рілс DepZsvdptkj: «моди» Claude Code — сесії пишуть одна одній, своя панель, дешевша модель (2026-10-18)
+TAGS: instagram, рілс, mods, моди, SendMessage, ListAgents, панель, роутер, turn.step, dsh
+
+— [claude-code, 2026-10-18; запит користувача «глянь… розбери як раніше як цю інфу вже можна використовувати
+відштовхуючись від головних ідей проєкту» → «Записати + проба панелі»]
+- Рілс — Кирилл Жильников (zhilnikov_it), 18.10.2026, 56 с; yt-dlp --write-info-json → whisper small -l ru → 19
+  кадрів (fps 1/3). Опис = зміст; whisper пропустив пункт 1 (є в описі й на кадрах). Гайд — «за коментар», не бачено.
+- Звірено з офіційною докою (curl code.claude.com/docs/llms.txt → plugins/mods/{overview,api,events,reference}.md):
+  (1) сесії пишуть одна одній — cross-session-messaging.md, ListAgents/SendMessage; у нас ListAgents працює (21
+  сесія: хмарні й Remote Control); (2) панель — моди малюють «panes, a band above the prompt, buttons»;
+  (3) дешевша модель — events.md `turn.step`: «send it to a different model with next({ ...e, model })», також
+  effort. Вимога: «In the terminal, use Claude Code v2.1.287 or later» — у нас 2.1.296.
+- Куди: (1) «рація» з «Зв'язок двох агентів» — лише Claude↔Claude; DSH не Claude Code, до нього — tmux/baton;
+  (2) мета G2 «живе дерево» і ідея «панель керування» (03.10) — панель «що роблять агенти» (черга + справжні
+  todo DSH) закрила б сьогоднішнє накладання (запис verify-nudge вище: ярлик «у dsh — T7» брехав); (3) T11/роутер
+  (рілс 13.10) — але головна ціна в нас — великий контекст (BACKLOG.md:549), не вибір моделі.
+- Не перевірено: малювання в Termux; чи turn.step може піти не в Claude-модель (DeepSeek); зміст гайду автора.
+- Рішення користувача: записати + проба одного мода «що роблять агенти» в пісочниці поза проєктом, план окремо.
+- **Проба мода agents-status — пройдена (того ж дня).** ~/.claude/dev-mods/1fe9acd7…/agents-status/ (поза git):
+  смуга AbovePrompt, 2 рядки, раз на 60 с `$.process.run` grep по trees/ і `tmux capture-pane -t work:3`.
+  Критерії: (1) смуга видна в Termux — користувач «смуга є»; (2) рядок DSH збігається з екраном — користувач
+  «рядок DSH збігається»; (3) без моделі — `claude plugin validate`: calls $.clock.every, $.process.run, $.state.*,
+  $.ui.resolve, жодного $.model. Живі дані одразу дали ⚠: дерево «у DSH: T7», а DSH насправді «Чекаю явного «так»…
+  verify-nudge-hook» — саме те накладання, що сталося сьогодні.
+- Граблі: `claude plugin test` на Termux падає «plugin: error while loading shared libraries: plugin: cannot open
+  shared object file» (exit 127) — раннер запускає argv0 «plugin» через glibc ld-linux; ймовірно той самий корінь,
+  що «grep і find не працюють у Bash-інструменті» (2026-09-20) [не перевірено]. Обхід: чисті функції розбору в
+  hooks/parse.ts і `node --experimental-strip-types` (node v26.4.0) — 3 тести ok.
+- Мод живе лише в цій сесії (теку прибере cleanupPeriodDays). Лишити надовго — скопіювати в свою теку й вантажити
+  `--plugin-dir` / CLAUDE_CODE_PLUGIN_DIRS — окреме рішення користувача (зміна команди старту).
