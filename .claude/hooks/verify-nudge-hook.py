@@ -108,6 +108,25 @@ def verified_this_turn(transcript_path):
     return False, seg_ts or turn_ts
 
 
+def log_keys(seen):
+    """Ключі журналу як кортежі, а не підрядки. Два формати:
+      ok   «sid\\tфайл\\t<мітка часу>»                  (3 поля, 3-є не «ask:»)
+      ask  «sid\\tфайл\\task:<ключ відрізка>\\t<мітка часу>»  (4 поля)
+    Було порівняння підрядком: ключ нагадування «sid\\tфайл\\t» — префікс ключа ask, тому після ask:
+    нагадування для того файлу не з'являлося ніколи. Розбір по полях читає і старі рядки.
+    Знахідка й код — DSH (чернетка dsh-app/drafts/verify-nudge-hook.py.new, 2026-10-18)."""
+    keys = set()
+    for line in seen.splitlines():
+        p = line.split("\t")
+        if len(p) < 3 or not p[0] or not p[1]:
+            continue
+        if p[2].startswith("ask:"):
+            keys.add((p[0], p[1], "ask", p[2][len("ask:"):]))
+        else:
+            keys.add((p[0], p[1], "ok", ""))
+    return keys
+
+
 def main():
     data = json.load(sys.stdin)
     tool = data.get("tool_name")
@@ -123,27 +142,30 @@ def main():
         return
     sid = data.get("session_id", "?")
     seen = open(LOG).read() if os.path.exists(LOG) else ""
+    keys = log_keys(seen)
     tp = data.get("transcript_path")
     ok, turn_ts = verified_this_turn(tp) if isinstance(tp, str) and os.path.isfile(tp) else (False, "")
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     if not ok:
         # ЗАМОК (2026-10-16, рішення користувача «Так, з Bash-правками»): сесія 0577c90b — план правки
         # session-close показано й виконано без verify-before-show; підказка не блокувала, голос на Stop
-        # спрацював уже після коміту. Тепер — запит на дозвіл, раз на файл за хід.
-        new = [r for r in targets if f"{sid}\t{r}\task:{turn_ts}\t" not in seen]
+        # спрацював уже після коміту. Тепер — запит на дозвіл, раз на файл за хід
+        # (з 2026-10-18 — за відрізок після останньої відповіді у віконці).
+        new = [r for r in targets if (sid, r, "ask", turn_ts) not in keys]
         if not new:
             return
         with open(LOG, "a") as f:
             for r in new:
                 f.write(f"{sid}\t{r}\task:{turn_ts}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
-        reason = (f"Правка захищеного файлу ({', '.join(new)}) без незалежної звірки плану "
-                  "(verify-before-show, RULES.md:49) після вашого останнього повідомлення. "
+        reason = (f"Правка захищеного файлу ({', '.join(new)}) без дійсної звірки плану "
+                  "(verify-before-show, RULES.md:49): звірки після вашого останнього повідомлення "
+                  "немає, або після неї вже було більше однієї відповіді у віконці — план застарів. "
                   "Дозволити без звірки? «Ні» — агент спершу звірить план.")
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse", "permissionDecision": "ask",
             "permissionDecisionReason": reason}}, ensure_ascii=False))
         return
-    new = [r for r in targets if f"{sid}\t{r}\t" not in seen]
+    new = [r for r in targets if (sid, r, "ok", "") not in keys]
     if not new:
         return  # раз на файл за сесію
     with open(LOG, "a") as f:
