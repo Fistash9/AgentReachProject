@@ -70,21 +70,42 @@ def bash_targets(cmd, cwd):
 
 
 def verified_this_turn(transcript_path):
-    """Чи був verify-before-show / delegate після останнього НАБРАНОГО повідомлення користувача
-    (відповіді у віконцях хід не переривають — план і його «так» лишаються в одному ході)."""
+    """Чи була звірка (verify-before-show / delegate) після останнього НАБРАНОГО повідомлення користувача,
+    і між нею та правкою — щонайбільше одна відповідь у віконці («так» на звірений план).
+    2026-10-18 (рішення користувача «Після 2-го віконця»): до того хід у сесії з віконцями тягнувся від
+    набраного повідомлення, і одна звірка накривала всі правки сесії — бектест: 22 з 40 зарахованих
+    звірок застарілі (≥2 віконця між звіркою і правкою, 6 сесій). Повертає (чи є звірка, ключ відрізка
+    для дедупу запиту — час останньої відповіді у віконці, інакше час ходу)."""
     ag = _load("answer-gate-shadow-hook.py")
     lines = ag.current_turn_lines(transcript_path)
-    turn_ts = ""
+    turn_ts, seg_ts, boxes = "", "", 0
     for l in lines[:1]:
         try:
             turn_ts = json.loads(l).get("timestamp", "")
         except ValueError:
             pass
-    for t in ag.iter_turns(lines):
-        for n, s in t["tools"]:
-            if (n == "Skill" and s == "verify-before-show") or n in ag.VERIFY_TOOLS:
-                return True, turn_ts
-    return False, turn_ts
+    for l in reversed(lines):
+        try:
+            d = json.loads(l)
+        except ValueError:
+            continue
+        if not isinstance(d, dict):
+            continue
+        if ag.is_box_answer(d):
+            boxes += 1
+            if boxes == 1:
+                seg_ts = d.get("timestamp", "")
+            if boxes > 1:
+                break
+            continue
+        if d.get("type") != "assistant":
+            continue
+        for x in (d.get("message") or {}).get("content") or []:
+            if isinstance(x, dict) and x.get("type") == "tool_use":
+                n, s = x.get("name", ""), str((x.get("input") or {}).get("skill", ""))
+                if (n == "Skill" and s == "verify-before-show") or n in ag.VERIFY_TOOLS:
+                    return True, seg_ts or turn_ts
+    return False, seg_ts or turn_ts
 
 
 def main():
