@@ -10,7 +10,8 @@ DeepSeek прийняв ToolSearch за «битий WebSearch»), повідо�
 
 JSONL за замовчуванням — найновіший журнал проєкту. --from — почати з першого
 блоку, що містить фразу. Виводи інструментів не обрізаються. Особисте
-(email, git-логін, ключі sk-/ghp_/AKIA, auth-коди) вирізається. Лише stdlib.
+(email, git-логін, ключі sk-/nvapi-/ghp_/AKIA, auth-коди) вирізається САМЕ — вручну
+поверх не маскувати (2026-10-18: ручна маска sk- ламала «task-notification»). Лише stdlib.
 """
 import argparse
 import glob
@@ -23,9 +24,11 @@ PROJ = os.path.expanduser(
     "~/.claude/projects/-data-data-com-termux-files-home-AgentReachProject")
 REDACT = [
     (re.compile(r"[\w.+-]+@[\w-]+\.[\w.]+"), "[email]"),
-    (re.compile(r"sk-[A-Za-z0-9_-]{16,}"), "[ключ]"),
-    (re.compile(r"ghp_[A-Za-z0-9]{20,}"), "[ключ]"),
-    (re.compile(r"AKIA[A-Z0-9]{16}"), "[ключ]"),
+    # (?<![A-Za-z]) — не частина слова: «task-notification» не ключ (граблі 03.10 і 18.10, TROUBLES:3818)
+    (re.compile(r"(?<![A-Za-z])sk-[A-Za-z0-9_-]{16,}"), "[ключ]"),
+    (re.compile(r"(?<![A-Za-z])nvapi-[A-Za-z0-9_-]{16,}"), "[ключ]"),
+    (re.compile(r"(?<![A-Za-z])ghp_[A-Za-z0-9]{20,}"), "[ключ]"),
+    (re.compile(r"(?<![A-Za-z])AKIA[A-Z0-9]{16}"), "[ключ]"),
     (re.compile(r"(?i)(auth_?code|code)=[A-Za-z0-9_-]{12,}"), r"\1=[код]"),
     (re.compile(r"Fistash9"), "[логін]"),
     (re.compile(r"mur4ik93"), "[логін]"),

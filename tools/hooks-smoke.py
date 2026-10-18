@@ -287,6 +287,24 @@ def main():
                  "хук є; без вузла → 1, з Q12 → 0", note))
     bad += not good
 
+    # Маска експорту сесії (2026-10-18): «task-notification» — не ключ; sk-/nvapi- — ключі.
+    try:
+        import importlib.util
+        s = importlib.util.spec_from_file_location("sexp", os.path.join(ROOT, "tools", "session-export.py"))
+        se = importlib.util.module_from_spec(s)
+        s.loader.exec_module(se)
+        txt = ("<task-notification_abcdefghijklmnopqrst> sk-" + "A1b2C3d4E5f6G7h8I9j0"
+               + " nvapi-" + "Z9y8X7w6V5u4T3s2R1q0")
+        for rx, rep in se.REDACT:
+            txt = rx.sub(rep, txt)
+        good = "task-notification_abcdefghijklmnopqrst" in txt and txt.count("[ключ]") == 2
+        note = txt[:120]
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    rows.append(("✅" if good else "❌", "session-export: маска ключів",
+                 "task-notification цілий; sk-/nvapi- → [ключ]", note))
+    bad += not good
+
     for r in rows:
         print(f"{r[0]} {r[1]} — очікую: {r[2]} — {r[3]}")
     print(f"\nхуків у налаштуваннях: {len(hs)}; поломок: {bad}")
