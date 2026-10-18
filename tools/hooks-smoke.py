@@ -149,12 +149,6 @@ def main():
          {**base, "hook_event_name": "PreToolUse", "tool_name": "Edit",
           "tool_input": {"file_path": f"{tmp}/x.md", "old_string": "a", "new_string": "b"}}, None,
          lambda rc, o, e: rc == 0 and ctx(o)[1] != "deny", "пропускає"),
-        ("commit-consent: коміт хука без вузла", "PreToolUse", "commit-consent-hook.py", "Bash",
-         bash("git add .claude/hooks/x.py && git commit -m 'fix: x'"), None,
-         lambda rc, o, e: ctx(o)[1] == "deny", "блок (код вузла, проба 18.10)"),
-        ("commit-consent: коміт хука з вузлом", "PreToolUse", "commit-consent-hook.py", "Bash",
-         bash("git add .claude/hooks/x.py && git commit -m 'fix: Q12 x'"), None,
-         lambda rc, o, e: ctx(o)[1] != "deny", "не блокує за вузол (дозвіл на коміт — окремо)"),
         ("verify-nudge: незахищений файл", "PreToolUse", "verify-nudge-hook.py",
          "Edit|Write|MultiEdit|NotebookEdit",
          {**base, "hook_event_name": "PreToolUse", "tool_name": "Write",
@@ -267,6 +261,30 @@ def main():
         good, note = False, f"{type(ex).__name__}: {ex}"
     rows.append(("✅" if good else "❌", "звірка перед сповіщенням фонової задачі",
                  "видно обом хукам", note))
+    bad += not good
+
+    # git commit-msg «код вузла в коміті механізму» (2026-10-18): хук поза git — перевіряємо, що він є й
+    # викликає скрипт, і ганяємо скрипт у тимчасовому репо (без вузла → 1, з Q12 → 0).
+    try:
+        gh = open(os.path.join(ROOT, ".git", "hooks", "commit-msg"), encoding="utf-8").read()
+        repo = os.path.join(tmp, "cm-repo")
+        os.makedirs(os.path.join(repo, "tools"))
+        g = lambda *a: subprocess.run(["git", "-C", repo, *a], capture_output=True, text=True)  # noqa: E731
+        g("init", "-q")
+        open(os.path.join(repo, "tools", "x.py"), "w").write("x\n")
+        g("add", "tools/x.py")
+        res = []
+        for msg in ("fix: x", "fix: Q12 x"):
+            mf = os.path.join(tmp, "cm-msg.txt")
+            open(mf, "w", encoding="utf-8").write(msg + "\n")
+            res.append(subprocess.run([sys.executable, os.path.join(ROOT, "tools", "commit-node-check.py"), mf],
+                                      cwd=repo, capture_output=True, text=True).returncode)
+        good = "commit-node-check.py" in gh and res == [1, 0]
+        note = f"git-хук є: {'commit-node-check.py' in gh}; коди без вузла/з Q12: {res}"
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    rows.append(("✅" if good else "❌", "git commit-msg: код вузла в коміті механізму",
+                 "хук є; без вузла → 1, з Q12 → 0", note))
     bad += not good
 
     for r in rows:

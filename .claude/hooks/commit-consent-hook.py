@@ -11,18 +11,13 @@ PreToolUse hook (Bash): git commit без «коміт» в останньому
 відповідь у віконці) — (а) сам каже «коміт/commit» без заперечення, або (б) у віконці питання
 про коміт, а відповідь починається з «так/yes/коміть». Будь-яка помилка — мовчить (fail-open).
 
-ВУЗОЛ (2026-10-18, рішення користувача «Так, з пробою», проба 3 сесії): коміт, що змінює механізми
-(хуки, скіли, налаштування, tools/, mods/, RULES/RULES-WHY/CLAUDE/AGENTS), без коду вузла (Q12, M11.4…)
-чи «без вузла: причина» у повідомленні — deny з підказкою; агент дописує сам, користувача не питає.
-Правило RULES.md:29 «ціль записується… коміт» механізму не мало: бектест — 24 з 54 комітів механізмів
-без вузла; 82 зі 123 команд коміту механізмів у журналах. Клас «працював повз дерево» (вузол Q12, 18.10).
-Критерій проби: «без вузла» ≤ 1 з 5 зупинок (журнал — той самий LOG, мітки node-deny / no-node).
+Перевірку «коміт механізму без вузла» (cfd43bd) звідси прибрано 2026-10-18: за текстом команди її обходили
+git add -A / . / commit -am / pathspec і вона хибно блокувала -F файл і власний текст (аудит DSH, перевірено
+запуском). Тепер — git-хук commit-msg → tools/commit-node-check.py (фактичний індекс і повідомлення).
 """
 import json
 import os
 import re
-import shlex
-import subprocess
 import sys
 import time
 
@@ -34,33 +29,6 @@ RE_NO = re.compile(r"(?:не|без|ні,?)\s+(?:за)?коміт|не\s+commit|
 RE_ANSWERED = re.compile(r"\s*(?:User has answered your questions|The user answered|"
                          r"Your questions have been answered):(.*)", re.S)
 RE_PAIR = re.compile(r'"((?:[^"\\]|\\.)*)"\s*=\s*"((?:[^"\\]|\\.)*)"', re.S)
-RE_NODE = re.compile(r"(?<![\w.])[GMTQZ]\d+(?:\.\d+)*(?![\w])")
-RE_NO_NODE = re.compile(r"без\s+вузла\s*:\s*(.{0,80})", re.I)
-RE_MECH = re.compile(r"^(?:\./)?(?:\.claude/(?:hooks|skills|settings)|tools/|mods/|RULES\.md|RULES-WHY\.md|"
-                     r"CLAUDE\.md|AGENTS\.md)")
-RE_HEREDOC = re.compile(r"<<-?\s*'?(\w+)'?\n(.*?)\n\1\b", re.S)
-
-
-def message(cmd):
-    """Текст повідомлення коміту з команди: тіла heredoc і аргументи -m."""
-    parts = [b for _, b in RE_HEREDOC.findall(cmd)]
-    parts += re.findall(r"-m\s+\"((?:[^\"\\]|\\.)*)\"", cmd) + re.findall(r"-m\s+'([^']*)'", cmd)
-    return "\n".join(parts)
-
-
-def commit_paths(cmd, cwd):
-    """Шляхи з git add у тій самій команді (на PreToolUse вони ще не в індексі) + уже проіндексовані."""
-    out = []
-    for seg in re.split(r"&&|\|\||;|\n", RE_HEREDOC.sub(" ", cmd)):
-        m = re.search(r"\bgit(?:\s+-C\s+\S+)?\s+add\s+(.*)", seg)
-        if m:
-            try:
-                out += [a for a in shlex.split(m.group(1)) if not a.startswith("-")]
-            except ValueError:
-                out += m.group(1).split()
-    r = subprocess.run(["git", "-C", cwd or PROJECT, "diff", "--cached", "--name-only"],
-                       capture_output=True, text=True, timeout=10)
-    return out + r.stdout.split()
 
 
 def consent(text):
@@ -116,32 +84,14 @@ def main():
     cmd = str((data.get("tool_input") or {}).get("command", ""))
     if not RE_COMMIT.search(cmd):
         return
-    sid, now = data.get("session_id", "?"), time.strftime("%Y-%m-%dT%H:%M:%S")
-    os.makedirs(os.path.dirname(LOG), exist_ok=True)
-    if any(RE_MECH.match(p) for p in commit_paths(cmd, data.get("cwd"))):
-        msg = message(cmd) or cmd
-        no_node = RE_NO_NODE.search(msg)
-        if not (RE_NODE.search(msg) or no_node):
-            with open(LOG, "a") as f:
-                f.write(f"{sid}\tnode-deny\t{now}\t{msg.splitlines()[0][:120] if msg.strip() else ''}\n")
-            print(json.dumps({"hookSpecificOutput": {
-                "hookEventName": "PreToolUse", "permissionDecision": "deny",
-                "permissionDecisionReason": (
-                    "Коміт змінює механізми (хуки/скіли/налаштування/tools/mods/правила), а в повідомленні нема "
-                    "коду вузла (RULES.md:29 «ціль записується… коміт»). Допиши код вузла словами (напр. "
-                    "«Q12 — …», назва: python3 tools/trees-index.py <код>) і запис у сам вузол, або рядок "
-                    "«без вузла: <чому>», і закоміть знову.")}}, ensure_ascii=False))
-            return
-        if no_node and not RE_NODE.search(msg):
-            with open(LOG, "a") as f:
-                f.write(f"{sid}\tno-node\t{now}\t{no_node.group(1).strip()}\n")
     tp = data.get("transcript_path")
     if not (isinstance(tp, str) and os.path.isfile(tp)):
         return
     last = last_decision(tp)
     ok = consent(last)
+    os.makedirs(os.path.dirname(LOG), exist_ok=True)
     with open(LOG, "a") as f:
-        f.write(f"{sid}\t{'ok' if ok else 'ask'}\t{now}\t"
+        f.write(f"{data.get('session_id', '?')}\t{'ok' if ok else 'ask'}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\t"
                 f"{re.sub(r'\s+', ' ', last)[:120]}\n")
     if ok:
         return
