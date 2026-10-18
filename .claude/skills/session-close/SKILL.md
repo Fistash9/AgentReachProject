@@ -11,6 +11,22 @@ description: Closes out an Agent Reach work session in Claude Code (Termux) — 
 
 Це **тільки для проєкту AgentReachProject** (`/data/data/com.termux/files/home/AgentReachProject`). Скрипт і кроки нижче припускають саме цей репозиторій.
 
+## Крок 0 — Спершу закрити роботу DSH (з 2026-10-19, рішення користувача)
+
+Користувач: «завжди закривай процеси дш як сьогодні перед завершенням». Естафета одна: якщо DSH
+передасть її після мене, його pass перезапише мої next (18.10 обидва підхопили #52 — TROUBLES 2026-10-19).
+
+1. Вікно є? `tmux list-windows -t work` має вікно dsh; нема — крок пропустити й написати це у звіті.
+2. Екран: `tmux capture-pane -p -t work:3` — зайнятий (`● Question` / `Queue as follow-up` / `working…` /
+   `thinking ·`) чи вільний; його список задач звірити з git (`git log --grep='Agent: dsh'`).
+3. Лист з межами за рецептом TROUBLES «Листи у вікно DSH» (текст з файлу → `tmux send-keys -t work:3 -l` →
+   окремо Enter; перед тим — не зайнятий і поле вводу порожнє, копія в полі — Ctrl+K): «Межі: ≤10 кроків, без
+   subagent/subagent_fork і llm-council. 1) що лишилось незавершеним — ≤8 рядків у agents/dsh/JOURNAL.md + коміт
+   з Agent: dsh; 2) закрий сесію: знімок .baton/baton.json у .baton/history/pass-<N>.json, baton_pass з пунктами
+   @dsh, наприкінці рядок «BATON PASSED»». Окремого питання не треба — це рішення користувача 2026-10-19.
+4. Чекати у фоні: «BATON PASSED» на екрані і DSH не працює (timeout 15 хв); перевірити його коміт і знімок.
+5. Лише тоді — крок 1 і далі; мій baton_pass (крок 4) — останній.
+
 ## Крок 1 — Знайти точку відліку
 
 Виклич `mcp__baton__baton_history` (project: AgentReachProject корінь) і знайди останній запис з дією `pick_up` в journal. Візьми його ISO-timestamp — це момент, коли поточна сесія підхопила контекст. Якщо записів `pick_up` немає взагалі (перша сесія проєкту) — просто не передавай timestamp на кроці 2, скрипт сам подбає про фолбек.
