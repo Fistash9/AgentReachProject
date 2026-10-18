@@ -86,8 +86,21 @@ def is_real_user(d):
     return isinstance(m, dict) and isinstance(m.get("content"), str)
 
 
-def iter_turns(lines):
-    """Хід = від справжнього повідомлення користувача до наступного."""
+def is_notification(d):
+    """Сповіщення фонової задачі (origin.kind = "task-notification" тощо): рядок-текст, як повідомлення
+    користувача, але набрала його не людина. 2026-10-18 (TROUBLES «verify-nudge…»): для звірки воно хід не
+    відкриває — інакше звірка перед сповіщенням зникає з поля зору verify-nudge і ask-gate."""
+    org = d.get("origin")
+    return isinstance(org, dict) and bool(org.get("kind")) and org.get("kind") != "human"
+
+
+def starts_turn(d, merge_notifications=False):
+    return is_real_user(d) and not (merge_notifications and is_notification(d))
+
+
+def iter_turns(lines, merge_notifications=False):
+    """Хід = від справжнього повідомлення користувача до наступного. merge_notifications=True —
+    сповіщення фонових задач хід не відкривають (verify-nudge, ask-gate; голос відповіді — ні, рішення 13.10)."""
     cur = None
     for line in lines:
         try:
@@ -96,7 +109,7 @@ def iter_turns(lines):
             continue
         if not isinstance(d, dict):
             continue
-        if is_real_user(d):
+        if starts_turn(d, merge_notifications):
             if cur is not None:
                 yield cur
             org = d.get("origin") if isinstance(d.get("origin"), dict) else {}
@@ -163,7 +176,7 @@ def check(turn):
     return misses
 
 
-def current_turn_lines(path, chunk=262_144, max_scan=8_000_000):
+def current_turn_lines(path, chunk=262_144, max_scan=8_000_000, merge_notifications=False):
     with open(path, "rb") as f:
         f.seek(0, 2)
         pos, buf, scanned = f.tell(), b"", 0
@@ -181,7 +194,7 @@ def current_turn_lines(path, chunk=262_144, max_scan=8_000_000):
                     d = json.loads(lines[i])
                 except ValueError:
                     continue
-                if isinstance(d, dict) and is_real_user(d):
+                if isinstance(d, dict) and starts_turn(d, merge_notifications):
                     return lines[i:]
         lines = buf.decode("utf-8", "ignore").splitlines()
         return lines[1:] if pos > 0 and lines else lines

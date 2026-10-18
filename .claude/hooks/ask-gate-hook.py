@@ -47,7 +47,7 @@ def question_text(inp):
 
 
 def misses_for(ag, lines, question):
-    turns = list(ag.iter_turns(ag.after_last_answer(lines)))
+    turns = list(ag.iter_turns(ag.after_last_answer(lines), merge_notifications=True))
     seg = turns[-1] if turns else {"texts": [], "tools": []}
     text = question  # seg["texts"] у журналі неповні — див. question_text
     out = []
@@ -79,7 +79,7 @@ def main():
     if not (isinstance(tp, str) and os.path.isfile(tp)):
         return
     ag = load_ag()
-    misses = misses_for(ag, ag.current_turn_lines(tp), question_text(data.get("tool_input")))
+    misses = misses_for(ag, ag.current_turn_lines(tp, merge_notifications=True), question_text(data.get("tool_input")))
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     with open(LOG, "a", encoding="utf-8") as f:
         f.write(json.dumps({"t": datetime.datetime.now().isoformat(timespec="seconds"),

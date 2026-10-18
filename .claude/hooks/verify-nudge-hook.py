@@ -77,7 +77,7 @@ def verified_this_turn(transcript_path):
     звірок застарілі (≥2 віконця між звіркою і правкою, 6 сесій). Повертає (чи є звірка, ключ відрізка
     для дедупу запиту — час останньої відповіді у віконці, інакше час ходу)."""
     ag = _load("answer-gate-shadow-hook.py")
-    lines = ag.current_turn_lines(transcript_path)
+    lines = ag.current_turn_lines(transcript_path, merge_notifications=True)
     turn_ts, seg_ts, boxes = "", "", 0
     for l in lines[:1]:
         try:

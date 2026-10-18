@@ -232,6 +232,37 @@ def main():
             rows.append(("✅" if good else "❌", f"тест {t}", "код 0",
                          f"код {r.returncode}" + ("" if good else f": {(r.stderr or r.stdout).strip()[:150]}")))
 
+    # Сповіщення фонової задачі не ховає звірку (2026-10-18, TROUBLES «verify-nudge…»): функції без
+    # побічних дій — verify-nudge verified_this_turn і ask-gate misses_for на штучному журналі
+    # «людина → delegate → task-notification».
+    nt = os.path.join(tmp, "notif.jsonl")
+    with open(nt, "w", encoding="utf-8") as f:
+        for d in ({"type": "user", "origin": {"kind": "human"}, "message": {"content": "зроби план"}},
+                  {"type": "assistant", "message": {"content": [
+                      {"type": "tool_use", "name": "mcp__delegate__delegate", "input": {}}]}},
+                  {"type": "user", "origin": {"kind": "task-notification"},
+                   "message": {"content": "<task-notification>done</task-notification>"}}):
+            f.write(json.dumps(d, ensure_ascii=False) + "\n")
+    try:
+        import importlib.util
+
+        def mod(name):
+            s = importlib.util.spec_from_file_location(name.replace("-", "_"),
+                                                       os.path.join(ROOT, ".claude", "hooks", name))
+            m = importlib.util.module_from_spec(s)
+            s.loader.exec_module(m)
+            return m
+        vn, gate, ag = mod("verify-nudge-hook.py"), mod("ask-gate-hook.py"), mod("answer-gate-shadow-hook.py")
+        v_ok = vn.verified_this_turn(nt)[0]
+        g_ok = "verify" not in gate.misses_for(
+            ag, ag.current_turn_lines(nt, merge_notifications=True), "Внести правку?\nЧерга: x → y")
+        good, note = v_ok and g_ok, f"verify-nudge бачить звірку: {v_ok}; ask-gate без вимоги звірки: {g_ok}"
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    rows.append(("✅" if good else "❌", "звірка перед сповіщенням фонової задачі",
+                 "видно обом хукам", note))
+    bad += not good
+
     for r in rows:
         print(f"{r[0]} {r[1]} — очікую: {r[2]} — {r[3]}")
     print(f"\nхуків у налаштуваннях: {len(hs)}; поломок: {bad}")
