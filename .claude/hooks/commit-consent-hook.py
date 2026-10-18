@@ -52,8 +52,11 @@ def bypass(cmd):
 RE_PAIR = re.compile(r'"((?:[^"\\]|\\.)*)"\s*=\s*"((?:[^"\\]|\\.)*)"', re.S)
 
 
-def consent(text):
-    """Чи дає це рішення користувача дозвіл на коміт."""
+def consent(text, labels=()):
+    """Чи дає це рішення користувача дозвіл на коміт.
+    М2 (2026-10-19, рецензія сесії 1fe9acd7, рішення «М2: коміт лише з голого «так»»): вибраний у віконці
+    ВАРІАНТ, який написав агент («Так, внести і закомітити»), дозволом не є, якщо саме питання не про коміт —
+    інакше агент сам вирішує, чи стрельне замок. Свій текст користувача («Other») з «коміт» — дозвіл, як раніше."""
     m = RE_ANSWERED.match(text)
     if not m:  # набране повідомлення
         return bool(RE_YES.search(text)) and not RE_NO.search(text)
@@ -61,26 +64,36 @@ def consent(text):
     for q, a in RE_PAIR.findall(body):
         if RE_NO.search(a):
             continue
-        if RE_YES.search(a):
+        own = a
+        for lb in sorted(labels, key=len, reverse=True):  # вибрані варіанти (і кілька через «, ») — текст агента
+            own = own.replace(lb, " ")
+        if RE_YES.search(own):  # власні слова користувача
             return True
-        if RE_YES.search(q) and re.match(r"\s*(?:так|yes|добре|коміть)\b", a, re.I):
-            return True
+        if RE_YES.search(q) and (re.match(r"\s*(?:так|yes|добре|коміть)\b", a, re.I) or RE_YES.search(a)):
+            return True  # питання саме про коміт: «так» або вибраний варіант зі словом «коміт» (не «без коміту»)
     return False
 
 
 def last_decision(transcript_path):
-    """Останнє рішення користувача в журналі сесії (без системних вставок)."""
-    last = ""
+    """Останнє рішення користувача в журналі сесії (без системних вставок) і підписи варіантів віконця,
+    на яке воно відповідає (М2: щоб відрізнити вибраний варіант агента від власних слів користувача)."""
+    last, labels, opts = "", (), {}
     with open(transcript_path, encoding="utf-8") as f:
         for line in f:
             try:
                 d = json.loads(line)
             except ValueError:
                 continue
+            if d.get("type") == "assistant":
+                for x in (d.get("message") or {}).get("content") or []:
+                    if isinstance(x, dict) and x.get("type") == "tool_use" and x.get("name") == "AskUserQuestion":
+                        opts[x.get("id")] = tuple(str(o.get("label", "")) for q in (x.get("input") or {}).get(
+                            "questions") or [] for o in q.get("options") or [] if isinstance(o, dict))
+                continue
             if d.get("type") == "attachment" and d.get("attachment", {}).get("type") == "queued_command":
                 q = d["attachment"].get("prompt", "")
                 if isinstance(q, str) and q.strip() and not q.lstrip().startswith("<"):  # не task-notification
-                    last = q
+                    last, labels = q, ()
                 continue
             if d.get("type") != "user" or d.get("isMeta"):
                 continue
@@ -88,14 +101,15 @@ def last_decision(transcript_path):
             blocks = [{"type": "text", "text": c}] if isinstance(c, str) else (c or [])
             for b in blocks:
                 if b.get("type") == "text" and not b.get("text", "").lstrip().startswith("<"):
-                    last = b["text"]
+                    last, labels = b["text"], ()
                 elif b.get("type") == "tool_result":
                     t = b.get("content")
                     t = t if isinstance(t, str) else " ".join(
                         x.get("text", "") for x in t or [] if isinstance(x, dict))
                     if RE_ANSWERED.match(t):
-                        last = t
-    return last
+                        last, labels = t, opts.get(b.get("tool_use_id"), ())
+    return last, labels
+
 
 
 def main():
@@ -108,7 +122,7 @@ def main():
     tp = data.get("transcript_path")
     if not (isinstance(tp, str) and os.path.isfile(tp)):
         return
-    last = last_decision(tp)
+    last, labels = last_decision(tp)
     if bypass(cmd) and "no-verify" not in last.lower():
         os.makedirs(os.path.dirname(LOG), exist_ok=True)
         with open(LOG, "a") as f:
@@ -120,7 +134,7 @@ def main():
                                          "перевірку вузла, й сканування ключів (pre-commit). Дозволити? «Ні» — "
                                          "агент комітить без обходу.")}}, ensure_ascii=False))
         return
-    ok = consent(last)
+    ok = consent(last, labels)
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     with open(LOG, "a") as f:
         f.write(f"{data.get('session_id', '?')}\t{'ok' if ok else 'ask'}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\t"

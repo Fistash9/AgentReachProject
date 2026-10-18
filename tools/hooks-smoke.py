@@ -306,6 +306,22 @@ def main():
                  note))
     bad += not good
 
+    # М2 (2026-10-19): варіант агента «…і закомітити» на питання НЕ про коміт — не дозвіл; на питання про
+    # коміт «так»/варіант з «коміт» — дозвіл; власні слова користувача з «коміт» — дозвіл.
+    try:
+        A = lambda q, a: f'Your questions have been answered: "{q}"="{a}". You can now continue.'  # noqa: E731
+        cases = [(A("Внести правку?", "Так, внести і закомітити"), ("Так, внести і закомітити", "Ні"), False),
+                 (A("Закомітити X?", "Так, коміт"), ("Так, коміт", "Ні"), True),
+                 (A("Закомітити?", "Поки без коміту"), ("Так, коміт", "Поки без коміту"), False),
+                 (A("Що робимо?", "Інше, і коміть усе"), ("Інше",), True),
+                 ("так, коміт", (), True)]
+        res = [cc.consent(t, lb) == want for t, lb, want in cases]
+        good, note = all(res), f"{sum(res)}/{len(res)} випадків"
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    rows.append(("✅" if good else "❌", "commit-consent: М2 дозвіл на коміт", "варіант агента ≠ дозвіл", note))
+    bad += not good
+
     # Маска експорту сесії (2026-10-18): «task-notification» — не ключ; sk-/nvapi- — ключі.
     try:
         import importlib.util
