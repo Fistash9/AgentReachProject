@@ -1,0 +1,5 @@
+{
+  "name": "agent-reach-mods",
+  "owner": { "name": "Agent Reach (claude-code)" },
+  "plugins": [{ "name": "agents-status", "source": "./agents-status" }]
+}

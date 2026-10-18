@@ -38,6 +38,7 @@ agent
 | [tools/provider-switch.py](./tools/provider-switch.py) | Перемикач провайдера delegate і хука: DeepSeek ↔ NVIDIA gpt-oss (menu.sh п.8) |
 | [tools/nvidia-live.py](./tools/nvidia-live.py) | Живий прогін моделей NVIDIA в консолі (меню моделей і кейсів) |
 | [tools/verifier-backtest/](./tools/verifier-backtest/) | Бектести верифікатора: кейси, результати (DeepSeek і NVIDIA) |
+| [mods/](./mods/) | Моди Claude Code (маркетплейс-тека, local scope): agents-status — смуга над полем вводу «що в роботі за деревом / що DSH робить насправді», ⚠ при розбіжності (TROUBLES 2026-10-18) |
 | [.claude/skills/verify-before-show/](./.claude/skills/verify-before-show/) | Скіл: звірка тверджень з джерелом до показу (промпт v2) |
 
 ## Tech Stack
