@@ -92,6 +92,8 @@ def main():
         for t, a, ev in (("2026-10-16T14:06:31Z", "claude-code", "pass"), ("2026-10-18T08:13:55Z", "claude-code", "pick_up"),
                          ("2026-10-18T08:20:09Z", "dsh", "pick_up")):
             f.write(json.dumps({"t": t, "agent": a, "event": ev, "pass": 52}) + "\n")
+    with open(os.path.join(tmp, "cost.jsonl"), "w", encoding="utf-8") as f:  # cost-nudge: $10.50
+        f.write(json.dumps({"session_id": SID, "cost": 10.5, "pct": 25}) + "\n")
     base ={"session_id": SID, "cwd": ROOT, "transcript_path": fake}
 
     def bash(c):
@@ -139,6 +141,11 @@ def main():
          {**base, "hook_event_name": "PostToolUse", "tool_name": "mcp__baton__baton_pick_up"},
          {"BATON_GUARD_LEDGER": os.path.join(tmp, "ledger.jsonl")},
          lambda rc, o, e: "#52" in ctx(o)[0], "⚠ про #52"),
+        ("cost-nudge: поріг $10 (тимч. журнал)", "UserPromptSubmit", "cost-nudge-hook.py", None,
+         {**base, "hook_event_name": "UserPromptSubmit", "prompt": "тест"},
+         {"COST_NUDGE_LOG": os.path.join(tmp, "cost.jsonl"), "COST_NUDGE_STATE": os.path.join(tmp, "cn.json")},
+         lambda rc, o, e: "$10.50" in (json.loads(o).get("systemMessage", "") if o.strip() else ""),
+         "systemMessage з ціною"),
         ("trash-md-guard: rm у проєкті", "PreToolUse", "trash-md-guard-hook.py", "Bash",
          bash(f"rm {ROOT}/hooks-smoke-не-існує.txt"), None,
          lambda rc, o, e: rc == 2 or ctx(o)[1] == "deny", "блок (TRASH.md не свіжий)"),
