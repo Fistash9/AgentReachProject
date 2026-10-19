@@ -92,6 +92,9 @@ def main():
         for t, a, ev in (("2026-10-16T14:06:31Z", "claude-code", "pass"), ("2026-10-18T08:13:55Z", "claude-code", "pick_up"),
                          ("2026-10-18T08:20:09Z", "dsh", "pick_up")):
             f.write(json.dumps({"t": t, "agent": a, "event": ev, "pass": 52}) + "\n")
+    with open(os.path.join(tmp, "baton-old.json"), "w", encoding="utf-8") as f:  # baton-guard: втрата #56→#57
+        json.dump({"passCount": 56, "next": ["@claude-code a"],
+                   "openQuestions": ["Розбіжність 486 vs 457 комітів у двох бектестах замка — не пояснено"]}, f)
     with open(os.path.join(tmp, "cost.jsonl"), "w", encoding="utf-8") as f:  # cost-nudge: $10.50
         f.write(json.dumps({"session_id": SID, "cost": 10.5, "pct": 25}) + "\n")
     base ={"session_id": SID, "cwd": ROOT, "transcript_path": fake}
@@ -134,8 +137,14 @@ def main():
          lambda rc, o, e: ctx(o)[1] == "deny", "блок"),
         ("baton-guard: next з @власником", "PreToolUse", "baton-guard-hook.py", "mcp__baton__baton_pass",
          {**base, "hook_event_name": "PreToolUse", "tool_name": "mcp__baton__baton_pass",
-          "tool_input": {"handoffNote": "x", "next": ["@claude-code a", "@dsh b"]}}, None,
+          "tool_input": {"handoffNote": "x", "next": ["@claude-code a", "@dsh b"]}},
+         {"BATON_GUARD_CURRENT": os.path.join(tmp, "немає.json")},
          lambda rc, o, e: rc == 0 and not o.strip(), "тиша"),
+        ("baton-guard: втрата відкритого питання (#56→#57)", "PreToolUse", "baton-guard-hook.py", "mcp__baton__baton_pass",
+         {**base, "hook_event_name": "PreToolUse", "tool_name": "mcp__baton__baton_pass",
+          "tool_input": {"handoffNote": "x", "next": ["@claude-code a"], "openQuestions": []}},
+         {"BATON_GUARD_CURRENT": os.path.join(tmp, "baton-old.json")},
+         lambda rc, o, e: ctx(o)[1] == "ask" and "486 vs 457" in o, "ask зі списком"),
         ("baton-guard: подвійний pick_up (журнал 18.10)", "PostToolUse", "baton-guard-hook.py",
          "mcp__baton__baton_pick_up",
          {**base, "hook_event_name": "PostToolUse", "tool_name": "mcp__baton__baton_pick_up"},

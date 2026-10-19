@@ -19,6 +19,14 @@
 #16 (7 хв), #35 (39 хв), #52 (6 хв); вікно 12 год ловить 16/35/52. Пункти next
 без @ — у знімках pass-39…53 усі, pass-54 1 з 9 (verify-before-show 3/3 ТАК).
 DSH працює не на хуках Claude — ворота 1 його pass не зупиняють.
+
+4. (2026-10-19, TROUBLES «Втрати естафети при передачі») PreToolUse
+   mcp__baton__baton_pass — передане next/openQuestions ЗАМІНЮЄ список
+   (server.mjs:158-159), тож пункт поточного .baton/baton.json, якого нема
+   в новому next/openQuestions/done/handoffNote (схожість — same() з
+   tools/baton-diff.py), зникає. Є такі — ask зі списком (рішення
+   користувача «Будь-яку втрату»). Бектест 45 передач #1…#58: питав би
+   в 31, ловить 4 відкриті питання #56→#57.
 Fail-open: будь-яка помилка читання — тиша.
 """
 import json
@@ -29,6 +37,8 @@ from datetime import datetime, timedelta
 
 REPO = "/data/data/com.termux/files/home/AgentReachProject"
 LEDGER = os.environ.get("BATON_GUARD_LEDGER") or f"{REPO}/.baton/ledger.jsonl"
+CURRENT = os.environ.get("BATON_GUARD_CURRENT") or f"{REPO}/.baton/baton.json"
+FIELDS = (("next", "Далі"), ("openQuestions", "Відкрите питання"))
 WINDOW_H = 12
 OWNER = re.compile(r"\s*@[\w-]+")
 
@@ -72,6 +82,25 @@ def warn_text(dp):
             f"(@власник у next), або скажи користувачу.")
 
 
+def lost_items(new):
+    """[(мітка, пункт)] з поточної естафети, яких нема в переданому pass."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("baton_diff", f"{REPO}/tools/baton-diff.py")
+    bd = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(bd)
+    try:
+        with open(CURRENT, encoding="utf-8") as f:
+            old = json.load(f)
+    except (OSError, ValueError):
+        return []
+    # непередане поле сервер лишає як було (server.mjs:158-159)
+    pool = [str(x) for k in ("next", "openQuestions") for x in
+            (new[k] if isinstance(new.get(k), list) else old.get(k) or [])]
+    pool += [str(x) for x in new.get("done") or []] + [str(new.get("handoffNote") or "")]
+    return [(label, str(item)) for key, label in FIELDS if isinstance(new.get(key), list)
+            for item in old.get(key) or [] if not any(bd.same(item, y) for y in pool)]
+
+
 def emit(event, **extra):
     print(json.dumps({"hookSpecificOutput": {"hookEventName": event, **extra}},
                      ensure_ascii=False))
@@ -86,10 +115,9 @@ def main():
     tool = data.get("tool_name", "")
 
     if event == "PreToolUse" and tool.endswith("baton_pass"):
-        nxt = (data.get("tool_input") or {}).get("next")
-        if not isinstance(nxt, list):
-            return
-        bad = [str(x)[:60] for x in nxt if not OWNER.match(str(x))]
+        ti = data.get("tool_input") or {}
+        nxt = ti.get("next")
+        bad = [str(x)[:60] for x in nxt if not OWNER.match(str(x))] if isinstance(nxt, list) else []
         if bad:
             emit("PreToolUse", permissionDecision="deny",
                  permissionDecisionReason=(
@@ -97,6 +125,19 @@ def main():
                      "(«@claude-code …», «@dsh …») — інакше обидва агенти беруть "
                      "той самий пункт (18.10, #52). Без власника: "
                      + " | ".join(bad) + ". Допиши @агент і передай знову."))
+            return
+        try:
+            lost = lost_items(ti)
+        except Exception:
+            lost = []
+        if lost:
+            emit("PreToolUse", permissionDecision="ask",
+                 permissionDecisionReason=(
+                     f"baton-guard: передача прибирає {len(lost)} пункт(ів) поточної естафети — "
+                     "вони зникнуть (19.10: 4 відкриті питання #56→#57 жили лише в TROUBLES). "
+                     "Кожен — зроблено / у BACKLOG / відкинути: "
+                     + " | ".join(f"[{l}] {' '.join(i.split())[:70]}" for l, i in lost)
+                     + ". Дозволити передачу?"))
         return
 
     if (event == "PostToolUse" and tool.endswith("baton_pick_up")) or \
