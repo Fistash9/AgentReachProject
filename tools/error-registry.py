@@ -5,6 +5,7 @@ registry-v1.md. Лише читає журнали сесій; без модел
   python3 tools/error-registry.py                  # поточна (найсвіжіша cli) сесія: поправки і «клас — N-й раз»
   python3 tools/error-registry.py --session <id>   # конкретна сесія (префікс id)
   python3 tools/error-registry.py --all            # підсумок за всіма сесіями
+  python3 tools/error-registry.py --loop           # клас → ліки (registry-v1.md «## Ліки») → ⚠ повтор після ліків; частка поправок
   python3 tools/error-registry.py --eval <labels> <corrections.jsonl>  # точність ознак (id|клас)
 """
 import glob, json, os, re, sys
@@ -79,8 +80,9 @@ def user_texts(d):
     return out
 
 
-def corrections(path):
-    """Поправки користувача в одній cli-сесії: [(час, текст, клас, повтор)]."""
+def corrections(path, counts=None):
+    """Поправки користувача в одній cli-сесії: [(час, текст, клас, повтор)]. counts (dict) — сюди
+    «msgs»: скільки всього повідомлень користувача пройшло ті самі фільтри (знаменник частки поправок)."""
     rows = []
     for line in open(path, encoding="utf-8"):
         try:
@@ -88,6 +90,8 @@ def corrections(path):
         except ValueError:
             continue
         if d.get("type") == "user" and d.get("entrypoint") not in (None, "cli"):
+            if counts is not None:
+                counts["msgs"] = 0
             return []  # під-сесія помічника
         if d.get("type") == "attachment" and d.get("attachment", {}).get("type") == "queued_command":
             q = d["attachment"].get("prompt", "")  # повідомлення посеред ходу (бектест: 5 справжніх поправок)
@@ -100,6 +104,8 @@ def corrections(path):
         for s in texts:
             if not isinstance(s, str) or not s.strip() or SYS.match(s) or len(s.split()) > LONG:
                 continue
+            if counts is not None:
+                counts["msgs"] = counts.get("msgs", 0) + 1
             if TRIG.search(answer_part(s)):  # лише слова користувача, не питання асистента у віконці (16.10: 4 хибні)
                 rows.append((d.get("timestamp", "")[:16], s.strip(), classify(s), bool(REPEAT.search(s))))
     return rows
@@ -162,6 +168,73 @@ def report_all():
               f"{first[c]} … {last[c]})")
 
 
+REGISTRY = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "agents", "claude-code", "q12-classes-2026-10-16", "registry-v1.md")
+
+
+def remedies(path=REGISTRY):
+    """{клас: [(час коміту, коміт, ліки)]} з розділу «## Ліки» реєстру; час — з git (UTC)."""
+    import subprocess
+    from datetime import datetime, timezone
+    out, on = {}, False
+    for l in open(path, encoding="utf-8"):
+        on = on or l.startswith("## Ліки")
+        m = on and re.match(r"\|\s*(Р\d)\s*\|\s*(\d{4}-\d\d-\d\d)\s*\|\s*([0-9a-f]{7,})\s*\|\s*(.+?)\s*\|", l)
+        if m:
+            r = subprocess.run(["git", "-C", os.path.dirname(path), "log", "-1", "--format=%ct", m.group(3)],
+                               capture_output=True, text=True)
+            ts = (datetime.fromtimestamp(int(r.stdout.strip()), timezone.utc).strftime("%Y-%m-%dT%H:%M")
+                  if r.stdout.strip().isdigit() else m.group(2) + "T23:59")  # без git — кінець дня (суворіше)
+            out.setdefault(m.group(1), []).append((ts, m.group(3), m.group(4)))
+    return out
+
+
+def report_loop():
+    """Коло «клас → ліки → повторилось після ліків?» + частка поправок від повідомлень по тижнях (2026-10-19;
+    ідея — cc-retrospective-learner «昇格», мірило — shenxingy/Clade «correction rate»)."""
+    from datetime import date
+    rem = remedies()
+    sess, week = {}, {}
+    for f in sorted(glob.glob(LOGS + "/*.jsonl"), key=os.path.getmtime):
+        cnt = {}
+        rows = corrections(f, cnt)
+        if rows:
+            sess[os.path.basename(f)[:8]] = rows
+        if cnt.get("msgs"):
+            with open(f, encoding="utf-8") as fh:  # тиждень — за першим повідомленням сесії
+                first = next((t for t in (json.loads(l).get("timestamp", "") for l in fh
+                                          if '"timestamp"' in l and l.strip().startswith("{")) if t), "")
+            if first:
+                wk = "%d-W%02d" % date.fromisoformat(first[:10]).isocalendar()[:2]
+                w = week.setdefault(wk, [0, 0])
+                w[0] += len(rows)
+                w[1] += cnt["msgs"]
+    allrows = [r for rows in sess.values() for r in rows]
+    print(f"Коло реєстру: поправок {len(allrows)} у {len(sess)} сесіях; ліки — {REGISTRY.split('/')[-1]} «## Ліки»")
+    warn = 0
+    for c, name, _ in CLASSES:
+        rs = [r for r in allrows if r[2] == c]
+        lk = sorted(rem.get(c, []))
+        if not rs and not lk:
+            continue
+        if not lk:
+            print(f"  {c} {name}: поправок {len(rs)}; ліків-механізмів немає")
+            continue
+        last = lk[-1][0]
+        after = [r for r in rs if r[0] > last]
+        mark = "⚠ ліки не діють" if after else "ок: після ліків повторів нема"
+        warn += bool(after)
+        print(f"  {c} {name}: поправок {len(rs)} (до останніх ліків {len(rs) - len(after)}, після {len(after)}); "
+              f"ліків {len(lk)}, останні {last[:10]} {lk[-1][1]} — {mark}")
+        for t, text, _, rep in after[:3]:
+            print(f"      {t[:16]}{' · повтор' if rep else ''}  «{re.sub(chr(10), ' ', text)[:90]}»")
+    print(f"⚠ класів з повтором після ліків: {warn}")
+    print("Частка поправок (поправки / повідомлення користувача) по тижнях:")
+    for wk in sorted(week):
+        n, m = week[wk]
+        print(f"  {wk}: {n}/{m} = {n / m:.1%}")
+
+
 def evaluate(labels_path, jsonl_path):
     """Точність ознак проти ручної розкладки: labels — рядки «id|клас», jsonl — вихід бектесту 16.10
     (agents/claude-code/q12-classes-2026-10-16/backtest.py; id = номер рядка)."""
@@ -186,6 +259,8 @@ if __name__ == "__main__":
     a = sys.argv[1:]
     if a[:1] == ["--all"]:
         report_all()
+    elif a[:1] == ["--loop"]:
+        report_loop()
     elif a[:1] == ["--eval"] and len(a) > 2:
         evaluate(a[1], a[2])
     elif a[:1] == ["--session"] and len(a) > 1:
