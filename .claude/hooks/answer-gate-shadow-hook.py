@@ -68,6 +68,43 @@ RE_TRIED = re.compile(r"шукав|спробував|перевіряв|про�
                       r"наступн\w* (сесі|хід|ход)|блоку\w*|з вашого «так»|з твого «так»|лише після|"
                       r"приклад|чек", re.I)
 VERIFY_TOOLS = ("mcp__delegate__delegate", "mcp__delegate__deepseek")
+# Підказки edit-gate (2026-10-19, BACKLOG «Механізми… 1fe9acd7» п.5, рішення «Так, роби»): перевіряємо ДІЮ, а не
+# слова — після підказки до кінця ходу: повний Read/cat файлу (read) або grep за його назвою (movers); інакше —
+# абзац, що називає файл і причину. Бектест з 13.10: 8 підказок → дія 1, причина 2, проігноровано 5.
+RE_EG_READ = re.compile(r"Ворота «перед правкою» \(([^),]+)[^)]*\): ([^.]*)")
+RE_EG_MOV = re.compile(r"Перед (?:mv|rm) (\S+): хто його читає")
+EG_WINDOW = 10
+RE_EG_WHY = re.compile(r"причин|\bбо\b|не дочитував|не читав|лише в описі|docstring|комент", re.I)
+
+
+def egate_misses(turn, text):
+    """["nudge:read:<файл>" | "nudge:movers:<файл>"] — підказки edit-gate без дії й без причини."""
+    out, ev = [], turn.get("events") or []
+    paras = re.split(r"\n\s*\n", text)
+    for i, e in enumerate(ev):
+        if e[0] != "hint":
+            continue
+        pend = [("read", m.group(1).strip()) for m in RE_EG_READ.finditer(e[1]) if "не прочитано" in m.group(2)]
+        pend += [("movers", m.group(1)) for m in RE_EG_MOV.finditer(e[1])]
+        # лише 10 викликів після підказки: з віконцями хід триває годинами, і пізніша випадкова згадка
+        # файлу (тест, що містить «pass-$i» і grep) зараховувалась дією (бектест 60aeb63a, 2026-10-19)
+        later = [x for x in ev[i + 1:] if x[0] == "tool"][:EG_WINDOW]
+        for kind, target in pend:
+            base = os.path.basename(target)
+            stem = os.path.splitext(base)[0] or base
+            if kind == "read":
+                done = any(n == "Read" and str(inp.get("file_path", "")).endswith(target)
+                           and not inp.get("offset") and not inp.get("limit")
+                           or n == "Bash" and re.search(r"\bcat\s+(?:-\w+\s+)*\S*" + re.escape(base),
+                                                        str(inp.get("command", "")))
+                           for _, n, inp in later)
+            else:
+                done = any(n in ("Bash", "Grep") and stem in json.dumps(inp, ensure_ascii=False)
+                           and (n == "Grep" or re.search(r"\b(grep|rg)\b", str(inp.get("command", ""))))
+                           for _, n, inp in later)
+            if not done and not any(RE_EG_WHY.search(p) and stem in p for p in paras):
+                out.append(f"nudge:{kind}:{target}")
+    return out
 
 
 def plain_codes():
@@ -116,16 +153,17 @@ def iter_turns(lines, merge_notifications=False):
             human = org.get("kind") == "human" if org else \
                 not d["message"]["content"].lstrip().startswith("<")
             cur = {"user": d["message"]["content"], "ts": d.get("timestamp", ""),
-                   "texts": [], "tools": [], "hints": [], "human": human}
+                   "texts": [], "tools": [], "hints": [], "human": human, "events": []}
             continue
         if cur is None:
             cur = {"user": None, "ts": d.get("timestamp", ""), "texts": [],
-                   "tools": [], "hints": [], "human": False}
+                   "tools": [], "hints": [], "human": False, "events": []}
         if d.get("type") == "attachment":
             a = d.get("attachment") or {}
             if a.get("type") == "hook_additional_context":
                 c = a.get("content")
                 cur["hints"].append(" ".join(c) if isinstance(c, list) else str(c or ""))
+                cur["events"].append(("hint", cur["hints"][-1]))
             continue
         if d.get("type") != "assistant":
             continue
@@ -135,6 +173,7 @@ def iter_turns(lines, merge_notifications=False):
             if x.get("type") == "tool_use":
                 inp = x.get("input") or {}
                 cur["tools"].append((x.get("name", ""), str(inp.get("skill", ""))))
+                cur["events"].append(("tool", x.get("name", ""), inp))
             elif x.get("type") == "text" and x.get("text", "").strip():
                 cur["texts"].append(x["text"])
     if cur is not None:
@@ -173,6 +212,7 @@ def check(turn):
         misses.append("nudge:brief")
     if RE_VERIFY_HINT.search(hints) and not RE_VERIFY_ANS.search(text):
         misses.append("nudge:verify")
+    misses += egate_misses(turn, text)
     return misses
 
 
@@ -251,6 +291,11 @@ NUDGE_REASON = ("Голос «підказку хука проігнорован
                 "один рядок «Підказка {which}: виконую / не виконую, бо …». Нічого іншого не повторюй.")
 
 
+EGATE_REASON = ("Голос «підказку edit-gate проігноровано» (2026-10-19, п.5 механізмів): {items}. Після підказки не було "
+                "ні дії (повний Read/cat файлу — для read; grep за назвою — для movers), ні причини з назвою файлу. "
+                "Зроби дію зараз або допиши один рядок «<файл>: не дочитував/не шукав, бо …». Нічого іншого не повторюй.")
+
+
 def write_log(session, misses, voice=None):
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     if os.path.isfile(LOG) and os.path.getsize(LOG) > LOG_MAX:
@@ -290,6 +335,8 @@ def run(data):
                     # бриф і verify; «делегуй» — тінь (підказка глобального classify-task радить платне
                     # на простих запитах; рішення про неї — окремо, пункт батона)
                     nudges = [m[6:] for m in misses if m in ("nudge:brief", "nudge:verify")]
+                    egate = [m[6:] for m in misses if m.startswith(("nudge:read:", "nudge:movers:"))]
+                    nudges += ["egate"] if egate else []
                     voice = "+".join((["queue"] if "queue" in misses else [])
                                      + (["codes"] if codes else [])
                                      + (["nudge"] if nudges else [])) or None
@@ -299,7 +346,8 @@ def run(data):
                              if codes else []) + \
                             ([BRIEF_REASON] if "brief" in nudges else []) + \
                             ([NUDGE_REASON.format(which="verify-before-show")]
-                             if "verify" in nudges else [])
+                             if "verify" in nudges else []) + \
+                            ([EGATE_REASON.format(items="; ".join(egate))] if egate else [])
         except OSError:
             misses = ["error:read"]
     else:

@@ -377,6 +377,23 @@ def main():
     rows.append(("✅" if good else "❌", "tree-focus: «DSH насправді»", "екран 18.10 → обидва ⚠; без списку — тиша", note))
     bad += not good
 
+    # Голос на проігноровані підказки edit-gate (2026-10-19): без дії → nudge:read; з повним Read → тиша.
+    try:
+        import importlib.util
+        s = importlib.util.spec_from_file_location("agv", os.path.join(ROOT, ".claude", "hooks", "answer-gate-shadow-hook.py"))
+        agv = importlib.util.module_from_spec(s)
+        s.loader.exec_module(agv)
+        hint = ("hint", "Ворота «перед правкою» (tools/x.py): файл не прочитано повністю (Read без offset/limit або cat).")
+        rd = ("tool", "Read", {"file_path": ROOT + "/tools/x.py"})
+        res = [agv.egate_misses({"events": [hint]}, "готово") == ["nudge:read:tools/x.py"],
+               agv.egate_misses({"events": [hint, rd]}, "готово") == [],
+               agv.egate_misses({"events": [hint]}, "x.py: не дочитував, бо правка в коментарі") == []]
+        good, note = all(res), f"{sum(res)}/{len(res)} випадків"
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    rows.append(("✅" if good else "❌", "answer-gate: голос на підказки edit-gate", "без дії → голос; Read/причина → ні", note))
+    bad += not good
+
     # edit-gate: mv/rm у теці знімків естафети → ask зі списком читачів; інший mv — ні (2026-10-19). Рядки з частин.
     try:
         import importlib.util
