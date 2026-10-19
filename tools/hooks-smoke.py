@@ -88,7 +88,11 @@ def main():
         f.write(json.dumps({"type": "assistant", "message": {"content": [
             {"type": "text", "text": "Далі **T5** — скіл пошуку."}]}}) + "\n")
     envf = os.path.join(tmp, "env")
-    base = {"session_id": SID, "cwd": ROOT, "transcript_path": fake}
+    with open(os.path.join(tmp, "ledger.jsonl"), "w", encoding="utf-8") as f:  # baton-guard: 18.10, #52
+        for t, a, ev in (("2026-10-16T14:06:31Z", "claude-code", "pass"), ("2026-10-18T08:13:55Z", "claude-code", "pick_up"),
+                         ("2026-10-18T08:20:09Z", "dsh", "pick_up")):
+            f.write(json.dumps({"t": t, "agent": a, "event": ev, "pass": 52}) + "\n")
+    base ={"session_id": SID, "cwd": ROOT, "transcript_path": fake}
 
     def bash(c):
         return {**base, "hook_event_name": "PreToolUse", "tool_name": "Bash",
@@ -122,6 +126,19 @@ def main():
          lambda rc, o, e: "TROUBLES.md має релевантні записи" in ctx(o)[0], "підказка з TROUBLES"),
         ("baton-reminder: не push", "PreToolUse", "baton-reminder-hook.py", "Bash", bash("echo smoke"), None,
          lambda rc, o, e: rc == 0 and not o.strip(), "тиша"),
+        ("baton-guard: next без @власника", "PreToolUse", "baton-guard-hook.py", "mcp__baton__baton_pass",
+         {**base, "hook_event_name": "PreToolUse", "tool_name": "mcp__baton__baton_pass",
+          "tool_input": {"handoffNote": "x", "next": ["@claude-code a", "зробити b"]}}, None,
+         lambda rc, o, e: ctx(o)[1] == "deny", "блок"),
+        ("baton-guard: next з @власником", "PreToolUse", "baton-guard-hook.py", "mcp__baton__baton_pass",
+         {**base, "hook_event_name": "PreToolUse", "tool_name": "mcp__baton__baton_pass",
+          "tool_input": {"handoffNote": "x", "next": ["@claude-code a", "@dsh b"]}}, None,
+         lambda rc, o, e: rc == 0 and not o.strip(), "тиша"),
+        ("baton-guard: подвійний pick_up (журнал 18.10)", "PostToolUse", "baton-guard-hook.py",
+         "mcp__baton__baton_pick_up",
+         {**base, "hook_event_name": "PostToolUse", "tool_name": "mcp__baton__baton_pick_up"},
+         {"BATON_GUARD_LEDGER": os.path.join(tmp, "ledger.jsonl")},
+         lambda rc, o, e: "#52" in ctx(o)[0], "⚠ про #52"),
         ("trash-md-guard: rm у проєкті", "PreToolUse", "trash-md-guard-hook.py", "Bash",
          bash(f"rm {ROOT}/hooks-smoke-не-існує.txt"), None,
          lambda rc, o, e: rc == 2 or ctx(o)[1] == "deny", "блок (TRASH.md не свіжий)"),
