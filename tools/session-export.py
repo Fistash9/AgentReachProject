@@ -10,11 +10,12 @@ DeepSeek прийняв ToolSearch за «битий WebSearch»), повідо�
 
 JSONL за замовчуванням — найновіший журнал проєкту. --from — почати з першого
 блоку, що містить фразу. Виводи інструментів не обрізаються. Особисте
-(email, git-логін, ключі sk-/nvapi-/ghp_/AKIA, auth-коди) вирізається САМЕ — вручну
+(email, логіни з ~/.config/agent-reach/personal-patterns.txt, ключі sk-/nvapi-/ghp_/AKIA, auth-коди) вирізається САМЕ — вручну
 поверх не маскувати (2026-10-18: ручна маска sk- ламала «task-notification»). Лише stdlib.
 """
 import argparse
 import glob
+import importlib.util
 import json
 import os
 import re
@@ -30,8 +31,6 @@ REDACT = [
     (re.compile(r"(?<![A-Za-z])ghp_[A-Za-z0-9]{20,}"), "[ключ]"),
     (re.compile(r"(?<![A-Za-z])AKIA[A-Z0-9]{16}"), "[ключ]"),
     (re.compile(r"(?i)(auth_?code|code)=[A-Za-z0-9_-]{12,}"), r"\1=[код]"),
-    (re.compile(r"Fistash9"), "[логін]"),
-    (re.compile(r"mur4ik93"), "[логін]"),
 ]
 
 
@@ -92,6 +91,16 @@ def main():
     s = "\n".join(out)
     for rx, rep in REDACT:
         s = rx.sub(rep, s)
+    # Логіни й інше особисте — з файлу поза git (2026-10-19, tools/personal-scan.py), не з коду
+    spec = importlib.util.spec_from_file_location(
+        "personal_scan", os.path.join(os.path.dirname(os.path.abspath(__file__)), "personal-scan.py"))
+    ps = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ps)
+    frags = ps.load()
+    if frags is None:
+        print(f"session-export: немає {ps.PATTERNS} — логіни НЕ замасковано", file=sys.stderr)
+    elif frags:
+        s = ps.regex(frags).sub("[логін]", s)
     if a.out:
         open(a.out, "w", encoding="utf-8").write(s)
     else:

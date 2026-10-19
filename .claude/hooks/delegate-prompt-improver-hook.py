@@ -194,6 +194,21 @@ def main():
         log("skip_structured", tool=tool, words=len(original_prompt.split()))
         return
 
+    # 2а) Особисте користувача — не переписувати: переписувач сам шле промпт назовні, а
+    #     personal-guard (паралельний хук) цей виклик і так заблокує (2026-10-19).
+    try:
+        import importlib.util
+        root = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+        spec = importlib.util.spec_from_file_location("personal_scan", os.path.join(root, "tools", "personal-scan.py"))
+        ps = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(ps)
+        frags = ps.load()
+        if frags and ps.scan_text(original_prompt, ps.regex(frags)):
+            log("skip_personal", tool=tool)
+            return
+    except Exception:
+        return  # не змогли перевірити — краще не переписувати, ніж відправити особисте
+
     instruction = META_INSTRUCTIONS.format(prompt=original_prompt)
 
     prov = provider()

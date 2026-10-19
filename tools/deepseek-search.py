@@ -182,6 +182,17 @@ def main():
         except OSError as e:
             sys.exit(f"deepseek-search: не читається файл {p}: {e}")
     question = "\n\n".join(attached + [a.question]) if attached else a.question
+    # Особисте не йде назовні (2026-10-19, tools/personal-scan.py; хук delegate цей виклик не бачить)
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("personal_scan", os.path.join(ROOT, "tools", "personal-scan.py"))
+    ps = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ps)
+    frags = ps.load()
+    if frags is None:
+        print(f"deepseek-search: немає {ps.PATTERNS} — особисте не перевірено", file=sys.stderr)
+    elif ps.scan_text(question, ps.regex(frags)):
+        sys.exit("deepseek-search: у питанні чи --file є особисте користувача — "
+                 "перевір: python3 tools/personal-scan.py <файли>; запит не надіслано")
 
     os.makedirs(HIST_DIR, exist_ok=True)
     sid = a.sid or time.strftime("%Y%m%d-%H%M%S")
