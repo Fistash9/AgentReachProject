@@ -9,6 +9,8 @@ WebSearch Claude Code (TROUBLES «Мислення DeepSeek…», дослід 2
   python3 tools/deepseek-search.py -c ID "уточнення"     # поглибити ту саму
   --uses N     max_uses для пошуку (за замовчуванням 5) — ПОБАЖАННЯ: сервер
                його не тримає (2026-10-06: 9 і 6 при 5; T6: 8 і 8)
+  --max-tokens N  стеля відповіді разом із мисленням (за замовчуванням 32000; модель — до 384K).
+               Рецензія сесії — 96000 (19.10 двічі stop=max_tokens на 32000 → порожньо, ≈$0.05)
 
 Історія: .claude/logs/deepseek-search/<ID>.json (під .gitignore). У неї йде
 лише текст відповіді + список URL, без сирих результатів пошуку — щоб
@@ -172,6 +174,8 @@ def main():
                     help="вставити вміст файлу в питання (можна кілька разів)")
     ap.add_argument("--no-search", action="store_true",
                     help="без web_search (рецензія файлу, не пошук)")
+    ap.add_argument("--max-tokens", type=int, default=32000,
+                    help="стеля відповіді з мисленням (рецензія сесії — 96000)")
     a = ap.parse_args()
 
     attached = []
@@ -206,7 +210,7 @@ def main():
     messages.append({"role": "user", "content": question})
 
     body = {
-        "model": MODEL, "max_tokens": 32000, "messages": messages,
+        "model": MODEL, "max_tokens": a.max_tokens, "messages": messages,
         "tools": [{"type": "web_search_20250305", "name": "web_search",
                    "max_uses": a.uses}],
         "thinking": {"type": "enabled"},
@@ -240,6 +244,9 @@ def main():
     if not answer:
         print(f"ЗБІЙ: порожня відповідь (stop_reason={stop}); "
               "розмову не збережено.", file=sys.stderr)
+        if stop == "max_tokens":
+            print(f"  мислення з'їло стелю {a.max_tokens} — повтори з --max-tokens "
+                  f"{max(96000, a.max_tokens * 2)}", file=sys.stderr)
     else:
         if stop != "end_turn":
             print(f"УВАГА: відповідь могла обірватись (stop_reason={stop}).",
