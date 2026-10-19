@@ -47,6 +47,7 @@ RE_MOVER = re.compile(r"(?:^|[;&|(]\s*|\bthen\s+|\bdo\s+)(mv|rm)\s+([^;&|\n]+)",
 # .baton/history/ — ask зі списком читачів, а не підказка. Підказка приходила в тій самій команді — запізно;
 # grep за stem («pass-$i») не ловив. Із 10 підказок movers з 12.10 знімків стосувалась 1 — решта лишаються підказками.
 HISTORY = ".baton/" + "history/"
+RE_HISTORY = re.compile(r"\.baton/history|[\"']\.baton[\"']\s*,\s*[\"']history[\"']")
 
 
 def history_readers():
@@ -59,7 +60,8 @@ def history_readers():
                 if p == me or "__pycache__" in p or not fn.endswith((".py", ".md", ".sh", ".mjs")):
                     continue
                 try:
-                    if HISTORY in open(p, encoding="utf-8", errors="ignore").read():
+                    # і os.path.join(…, ".baton", "history", …) — так читає tools/achieved-map.py (рецензія 19.10, п.15)
+                    if RE_HISTORY.search(open(p, encoding="utf-8", errors="ignore").read()):
                         out.append(rel(p))
                 except OSError:
                     pass
