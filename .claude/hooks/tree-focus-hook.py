@@ -258,6 +258,49 @@ def project_root(cwd):
     return os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 
+DSH_SESSION = "work"  # сесія tmux; вікно DSH шукаємо за назвою «dsh…», не за номером
+RE_DSH_BUSY = re.compile(r"working…|thinking ·|● Question|Queue as follow-up")
+RE_DSH_WAIT = re.compile(r"^\s*(?:Чекаю|чекаю|Жду|Waiting)")
+DSH_LOG = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "logs", "dsh-line.jsonl")
+
+
+def parse_dsh(screen, ids):
+    """Рядок «DSH насправді» з екрана DSH (проба 3 сесії з 2026-10-19, BACKLOG «Механізми… 1fe9acd7» п.4;
+    чернетка 18.10). 18.10: ярлик «[>] T7 @dsh» брехав, а DSH чекав мого листа — я не бачив (смуга мода
+    agents-status показує це лише користувачу). ids — його [>] з дерева. Пункт ◐ зі списку задач
+    (розбір як mods/agents-status parseDshTodo); ⚠ якщо не згадує жоден його [>]; ⚠ якщо чекає й не працює."""
+    todo = None
+    for line in screen.split("\n"):
+        if "◐" in line:
+            cells = [c.strip() for c in line.split("│") if c.strip()]
+            if "◐" in cells and cells.index("◐") + 1 < len(cells):
+                todo = cells[cells.index("◐") + 1]
+                break
+    if todo is None:
+        return None, []  # списку задач на екрані нема — мовчимо
+    busy = bool(RE_DSH_BUSY.search(screen))
+    out, flags = "DSH насправді: " + short(todo, 90) + (" [працює]" if busy else ""), []
+    if ids and not any(i in todo for i in ids):
+        flags.append("mismatch")
+        out += f" — ⚠ не збігається з [>] {', '.join(ids)} (перевір, чи не робите одне й те саме)"
+    if not busy and RE_DSH_WAIT.match(todo):
+        flags.append("waiting")
+        out += " — ⚠ ЧЕКАЄ ВІДПОВІДІ: доставити лист (TROUBLES «Листи у вікно DSH») або сказати користувачу"
+    return out, flags
+
+
+def dsh_now(ids):
+    r = subprocess.run(["tmux", "list-windows", "-t", DSH_SESSION, "-F", "#{window_index} #{window_name}"],
+                       capture_output=True, text=True, timeout=2)
+    win = next((l.split()[0] for l in r.stdout.splitlines()
+                if len(l.split()) > 1 and l.split()[1].startswith("dsh")), None)
+    if r.returncode != 0 or win is None:
+        return None, []
+    r = subprocess.run(["tmux", "capture-pane", "-p", "-t", f"{DSH_SESSION}:{win}"],
+                       capture_output=True, text=True, timeout=2)
+    return parse_dsh(r.stdout, ids) if r.returncode == 0 else (None, [])
+
+
 def main():
     # Мовчить лише в під-сесіях-помічниках deepseek-mcp: вони завжди мають
     # CLAUDE_CODE_EFFORT_LEVEL (env.js) і entrypoint sdk-cli (перевірено
@@ -325,6 +368,17 @@ def main():
                    f"картку в trees/ або заведи вузол і постав [>] … @{me}.")
     for who, ids in others.items():
         out.append(f"У {who} в роботі: " + ", ".join(ids))
+    if me != "dsh":  # про DSH — лише для інших агентів; лог — для підсумку проби
+        try:
+            dsh, flags = dsh_now(others.get("dsh", []))
+            if dsh:
+                out.append(dsh)
+                with open(DSH_LOG, "a", encoding="utf-8") as f:
+                    f.write(json.dumps({"t": __import__("time").strftime("%Y-%m-%dT%H:%M:%S"),
+                                        "session": data.get("session_id", ""), "event": event,
+                                        "flags": flags, "line": dsh[:200]}, ensure_ascii=False) + "\n")
+        except Exception:
+            pass
     if unowned:
         out.append("[>] без власника: " + ", ".join(unowned[:MAX_WORK])
                    + more(unowned, MAX_WORK) + " — познач @агент або зніми [>].")

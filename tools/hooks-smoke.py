@@ -362,6 +362,21 @@ def main():
     rows.append(("✅" if good else "❌", "plain-codes: хеші й «М» без назви", "шифр → ловиться; з описом → ні", note))
     bad += not good
 
+    # «DSH насправді» (проба з 2026-10-19): рядок з екрана 18.10 (тести мода agents-status) → обидва ⚠;
+    # без списку задач — тиша.
+    try:
+        import importlib.util
+        s = importlib.util.spec_from_file_location("tfh", os.path.join(ROOT, ".claude", "hooks", "tree-focus-hook.py"))
+        tf = importlib.util.module_from_spec(s)
+        s.loader.exec_module(tf)
+        scr = "│   4 │ ☑  │ Чернетка патчу │\n│   5 │ ◐  │ Чекаю явного «так» на verify-nudge │\n"
+        res = [tf.parse_dsh(scr, ["T7"])[1] == ["mismatch", "waiting"], tf.parse_dsh("dsh ▸\n", ["T7"])[0] is None]
+        good, note = all(res), f"{sum(res)}/{len(res)} випадків"
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    rows.append(("✅" if good else "❌", "tree-focus: «DSH насправді»", "екран 18.10 → обидва ⚠; без списку — тиша", note))
+    bad += not good
+
     # Маска експорту сесії (2026-10-18): «task-notification» — не ключ; sk-/nvapi- — ключі.
     try:
         import importlib.util
