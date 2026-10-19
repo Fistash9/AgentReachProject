@@ -1,0 +1,278 @@
+deepseek-search: перший шматок 0.5 с, усе 66.8 с
+УВАГА: пошуків 8 при --uses 4 — сервер ліміт не тримає.
+# Інструменти, що перетворюють поправки користувача на постійні правила (огляд, стан на момент пошуку)
+
+**Тип питання:** огляд + рішення (порівняння інструментів). Тому копав глибше за один факт.
+**Обмеження звіту:** я вичерпав ліміт кроків пошуку на етапі перевірки зірок/дат останнього коміту для більшості репозиторіїв. Тому там, де дати або кількості немає — прямо пишу «не перевірено», а не вгадую.
+
+---
+
+## Коротка відповідь
+
+Готових інструментів багато (я нарахував ~15 живих проєктів), але вони розпадаються на **три різні архітектури**, і тільки третя відповідає твоєму запиту повністю:
+
+1. **«Capture → CLAUDE.md»** (більшість): хук ловить фразу-поправку, складає в чергу, `/reflect` дописує правило в `CLAUDE.md`. Приклади: `claude-reflect`, `reflexion`, `reflect`, `auto-sop`, `claude-evolve`.
+2. **«Lessons-ledger через MCP»**: помилка/фікс пишеться в локальну БД, при наступній схожій помилці підтягується в контекст. Приклади: `learned-experience`, `memories-with-lessons-mcp-server`, `mimir`, `fixmind`, `supermemory-agent`, `misakanet`.
+3. **«Повний цикл із перевіркою повтору»** (те, що ти описав): правило має лічильник порушень, підвищується в ранг при повторі й **демотується/видаляється, якщо його ігнорують**. Це вже вміють одиниці: `cc-retrospective-learner` (поріг `pain_count>=3`, ескалація до Hook), `claude-learner` (`record_compliance` + авто-прунінг при ігноруванні >70%), `mimir` (ε-gate: правило приймається лише якщо виміряний приріст > шум), `learned-experience` (`reinforce` з результатом).
+
+**Головне, що варто знати до вибору:** офіційна документація Claude Code прямо каже, що `CLAUDE.md` — це **контекст, а не примус**, і що блокувати дію може лише `PreToolUse` хуок. Тобто будь-який інструмент, який обіцяє, що «помилка більше ніколи не повториться» через дописування в `CLAUDE.md`, продає більше, ніж дає платформа.
+
+---
+
+## Докази
+
+### A. Вбудоване в Claude Code (першоджерело, офіційна документація)
+
+**A1. Auto memory — нативний «learn from corrections»** · [першоджерело] · URL: https://code.claude.com/docs/en/memory
+> «Auto memory: notes Claude writes itself based on your corrections and preferences… Auto memory lets Claude learn from your corrections without manual effort.»
+
+Обмеження (там же):
+> «Both are loaded at the start of every conversation. Claude treats them as context, not enforced configuration. To block an action regardless of what Claude decides, use a PreToolUse hook instead.»
+> «Loaded into | Every session | Every session (first 200 lines or 25KB)»
+
+Тригер для ручного правила (там же):
+> «Add to it when: Claude makes the same mistake a second time»
+
+**A2. `/doctor prompt-audit` — офіційна перевірка «чи не застаріли правила»** · [першоджерело] · URL: той самий
+> «Claude looks for problems such as instructions written for older models, references to files or commands that don't exist, and files that contradict each other… `/doctor prompt-audit` requires Claude Code v2.1.283 or later.»
+
+Це найближче до «перевіряє, чи помилка повторилась» з коробки — але це аудит **суперечностей і застарілості правил**, а не детекція повтору самої помилки. Різницю варто тримати в голові.
+
+**A3. Обмеження розміру (важливо для «self-improving CLAUDE.md»)** · [першоджерело]
+> «Size: target under 200 lines per CLAUDE.md file. Longer files consume more context and reduce adherence.»
+
+Висновок-ризик: будь-який авто-дописувач правил без дедупу/видалення через кілька тижнів сам собі шкодить.
+
+---
+
+### B. Плагіни/хуки «ловлю поправку → пишу правило»
+
+**B1. `claude-reflect` — BayramAnnakov (найзріліший за функціями в цій категорії)** · [першоджерело, самоопис репо] · версія README `v2.3.1` · URL: https://github.com/BayramAnnakov/claude-reflect/blob/v2.3.1/README.md ; https://github.com/BayramAnnakov/claude-reflect/blob/main/SKILL.md
+> «Stage 1: Capture (Automatic) — Hooks run automatically to detect and queue corrections: `capture_learning.py` | Every prompt | Detects correction patterns and queues them / `check_learnings.py` | Before compaction | Backs up queue and informs user / `post_commit_reminder.py` | After git commit | Reminds to run /reflect»
+> «Two-Stage Process… Stage 2: Process (Manual)»
+> «Each captured learning has a confidence score (0.60-0.95)… Multi-language support — understands corrections in any language»
+> «AGENTS.md (if exists - works with Codex, Cursor, Aider, Jules, Zed, Factory)»
+
+Куди пише (з `SKILL.md`):
+> «`./CLAUDE.local.md`… `./.claude/rules/*.md` - Modular rules with optional path-scoping… `~/.claude/projects/<project>/memory/*.md` - Auto memory (low-confidence, exploratory)»
+
+Чому це важливо: він один із небагатьох, хто пише **не лише в CLAUDE.md**, а й у `.claude/rules/*.md` з path-scoping та в auto memory — це прямо відповідає офіційним рекомендаціям A3.
+
+**B2. `auto-sop` — npm, є комерційна частина** · [першоджерело, самоопис] · версія `0.1.32` · URL: https://www.npmjs.com/package/auto-sop
+> «auto-sop captures every Claude Code interaction, detects recurring mistakes (3+ evidence threshold), and writes enforced directives to your project's CLAUDE.md — automatically. Zero manual upkeep… so the same mistake never happens again.»
+> «Beyond directives, auto-sop tracks metrics — confirmed directive fires, estimated token savings — and syncs aggregate stats to the cloud dashboard»
+> «The CLI also self-updates by checking the npm registry during learner runs»
+
+**B3. `claude-evolve` — jack60810 (найамбітніша «дарвінівська» схема)** · [першоджерело, самоопис] · дата оновлення: не перевірено · URL: https://github.com/jack60810/claude-evolve
+> «Self-evolving learning system for Claude Code — learns from your corrections and behavior, auto-writes rules to CLAUDE.md with Darwinian fitness scoring»
+> «optimize: LLM scores all active rules 0-10, demotes low scorers / cleanup: merge / rewrite / remove redundant rules / skillify: promote mature rule groups → .claude/skills/ files»
+> «Rules live in three states: active (in CLAUDE.md), dormant (demoted but preserved…), dead (dormant too long). Nothing is deleted immediately.»
+> «Scores use exponential moving average (30% new, 70% history)»
+
+Це єдиний знайдений, хто **сам собі вимірює корисність правила** (LLM-оцінка + EMA) і має «життєвий цикл» правила. Але оцінка — від LLM, а не від факту повтору помилки.
+
+**B4. `cc-retrospective-learner` — echolimitless (найточніше влучання в «поріг повтору → механізм»)** · [першоджерело, самоопис, японською] · дата: не перевірено · URL: https://github.com/echolimitless/cc-retrospective-learner
+> «Claude Code の auto memory はセッション単位で記録を残すが、 セッションを跨いだパターン検出や昇格の仕組みがない» (auto memory не має виявлення й підвищення патернів між сесіями)
+> «transcript で既知の feedback_*.md に該当するパターンを検出 → pain_count / success_count を直接更新 → >= 3 で CLAUDE.md 昇格を提案»
+> «昇格後も違反が継続… → Lv.3 スキル or Hook（パターンの性質で振り分け）— 「毎回この手順」系 → スキル / 「前後に必ずやる」系 → Hook»
+> «全ての昇格にユーザーの明示的な承認が必要。自動昇格はしない。» (усі підвищення — лише з явним підтвердженням, без автопідвищення)
+
+Це буквально твій сценарій: поправка → запис із лічильником болю → поріг 3 → правило в CLAUDE.md → якщо порушення тривають → **скіл або хук** (тобто механізм примусу). Мінус: документація лише японською, метрик впливу немає, популярність не перевірена.
+
+**B5. `reflexion` / `memory-keeper` / `loop-ledger` — Ink01101011/kktest-dev** · [першоджерело, самоопис] · URL: https://github.com/Ink01101011/kktest-dev
+> «reflexion | Self-improving agent memory built on memory-keeper — recall matching lessons before a task, reflect a new lesson after it, browse the error/success library, and compress recurring lessons into higher-level patterns.»
+> «these plugins complete the "self-improvement chain" — see docs/proposals/SELF-IMPROVEMENT-CHAIN_SPEC.md»
+
+**B6. `continuous-improvement` — naimkatiman** · [третя сторона: реєстр плагінів] · версія `v3.25.0` · URL: https://www.claudepluginhub.com/marketplaces/naimkatiman-continuous-improvement-dev
+> «It remembers the corrections you already gave… and — through the Mulahazah engine — turns each fix into a reusable instinct, so a lesson learned once is applied automatically next time with no re-teaching… 28 bundled skills, instinct-aware hooks, an MCP toolset for recall and reflection, and a GitHub Action transcript linter»
+
+**B7. `reflect` — gooditworks/ai** (мета-рівень: покращує не код, а твій тулкіт) · [першоджерело, самоопис] · коміти `Jan 9, 2026` · URL: https://github.com/gooditworks/ai
+> «Identifies permission gaps (commands approved repeatedly) / Discovers documentation gaps (patterns searched multiple times) / Suggests skill improvements and new skill candidates»
+
+**B8. `retrospect` — barnuri/retrospect-skill** · [третя сторона: ClaudeAtlas] · «Created 1 months ago, Last Updated 4 weeks ago», `0 stars 0 forks`, `License None`, Quality Score 50/100 · URL: https://claudeatlas.com/plugins/barnuri/retrospect/
+> «Includes passive hook-based learning sensors and a local stdio MCP server» (хуки: `after-edit`, `after-error`, `before-command`, `session-end`)
+
+**B9. Скіли «reflection» (не плагіни, а окремі SKILL.md)** · [третя сторона: SkillsMP]
+- `reflecting-on-skills` — mdsakalu/agent-plugins, метадані `"updated":"2026-01-08"`, остання активність джерела `26 février 2026`, 4 зірки · URL: https://skillsmp.com/fr/creators/mdsakalu/agent-plugins/reflecting-on-skills-skills-reflecting-on-skills
+> «Analyzes skill usage and suggests improvements. Automatically invoked after other skills via PostToolUse hook… Compatibility: Claude Code only.»
+- `reflect-and-improve` — aroyburman-codes · URL: https://skillsmp.com/ja/creators/aroyburman-codes/claude-skills/skills-reflect-and-improve
+> «Reduces repeated mistakes and user friction over time… writes confirmed learnings to persistent memory files» (структура: `errors.md` + `permissions.md`, з полем «Prevention»)
+- `project-with-reflect` — initialneil, `v0.9.20`, «multi-agent meta-skill for Codex, Claude Code» · URL: https://www.claudepluginhub.com/marketplaces/initialneil-project-with-reflect
+
+---
+
+### C. Lessons-ledger / MCP-сервери (пам'ять + зворотний зв'язок)
+
+**C1. `mimir-agent-memory` — єдиний, хто заявляє вимірювання до/після** · [першоджерело, самоопис] · версія `0.1.1` · URL: https://pypi.org/project/mimir-agent-memory/0.1.1/
+> «Mimir watches an agent work, distills its failures into lessons, and serves those lessons back… Claude Code hook logs EPISODEs (action / context / consequence) to append-only JSONL… LLM judge extracts a rule from failure episodes; contradiction check, then HMAC-signed LESSON written to the vector store, served as MCP tools.»
+> «bench/ contains a WARM/COLD attribution harness: the same tasks are run by an agent with Mimir's lessons (WARM) and without (COLD), with seeded runs, a held-out probe set, and an ε-gate: a lesson is only admitted if the measured lift clears the noise floor.»
+> «A WARM−COLD lift smaller than the band is reported as noise, not a result.»
+> «LESSON: a distilled, specific directive (never "be careful") with a confidence score that moves only on scored evidence… bi-temporal lifecycle (active → quarantined / superseded / retired; never hard-deleted)»
+
+Це найкраща методологія з усіх знайдених. Але: **це самоопис, а не незалежний вимір**, версія 0.1.1, і сам бенчмарк треба запускати в себе (`demo_band()`), щоб він щось доводив.
+
+**C2. `learned-experience` — fitz2882 (найчистіший «менш повторів» цикл через хук)** · [першоджерело, самоопис] · версія `0.1.0` · URL: https://www.npmjs.com/package/learned-experience
+> «the plugin. It installs the MCP server and a hook that recalls past fixes automatically whenever a tool call fails.»
+> «A `PostToolUseFailure` hook runs `learned-experience hook`, which reads the failure payload, extracts the error lines, runs recall in-process, and injects the hits into the model's context»
+> «Apply the best-fitting fix first, then call learned-experience `reinforce` with its id and whether it worked.»
+> «Deterministic where it matters: exact error fingerprints, BM25 lexical search… Bayesian confidence… one SQLite file… No API key needed»
+> «Works with any MCP host: Claude Code, Claude Desktop, Cursor, Windsurf, Codex CLI, Gemini CLI»
+
+**C3. `memories-with-lessons-mcp-server` — T1nker-1220 (найпростіший «ledger із верифікацією»)** · [першоджерело, самоопис] · дата: не перевірено · URL: https://github.com/T1nker-1220/memories-with-lessons-mcp-server
+> «I enhance the existing memory mcp server from the official mcp github»
+> «`create_lesson`… `errorPattern`… `metadata`… `frequency` (number): Times encountered, `successRate`… `verificationSteps`… `find_similar_errors`… Uses fuzzy matching for error messages… `update_lesson_success`… Success rate (weighted average)»
+
+**C4. `claude-learner` — npm (єдиний із явним трекінгом комплаєнсу)** · [першоджерело, самоопис] · версія `2.0.0` · URL: https://www.npmjs.com/package/claude-learner?activeTab=versions
+> «log_correction | Log corrections for learning / record_compliance | Track rule effectiveness… Auto-prune: If ignored >70%, rule is pruned»
+> «`rules --effectiveness` | Show compliance rates»
+> Показник реєстру: «2.0.0 | 2 | latest» (2 завантаження за 7 днів на момент знімка) — [першоджерело]
+
+**C5. `supermemory-agent`** · [першоджерело, самоопис] · версія `0.2.3` · URL: https://pypi.org/project/supermemory-agent/0.2.3/
+> «Captures distilled lessons from failures and corrections (not full transcripts), validates before storage»
+> «Agent learning loop: retrieve → record_failure → reflect(event_ids) → validate → process_promotions → retrieve again → report_outcome»
+> Скіл для Claude Code: `.claude/skills/supermemory-agent-learning/`
+
+**C6. `fixmind`** · [першоджерело, самоопис] · версія `1.0.28` · URL: https://www.npmjs.com/package/fixmind
+> «records short learning lessons after meaningful coding fixes, then reuses reviewed lessons as memory when a new task looks familiar.»
+> «The Quality Gate… If the agent tries to save a formatting change, a pure refactor, or a UI tweak without a behavior break, the server rejects it… If a saved lesson turns out to be wrong, the corrected lesson can supersede the old one»
+> Примітка: «Spaced Recall: New lessons come back on a schedule… quizzes you» — це переважно **навчання людини**, а не правила для агента. Нюанс, який легко пропустити.
+
+**C7. `AgentRecall-X` — Goldentrii (найцінніше емпіричне спостереження)** · [першоджерело, самоопис] · дата: не перевірено · URL: https://www.npmjs.com/package/agent-recall-core
+> «Correction | Behavioral calibration: rules the agent must follow, with severity and outcome tracking.»
+> «Awareness | Cross-project insights promoted from N-confirmed corrections — the compounding layer.»
+> «`/arreflect` | Every K sessions | CONSOLIDATE. Periodic triage: confirm recurrence/phantom matches»
+> «Memory only compounds if it fires automatically, not on demand. Every pull-channel tool (recall, memory_query) saw zero organic calls across 44 projects over weeks of real use — including from the agent that built them. That is why only 5 tools ship by default»
+
+Це пряме свідчення проти архітектури «агент сам згадає викликати recall»: за 44 проєкти — нуль органічних викликів. Тобто **працюють лише хуки**, а не інструкції «перевіряй пам'ять».
+
+**C8. `misakanet` — спільна (ком'юніті) пам'ять з градацією доказів** · [першоджерело, самоопис] · версія `2.32.0` · URL: https://pypi.org/project/misakanet/2.32.0/
+> «Evidence is graded, not asserted. E0–E4 lets an agent weigh a community intake differently from a production-proven fix… most lessons sit at E0–E2.»
+> «Supported agents: Claude Code · Codex · Cursor · Gemini CLI · Windsurf · OpenCode · Copilot»
+
+**C9. `wasurenagusa-mcp`** · [третя сторона: mcpworld, таблиця-порівняння китайською] · URL: https://www.mcpworld.com/zh/detail/a4ecbca4b8a767ad718a948415cd631b
+> «Session End (Hook) → LLM analyzes the conversation → Detects mistakes, frustration, retry patterns → Auto-saves lessons learned → Deduplicates… Background: Consolidates "dont" entries → behavioral principles»
+
+**C10. `fleetmemory` (Go, у складі anthony-chaudhary/fak `v0.40.0`)** — міжагентний ledger, не плагін · [першоджерело, pkg.go.dev] · URL: https://pkg.go.dev/github.com/anthony-chaudhary/fak@v0.40.0/internal/fleetmemory
+> «Auto-memory is per-agent-store: when one agent learns a workaround… every OTHER agent re-discovers it the hard way… This package makes a lesson publishable ONCE with a trigger context and injectable to any peer whose session matches that trigger»
+> «Read-time re-verification (the dos_recall discipline — a stale lesson is withheld, not asserted) is the CALLER's job»
+
+---
+
+### D. Суміжне: як вимірюють «менше повторів»
+
+**D1. Метрики, які хтось уже формалізував** · [першоджерело, дизайн-док особистого репо] · дата `2026-02-25` · URL: https://raw.githubusercontent.com/shenxingy/Clade/refs/heads/main/docs/archive/2026-02-25-self-improving-system.md
+> «Correction rate = corrections / total user messages (lower = better)»
+> «Rule trigger rate = times a correction matches an existing rule domain (lower = rules working)»
+> «candidate → validated: Rule survives 7 days without contradiction, triggered 2+ times»
+> «Max 50 rules in rules.md (FIFO eviction already exists)»
+
+Це не продукт, а план — але це найкоректніше визначення «чи помилка повторилась» серед усього знайденого, і його можна взяти як мірило для будь-якого інструмента зі списку.
+
+---
+
+## Суперечності
+
+1. **Версії `claude-reflect`:** GitHub тег `v2.3.1` ([першоджерело](https://github.com/BayramAnnakov/claude-reflect/blob/v2.3.1/README.md)) проти npm-пакета `@intentsolutionsio/claude-reflect` `1.5.1` ([першоджерело](https://socket.dev/npm/package/@intentsolutionsio/claude-reflect)). Розбіжність на мажорну версію. Не зміг з'ясувати, чи це той самий код у різній упаковці, чи форк. **Не усереднюю — фіксую як невирішене.**
+2. **`claude-evolution`:** сторінка npm каже `0.2.0`, а текст README на тій самій сторінці — «⭐ v0.3.0 全新升级» і «Learning Review … 🆕 v0.3.0». Внутрішня суперечність ([першоджерело](https://www.npmjs.com/package/claude-evolution/v/0.2.0)).
+3. **`auto-sop` проти офіційної семантики:** «writes **enforced** directives… so the same mistake never happens again» (npm) vs «Claude treats them as context, **not enforced configuration**» (code.claude.com/docs/en/memory). Одне з двох не так; офіційна документація має пріоритет.
+4. **`Claude Reflect System` (haddock-development):** сторонній огляд називає його «Production-ready, actively maintained» і дає URL репозиторію, але **сам же** зізнається, що знайшов його через Perplexity, а не через GitHub. Мої пошуки репозиторію не підтвердили. [не перевірено] — схильний вважати, що це або перейменований, або вигаданий проєкт.
+5. **«Хуки блокують компакцію»:** стара версія `claude-reflect` описувала `check-learnings.sh` як «Blocks compaction if queue has items», а поточна — «Backs up queue and informs user». Поведінка змінилась — не покладайся на старі пости.
+
+---
+
+## Висновок
+
+**висновок:** запит «поправка → постійне правило → перевірка, чи повторилось» **закривається з коробки лише наполовину**. Нативний Claude Code дає `auto memory` + `/doctor prompt-audit`, і цього достатньо для 80% болю, якщо ти готовий раз на тиждень чистити файли (і тримати їх <200 рядків — інакше авто-дописування погіршує слухняність).
+
+**висновок:** серед сторонніх інструментів **жоден не має незалежних вимірів «менше повторів до/після»**. Є три самоописи з методологією: `mimir` (WARM/COLD з ε-gate — найчесніший), `agent-recall` (спостереження «0 органічних recall за 44 проєкти»), `auto-sop`/`claude-learner` (метрики є, але вони або у вендорському дашборді, або без даних). Усе інше — маркетинг.
+
+**висновок:** архітектурно правильна зв'язка — **хук на `PostToolUseFailure`/`UserPromptSubmit` (детермінований запуск) + локальний ledger із лічильником + ескалація в `PreToolUse` хук, коли поріг перейдено**. Це рівно те, що робить `cc-retrospective-learner` (Lv.2 → Lv.3 skill/Hook) і частково `claude-evolve` (`skillify`). Інструменти, які просто пишуть у `CLAUDE.md`, не вирішують проблему повтору — вони лише переносять її в контекст.
+
+---
+
+## Рекомендація
+
+**рекомендація** (не факт):
+
+- **Базовий шар (нуль ризику):** увімкнути нативний `auto memory` + поставити в звичку `/doctor prompt-audit` перед великими задачами. Це вже покриває «забув, що мені казали».
+- **Якщо треба саме детекція повторів:** почати з `claude-reflect` (найбільше зірок уваги в екосистемі, пише і в `.claude/rules/`, і в AGENTS.md — не прив'язує до одного агента) **або** `cc-retrospective-learner`, якщо тобі критична саме ескалація «правило → хук після 3-го порушення». Другий — японською і маловідомий, тому читай код перед встановленням.
+- **Якщо треба саме пам'ять про помилки (а не правила стилю):** `learned-experience` — найчистіший дизайн (хук на failure + `reinforce` з результатом + локальний SQLite, без ключів API). Версія 0.1.0 — тримай на некритичному проєкті.
+- **Якщо потрібні докази ефекту, а не обіцянки:** клонуй `mimir` і запусти `demo_band()` **у себе** — це єдиний спосіб отримати не-вендорське число.
+- **Чого не робити:** не став `auto-sop` (телеметрія в хмару + self-updating CLI + підписка) на робочу машину без потреби; не вір «enforced» у текстах — enforced буває тільки `PreToolUse`.
+- **Метрика для власної перевірки:** `correction_rate = поправки / повідомлення` і `rule_trigger_rate` за 2 тижні до/після. Якщо після впровадження правила `correction_rate` не падає — інструмент не працює, незалежно від зірок.
+
+---
+
+## Чого не знайшов
+
+- **Зірок GitHub, дат останнього коміту, кількості issues** для більшості репо (`claude-reflect`, `claude-evolve`, `learned-experience`, `cc-retrospective-learner`, `mimir`, `memories-with-lessons-mcp-server`, `AgentRecall-X`, `auto-sop`). Вичерпав ліміт кроків саме на цих запитах. Тому в розділі «Докази» дати є лише там, де вони були в тексті сторінки (`Jan 9, 2026`, `2026-01-08`, `26 février 2026`, `2026-01-24`, `2026-02-25`).
+- **Жодного незалежного відгуку** (HN, Reddit, блог) із цифрами «до/після» — ні для одного інструмента. Це не «не шукав», це «не існує в індексі».
+- **Дата публікації** більшості npm/PyPI-версій (реєстр показував номер, не дату).
+- **Офіційного Anthropic-плагіна** для цього сценарію: у документації є `auto memory` і `/doctor prompt-audit`, але немає «learn from corrections» як окремого плагіна. Можливо, з'явився після мого зрізу — не перевірено.
+
+---
+
+## Червоні прапорці
+
+1. **«Enforced» без хука.** Будь-який текст «помилка більше не повториться» через `CLAUDE.md` суперечить офіційній документації.
+2. **Ріст без обмеження.** Тільки `claude-evolve` (dormant/dead), `claude-learner` (>70% ігнорування → prune) і `cc-retrospective-learner` (пороги + ручне схвалення) мають механізм видалення. Решта — додають.
+3. **Авто-дописування без людини.** `auto-sop` і `claude-evolution` (авто-промоушен при confidence≥75%, mentions≥5) пишуть у `CLAUDE.md` самі → прямий канал **persistent prompt injection** через текст поправки.
+4. **Телеметрія/самооновлення:** `auto-sop` (агрегована статистика в хмару, self-update з npm registry). Ланцюг постачання.
+5. **Майже нульове впровадження:** `claude-learner` — 2 завантаження/тиждень; `retrospect` — 0 зірок, без ліцензії. Код не перевірений спільнотою, а хуки виконують довільні команди.
+6. **Ризики, названі стороннім оглядом:** «feedback poisoning, memory poisoning, prompt injection, skill bloat» — [третя сторона, https://github.com/FlorianBruniaux/claude-code-ultimate-guide/blob/main/docs/resource-evaluations/self-improve-skill.md, дата 2026-01-24]. Сам огляд — приклад того, як легко «знайти» неіснуючий репозиторій.
+7. **`fixmind` ≠ правила для агента:** його основний цикл — тестування **тебе** (spaced recall). Легко встановити й отримати не те, що очікував.
+
+---
+
+## [не перевірено]
+
+- `haddock-development/claude-reflect-system` — існування репозиторію.
+- Зірки/дати/ліцензії всіх репо з розділу «Чого не знайшов».
+- Будь-які цифри «менше повторів до/після» — їх немає ні в кого, окрім самоописів `mimir`, `auto-sop`, `claude-learner`.
+- Твердження `mimir` про «Sonnet 5» у бенчмарку та `misakanet` про E0–E4 — взяті з тексту, не запускав.
+- Чи оновлювались ці проєкти в 2026-му: підтверджені 2026-дати є лише в `gooditworks/ai` (09.01.2026), `mdsakalu/agent-plugins` (08.01.2026 / активність 26.02.2026), огляді `FlorianBruniaux` (24.01.2026), дизайн-доку `shenxingy/Clade` (25.02.2026).
+
+---
+
+*Питання явно повторюване (екосистема плагінів Claude Code змінюється щотижня) — якщо хочеш, зроблю з цього компактну таблицю-реєстр із колонками «нативне / плагін / MCP», «є трекінг повтору», «є видалення правил», «локально/хмара», щоб порівнювати при кожному наступному огляді.*
+
+== Джерела (36):
+- How Claude remembers your project - Claude Code Docs — https://code.claude.com/docs/en/memory
+- Claude があなたのプロジェクトを記憶する方法 - Claude Code Docs — https://code.claude.com/docs/ja/memory
+- Claude 如何记住您的项目 - Claude Code Docs — https://code.claude.com/docs/zh-CN/memory
+- @intentsolutionsio/claude-reflect - ⚠️ — https://www.npmjs.com/package/@intentsolutionsio/claude-reflect/v/1.5.0?activeTab=readme#1
+- GitHub - jack60810/claude-evolve: Self-evolving learning system for Claude Code — learns from your corrections and behavior, auto-writes rules to CLAUDE.md with Darwinian fitness scoring · GitHub - GitHub - jack60810/claude-evolve: Self-evolving learning system for Claude Code — learns from your corrections and behavior, aut... — https://github.com/jack60810/claude-evolve#1
+- @intentsolutionsio/claude-reflect - npm Package Security Ana... - New:Microsoft Teams Notifications Are Now Available in Socket — https://socket.dev/npm/package/@intentsolutionsio/claude-reflect#1
+- marketplace/skills/bayramannakov/claude-reflect/README.md at 26ee580b1dc4b5aed6b30c1dd62b327556bac8d8 · aiskillstore/marketplace · GitHub - claude-reflect — https://github.com/aiskillstore/marketplace/blob/26ee580b1dc4b5aed6b30c1dd62b327556bac8d8/skills/bayramannakov/claude-reflect/README.md?plain=1#L279#1
+- claude-learner - ⚠️ — https://www.npmjs.com/package/claude-learner?activeTab=versions#1
+- Plan: Self-Improving Claude Code System — https://raw.githubusercontent.com/shenxingy/Clade/refs/heads/main/docs/archive/2026-02-25-self-improving-system.md#1
+- auto-sop - ⚠️ — https://www.npmjs.com/package/auto-sop?activeTab=dependents#1
+- claude-reflect/README.md at v2.3.1 · BayramAnnakov/claude-reflect - Skip to content — https://github.com/BayramAnnakov/claude-reflect/blob/v2.3.1/README.md#1
+- claude-reflect/SKILL.md at main · BayramAnnakov/claude-reflect · GitHub - --- — https://github.com/BayramAnnakov/claude-reflect/blob/main/SKILL.md?plain=1#1
+- @intentsolutionsio/claude-reflect - ⚠️ — https://www.npmjs.com/package/@intentsolutionsio/claude-reflect/v/1.5.0?activeTab=code#1
+- GitHub - echolimitless/cc-retrospective-learner: ふりかえりをベースにした Claude Code の学習機構 · GitHub - GitHub - echolimitless/cc-retrospective-learner: ふりかえりをベースにした Claude Code の学習機構 · GitHub — https://github.com/echolimitless/cc-retrospective-learner#1
+- claude-evolution - ⚠️ — https://www.npmjs.com/package/claude-evolution/v/0.2.0#1
+- name: claude-reflect — https://raw.githubusercontent.com/BayramAnnakov/claude-reflect/refs/heads/main/SKILL.md#1
+- supermemory-agent - SuperMemory MCP — https://pypi.org/project/supermemory-agent/0.2.3/#files#1
+- agent-recall-core - ⚠️ — https://www.npmjs.com/package/agent-recall-core?activeTab=code#1
+- mimir-agent-memory - Mimir — https://pypi.org/project/mimir-agent-memory/0.1.1/#1
+- misakanet - MisakaNet — https://pypi.org/project/misakanet/2.32.0/#files#1
+- learned-experience - ⚠️ — https://www.npmjs.com/package/learned-experience#1
+- fixmind — https://www.npmjs.com/package/fixmind?activeTab=readme#1
+- MCP智能记忆学习系统 - 让AI从错误中成长-MCP服务 — https://www.mcpworld.com/zh/detail/a4ecbca4b8a767ad718a948415cd631b
+- GitHub - T1nker-1220/memories-with-lessons-mcp-server: I enhance the existing memory mcp server from the official mcp github, so big thanks and credits for creating this · GitHub - GitHub - T1nker-1220/memories-with-lessons-mcp-server: I enhance the existing memory mcp server from the official mcp github, so... — https://github.com/T1nker-1220/memories-with-lessons-mcp-server#1
+- feat(rust): serve memory_forget over MCP by Pseudogiant-xr · Pull Request #832 · Pseudogiant-xr/Pseudolife-MCP — https://github.com/Pseudogiant-xr/Pseudolife-MCP/pull/832
+- fleetmemory - fleetmemory — https://pkg.go.dev/github.com/anthony-chaudhary/fak@v0.40.0/internal/fleetmemory#1
+- GitHub - Ink01101011/kktest-dev · GitHub - GitHub - Ink01101011/kktest-dev · GitHub — https://github.com/Ink01101011/kktest-dev?trk=public_post_comment-text#1
+- claude-smart - claude-smart — https://pypi.org/project/claude-smart/0.1.6/#1
+- claude-code-ultimate-guide/docs/resource-evaluations/self-improve-skill.md at main · FlorianBruniaux/claude-code-ultimate-guide - Skip to content — https://github.com/FlorianBruniaux/claude-code-ultimate-guide/blob/main/docs/resource-evaluations/self-improve-skill.md#1
+- GitHub - gooditworks/ai · GitHub — https://github.com/gooditworks/ai
+- retrospect — Claude Code Plugin | ClaudeAtlas — https://claudeatlas.com/plugins/barnuri/retrospect/
+- reflect - Agent Skill | Skill Gallery — https://www.skill-gallery.jp/skills/anton-abyzov/reflect
+- continuous-improvement — https://www.claudepluginhub.com/marketplaces/naimkatiman-continuous-improvement-dev
+- project-with-reflect — https://www.claudepluginhub.com/marketplaces/initialneil-project-with-reflect
+- reflecting-on-skills Agent Skill | mdsakalu/agent-plugins — https://skillsmp.com/fr/creators/mdsakalu/agent-plugins/reflecting-on-skills-skills-reflecting-on-skills
+- reflect-and-improve Agent Skill | aroybu/claude-sk~13n0ae6 — https://skillsmp.com/ja/creators/aroyburman-codes/claude-skills/skills-reflect-and-improve
+
+== Розмова: 20261019-140957 | вх 46458 (з кешу 49792) | вих 13516 | пошуків 8
+== Ціна ≈$0.0152 (не пік; без вартості пошуків)
