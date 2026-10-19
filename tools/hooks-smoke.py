@@ -377,6 +377,22 @@ def main():
     rows.append(("✅" if good else "❌", "tree-focus: «DSH насправді»", "екран 18.10 → обидва ⚠; без списку — тиша", note))
     bad += not good
 
+    # edit-gate: mv/rm у теці знімків естафети → ask зі списком читачів; інший mv — ні (2026-10-19). Рядки з частин.
+    try:
+        import importlib.util
+        s = importlib.util.spec_from_file_location("egh", os.path.join(ROOT, ".claude", "hooks", "edit-gate-hook.py"))
+        eg = importlib.util.module_from_spec(s)
+        s.loader.exec_module(eg)
+        HIS = ".baton/" + "history/"
+        ask = lambda c: any(k.startswith("ask-history") for k, _ in eg.check("Bash", {"command": c}, eg.Evidence()))  # noqa
+        res = [ask("m" + "v " + HIS + "pass-$i.json .trash/x/"), not ask("m" + "v tools/x.py tools/y.py"),
+               "tools/baton-diff.py" in eg.history_readers()]
+        good, note = all(res), f"{sum(res)}/{len(res)} випадків"
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    rows.append(("✅" if good else "❌", "edit-gate: mv знімків естафети → ask", "знімок → ask; інше → ні; читачі", note))
+    bad += not good
+
     # Маска експорту сесії (2026-10-18): «task-notification» — не ключ; sk-/nvapi- — ключі.
     try:
         import importlib.util

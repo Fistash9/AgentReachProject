@@ -43,6 +43,27 @@ INPUT_FIELDS = re.compile(r"last_assistant_message|transcript_path|stop_hook_act
                           r"tool_name|session_id|hook_event_name|\"prompt\"")
 SETTINGS = os.path.join(PROJECT, ".claude", "settings.local.json")
 RE_MOVER = re.compile(r"(?:^|[;&|(]\s*|\bthen\s+|\bdo\s+)(mv|rm)\s+([^;&|\n]+)", re.M)
+# 2026-10-19 (5-й випадок класу «mv знімків baton до пошуку читачів», TROUBLES; рішення «Так, роби»): mv/rm у
+# .baton/history/ — ask зі списком читачів, а не підказка. Підказка приходила в тій самій команді — запізно;
+# grep за stem («pass-$i») не ловив. Із 10 підказок movers з 12.10 знімків стосувалась 1 — решта лишаються підказками.
+HISTORY = ".baton/" + "history/"
+
+
+def history_readers():
+    """Файли tools/, .claude/hooks/, .claude/skills/, що згадують теку знімків (крім цього хука)."""
+    out, me = [], os.path.abspath(__file__)
+    for d in CODE_DIRS:
+        for root, _, files in os.walk(os.path.join(PROJECT, d)):
+            for fn in files:
+                p = os.path.join(root, fn)
+                if p == me or "__pycache__" in p or not fn.endswith((".py", ".md", ".sh", ".mjs")):
+                    continue
+                try:
+                    if HISTORY in open(p, encoding="utf-8", errors="ignore").read():
+                        out.append(rel(p))
+                except OSError:
+                    pass
+    return sorted(out)
 
 
 def rel(path, cwd=None):
@@ -252,6 +273,11 @@ def check(name, inp, ev, cwd=None, exists=None, day=None):
                 if a.startswith(SAFE_PREFIXES):
                     continue
                 r = rel(a, cwd)
+                if r and r.startswith(HISTORY):  # ask, не підказка — і без огляду на grep (див. history_readers)
+                    out.append((f"ask-history\t{r}", f"{op} {r} — знімок естафети. Читачі "
+                                f"{HISTORY}: {', '.join(history_readers()) or 'не знайдено'}. Перевір, що "
+                                "перенесення їх не зламає (baton-diff порівнює сусідні знімки), і запис у TRASH.md до дії."))
+                    continue
                 if not r or r.startswith(".trash/") or ev.grepped(r):
                     continue
                 out.append((f"movers\t{r}", f"Перед {op} {r}: хто його читає? "
@@ -302,15 +328,25 @@ def main():
             ev.add(n, i)
     sid = data.get("session_id", "?")
     seen = seen_keys(sid)
-    msgs = []
+    msgs, asks = [], []
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     for key, msg in check(name, inp, ev, data.get("cwd")):
+        if key.startswith("ask-history"):  # питає щоразу, без дедупу за сесію
+            with open(LOG, "a", encoding="utf-8") as f:
+                f.write(f"{sid}\t{key}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
+            asks.append(msg)
+            continue
         if key in seen:
             continue
         with open(LOG, "a", encoding="utf-8") as f:
             f.write(f"{sid}\t{key}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
         msgs.append(msg)
-    if msgs:
+    if asks:
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "PreToolUse", "permissionDecision": "ask",
+            "permissionDecisionReason": "edit-gate: " + " | ".join(asks),
+            "additionalContext": "\n".join(msgs + asks)}}, ensure_ascii=False))
+    elif msgs:
         print(json.dumps({"hookSpecificOutput": {
             "hookEventName": "PreToolUse", "additionalContext": "\n".join(msgs)}},
             ensure_ascii=False))
