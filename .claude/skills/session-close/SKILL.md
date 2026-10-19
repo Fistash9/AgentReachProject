@@ -22,9 +22,13 @@ description: Closes out an Agent Reach work session in Claude Code (Termux) — 
 3. Лист з межами за рецептом TROUBLES «Листи у вікно DSH» (текст з файлу → `tmux send-keys -t work:3 -l` →
    окремо Enter; перед тим — не зайнятий і поле вводу порожнє, копія в полі — Ctrl+K): «Межі: ≤10 кроків, без
    subagent/subagent_fork і llm-council. 1) що лишилось незавершеним — ≤8 рядків у agents/dsh/JOURNAL.md + коміт
-   з Agent: dsh; 2) закрий сесію: знімок .baton/baton.json у .baton/history/pass-<N>.json, baton_pass з пунктами
-   @dsh, наприкінці рядок «BATON PASSED»». Окремого питання не треба — це рішення користувача 2026-10-19.
-4. Чекати у фоні: «BATON PASSED» на екрані і DSH не працює (timeout 15 хв); перевірити його коміт і знімок.
+   з Agent: dsh; 2) закрий сесію: естафети в tui немає — пункти @dsh для моєї передачі допиши в той самий запис
+   JOURNAL.md; наприкінці рядок «BATON PASSED»». Окремого питання не треба — це рішення користувача 2026-10-19.
+   Профіль `web` (там baton MCP є — agents/dsh/JOURNAL.md:4): замість 2) — «знімок .baton/baton.json у
+   .baton/history/pass-<N>.json, baton_pass з пунктами @dsh, наприкінці «BATON PASSED»». Профіль видно в `ps`
+   (`dsh --profile tui`). Виправлено 2026-10-19: у tui DSH відповів «BATON НЕДОСТУПНИЙ» (BACKLOG «Після зовнішньої…» п.7а).
+4. Чекати у фоні: «BATON PASSED» на екрані і DSH не працює (timeout 15 хв); перевірити його коміт (у `web` — і знімок);
+   його пункти @dsh перенести в мій baton_pass.
 5. Лише тоді — крок 1 і далі; мій baton_pass (крок 4) — останній.
 
 ## Крок 1 — Знайти точку відліку
