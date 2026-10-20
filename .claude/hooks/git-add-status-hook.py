@@ -108,6 +108,34 @@ def git_add_arg_tokens(command):
     return combined_args if found else None
 
 
+def l2s_links(args, status_lines, cwd):
+    """Ярлики серед шляхів, які додасть git add (2026-10-20, рішення користувача «Так, зробити»): у cf52c36
+    звіт DSH пішов у git як symlink на rootfs/.l2s. Шляхи — з git status (тип «T» і нові), що підпадають під
+    аргументи; ярлик рахується, якщо він у agents/dsh/ або веде в .l2s."""
+    import os
+    # Власний виклик з --untracked-files=all: --short згортає нову теку в «?? agents/» (тест 2026-10-20: 2/7).
+    try:
+        status_lines = subprocess.run(["git", "-C", REPO, "status", "--porcelain", "--untracked-files=all"],
+                                      capture_output=True, text=True, timeout=10).stdout.splitlines()
+    except (OSError, subprocess.SubprocessError):
+        return []
+    paths = [ln[3:].strip().strip('"') for ln in status_lines if len(ln) > 3]
+    specs = [a for a in args if not a.startswith("-")]
+    every = any(a in ("-A", "--all", "-u", "--update") for a in args)
+    rels = []
+    for a in specs:
+        r = os.path.normpath(os.path.relpath(os.path.join(cwd, a), REPO))
+        rels.append("" if r == "." else r)
+    out = []
+    for p in paths:
+        if not (every or any(r == "" or p == r or p.startswith(r.rstrip("/") + "/") for r in rels)):
+            continue
+        full = os.path.join(REPO, p)
+        if os.path.islink(full) and (p.startswith("agents/dsh/") or ".l2s" in os.readlink(full)):
+            out.append(p)
+    return out
+
+
 def main():
     try:
         data = json.load(sys.stdin)
@@ -144,6 +172,21 @@ def main():
         )
         lines = result.stdout.splitlines()
     except (OSError, subprocess.SubprocessError):
+        return
+
+    links = l2s_links(args, lines, data.get("cwd") or REPO)
+    if links:
+        print(json.dumps({
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "ask",
+                "permissionDecisionReason": (
+                    "git add додасть ЯРЛИК, а не файл: " + ", ".join(links[:5]) + ". Файли DSH з Termux — "
+                    "ярлики l2s (TROUBLES 2026-10-20 «Закомітив ярлик l2s…»): у коміт піде symlink 120000. "
+                    "Спершу cp --remove-destination \"$(readlink F)\" F і звір md5."
+                ),
+            }
+        }))
         return
 
     if not lines:
