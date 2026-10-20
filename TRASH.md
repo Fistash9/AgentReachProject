@@ -281,3 +281,13 @@
 - Що: venv, створений цієї сесії для проби Graphify (14 МБ), збирання впало на numpy з вихідного коду.
 - Чому: перестворюю з --system-site-packages після `pkg install python-numpy` (рішення користувача «Встановити зараз»).
 - Відновлюване: так — `python3 -m venv` за секунди. — [claude-code, 2026-10-20]
+
+## 2026-10-20 — 4 старі знімки естафети .baton/history/pass-58…pass-61.json → .trash/baton-history-2026-10-20/
+- Що: знімки .baton/history/pass-58.json, pass-59.json, pass-60.json, pass-61.json (поза git — .baton/ у .gitignore).
+- Чому: правило RULES «Baton» — baton-diff на старті показав 4 випалі пункти (#58→#62): 2 зроблено (DSH без baton
+  у tui; 22/11/30 виправлено у звіті тріажу), 1 є в BACKLOG (п.7в, :122) і естафеті #62, клон ss-test-1910 —
+  записано в BACKLOG п.7е (рішення «Записати в BACKLOG»). Найновіший знімок не лишаю — як 2026-10-19b: pass-62
+  знімуть перед наступним baton_pass. Читачі перевірені ДО mv (TROUBLES «6-й випадок класу…»): baton-diff,
+  project-audit, achieved-map, focus-tree, edit-gate — після mv перезапуск.
+- Як: mv (не rm) у .trash/baton-history-2026-10-20/ — відновлюване: mv назад.
+— [claude-code, 2026-10-20; старт сесії, рішення користувача «Так, прибрати»]
