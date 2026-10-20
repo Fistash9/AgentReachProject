@@ -30,6 +30,7 @@
             нагадування; механізм 2 рецензента; рішення користувача «2,1» (замок зараз).
   ask     — (2026-10-20, ГОЛОС) остання відповідь закінчується «?», а віконця AskUserQuestion у ході нема
             (пам'ять ask-questions-one-at-a-time-plainly; користувач 20.10: «Питання без кнопок»).
+  ask-req — (2026-10-20, ТІНЬ 3 сесії) прохання рішення без «?» у кінці («скажіть», «ваше «так»») — RE_REQ.
 Розбір журналу — iter_turns з number-claim-shadow-hook.py (той самий «хід»),
 плюс записи attachment/hook_additional_context.
 
@@ -117,6 +118,11 @@ def egate_misses(turn, text):
             if not done and not any(RE_EG_WHY.search(p) and stem in p for p in paras):
                 out.append(f"nudge:{kind}:{target}")
     return out
+
+
+RE_REQ = re.compile(r"скажіть|якщо скажете|ваш\w* (?:«так»|дозвіл|рішенн\w*|слов\w*)|без вашого|на ваше рішення|"
+                    r"питання до вас|від вас", re.I)
+RE_LATER = re.compile(r"наступн\w* сесі", re.I)
 
 
 def plain_codes():
@@ -212,8 +218,13 @@ def check(turn):
     # кнопок»): відповідь закінчується питанням, а віконця AskUserQuestion у ході нема — правило пам'яті
     # ask-questions-one-at-a-time-plainly без механізму. ГОЛОС того ж дня: бектест 1/105 справжнє, хибних 0 →
     # рішення «Голос і коміт».
-    if last.endswith("?") and not any(n == "AskUserQuestion" for n, _ in turn["tools"]):
+    no_box = not any(n == "AskUserQuestion" for n, _ in turn["tools"])
+    if last.endswith("?") and no_box:
         misses.append("ask")
+    # ask-req (ТІНЬ 3 сесії, рішення «Широкий — тінню»): прохання рішення без «?» у кінці. Сліпа розмітка 20.10:
+    # «?» ловить 2 з 13, разом зі словами — 8 з 13 при 3 хибних з 15 (слова підібрано на тих самих даних).
+    elif no_box and RE_REQ.search(last) and not RE_LATER.search(last):
+        misses.append("ask-req")
     if last.endswith("?") and (RE_CHANGE.search(tail) or RE_PLAN_Q.search(qline)):
         ok = any(n == "Skill" and s == "verify-before-show" or n in VERIFY_TOOLS
                  for n, s in turn["tools"])

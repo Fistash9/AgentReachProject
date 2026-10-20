@@ -412,7 +412,9 @@ def main():
         t = lambda txt, tools: {"texts": [txt], "tools": tools, "hints": [], "events": []}  # noqa
         res = ["ask" in agv.check(t("Черга: x → y. Почати з першого?", [])),
                "ask" not in agv.check(t("Черга: x → y. Почати з першого?", [("AskUserQuestion", "")])),
-               "ask" not in agv.check(t("Черга: x → y. Готово.", []))]
+               "ask" not in agv.check(t("Черга: x → y. Готово.", [])),
+               "ask-req" in agv.check(t("Черга: x → y. Скажіть, якщо пушити.", [])),
+               "ask-req" not in agv.check(t("Черга: x → y. Ваше рішення — у наступній сесії.", []))]
         good, note = all(res), f"{sum(res)}/{len(res)} випадків"
     except Exception as ex:  # noqa — перевірка не має падати сама
         good, note = False, f"{type(ex).__name__}: {ex}"
