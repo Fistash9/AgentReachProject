@@ -54,7 +54,13 @@ def main():
                 fo.write(f"## {iid} [{'Зроблено' if key == 'done' else 'Обережно'}]\nПУНКТ: {it}\n")
                 for _, k in sc[:3]:
                     f, ln, p = paras[k]
-                    fo.write(f"КАНДИДАТ {f}:{ln}: {p.strip()[:700]}\n")
+                    # Вікно з 10 рядків, де найбільше слів пункту, а не перші 700 символів (2026-10-20): вузол
+                    # дерева — один абзац на десятки рядків, потрібний рядок був за обрізом (D128 → :43 при :31).
+                    # Вибірка 10 «лише в естафеті»: справжнє місце видно делегату 3/10 → 7/10.
+                    lines = p.split("\n")
+                    s = max(range(max(1, len(lines) - 9)), key=lambda j: (
+                        sum(1 / (1 + df[w]) for w in ws & W("\n".join(lines[j:j + 10]))), -j))
+                    fo.write(f"КАНДИДАТ {f}:{ln + s}: {chr(10).join(lines[s:s + 10]).strip()[:900]}\n")
                 fo.write("\n")
     print(f"з комітом у git: {in_git}; на делегата: {len(items)} у {math.ceil(len(items) / per)} файлі(ах) → {a.out}")
 
