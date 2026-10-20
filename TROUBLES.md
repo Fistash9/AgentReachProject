@@ -5372,3 +5372,51 @@ TAGS: baton, вплив, втрати, рецензія, годинник
   Межа: рішення лише в чаті (без коміту) не перевірено.
 - Побіжно: годинники розходяться в межах хвилин — `date` 16:35 EEST, improver.log 23:09, назва .bak 20:24,
   ledger #57 10:35Z при «~16:30 Київ» у нотатці. Вікна в часі рахувати за порядком комітів/передач. Причину не розбирано.
+
+## Картка: як ставити «неставне» в Termux — перевірені рецепти (2026-10-20)
+TAGS: картка-установки, termux-install, pkg, grun, glibc, python-glibc, manylinux, sdist, linux-arm64, proot
+
+— [claude-code, 2026-10-20; запит користувача «ми раніше багато встановлювали того що не повинно було працювати і воно
+працює… зроби щось щоб ти це вже запам'ятав… виправляй»; проба Graphify: numpy, tree-sitter — рецепти були, я їх не взяв]
+Показує хук install-check на кожну першу за сесію установку пакета (pip/pipx/uv/npm/pkg/apt/cargo). Порядок спроб:
+1. **Готовий пакет Termux:** `pkg search python-<x>` → `pkg install python-<x>` (numpy 20.10 — сирці падають на bionic;
+   cryptography #04 рядок 44). Для venv — `--system-site-packages`.
+2. **Linux-збірка (glibc) замість android:** `grun <бінарник>` (Freebuff — рядок 2517; iwe — 3119); аргументи з пробілами
+   ламаються — запуск через `$PREFIX/glibc/lib/ld-linux-aarch64.so.1 --library-path $PREFIX/glibc/lib` (3523). Python-пакети
+   з `manylinux_aarch64` збірками — `pkg install python-glibc` (3.12.9, знайдено 20.10, **ще не перевірено**).
+   ✅ Перевірено 20.10: `grun $PREFIX/glibc/bin/python3 -m venv V` → `grun V/bin/python3 -m pip install graphifyy` — 13 с,
+   pip check чисто, усі 26 tree-sitter готовими збірками; скрипти з V/bin — через `grun V/bin/python3 V/bin/<скрипт>`.
+3. **npm бачить платформу android** і мовчки пропускає опційні `*-linux-arm64` — поставити вручну `npm pack` + `tar -xzf` (3527).
+4. **Сирці на PyPI бувають неповні** (tree-sitter 20.10: немає `parser.h` / `scanner.c`) — брати git-тег джерела і `pip install ./тека`.
+5. **Rust-збирання** (jiter, cryptography) — довге, не вбивати (#07, рядок 64) або обійти без пакета (#03, рядок 35).
+6. **Лише glibc і нема збірки** — proot-distro Ubuntu (DSH — #02, 3454); але виміряне в proot ≠ Termux (4172).
+7. Перед установкою стороннього — правило RULES «Перед ВСТАНОВЛЕННЯМ» і pkgtruth; пісочниця поза проєктом.
+
+## Проба Graphify у Termux (рілс Der4LWmxHF1): що ставиться, що економить (2026-10-20)
+TAGS: graphify, graphifyy, tree-sitter, python-glibc, obsidian, resume, sessionend, старт, a/b, рілс
+
+— [claude-code, 2026-10-20; запит користувача «можна запустити агента на ідеях з відео… протестити наживо якість економію» →
+бриф v2 → «можна зараз… обирай раціонально»; пісочниця ~/sandbox-graphify (поза проєктом): GATES.md, REPORT.md, ab/]
+- **Рілс** (chingizkhan_yt, 19.10, 97 с, ролик зроблено нейронкою): «71,5× менше токенів» — з lucasrosati/claude-code-memory-setup,
+  автор якого сам пише «not supported by a published session ledger»; Graphify-Labs/graphify (Apache-2.0, PyPI graphifyy) обіцяє
+  «80%» для платного Cloud. Незалежний замір — PR #891: до патча 34k проти 30k без graphify, після — 30k проти 30k.
+- **Установка в Termux:** bionic-Python — numpy зі сирців падає, 14 граматик без parser.h, python-граматика без scanner.c
+  (обходи: pkg python-numpy, --no-deps, git-тег). **Чистий шлях — python-glibc** (картка установки, п.2): 13 с, усі 26 пакетів
+  tree-sitter готовими збірками. Граф клону проєкту — 2 629 вузлів / 3 851 зв'язок за 4,4 с; graphify пік 82 МБ.
+  `graphify install` ставить 2 PreToolUse-хуки на Bash|Grep і Read|Glob + блок у CLAUDE.md (install.py:445–480) — НЕ ставили.
+- **A/B (DeepSeek flash, claude -p з пісочниці, по 1 прогону, правильні відповіді записано до прогону):** старт повний
+  (pick_up 74 496 симв.) — 43 009 вх. токенів, 10/10; короткий у стилі /resume (мета/зупинка/далі/відкрите + 3 нотатки
+  ledger, 6 098 симв.) — 13 964 (−68%), 10/10. Graphify на 3 питаннях: сумарно −6,4% (q1 у 3,6× дешевше, q2 у 3,4× дорожче,
+  q3 ≈) — шум, не висновок. Ціна прогонів ≈$0.03 (total_cost_usd у виводі ≈$1.18 — тариф Claude, не справжній).
+- **Головне:** 88% старту — «Done» (44 230) і «Watch out» (21 823), які естафета лише дописує; вони дублюють git log і TROUBLES.
+  Скоротити старт — найбільший виграш (вузол M14), не Graphify.
+- **Страховка SessionEnd** (ідея Part 5): ~/sandbox-graphify/sessionend/autosave.py — без моделі, 58 мс; незакрита сесія →
+  слід (коміти й незакомічене — з git), закрита (baton_pass) → пропуск. Перша чернетка мала 2 вади (Edit/Write без Bash-правок;
+  «git commit» з тексту heredoc) — виправлено. Наживо як хук НЕ ввімкнено.
+- **Порада DeepSeek** (розмова 20261020-105608, ≈$0.032): A/B без справжнього install і з n=1 права на висновок не дає;
+  graphify-out/ інвалідовує кеш підказки (цитата є в описі 0.9.76); є журнал ~/.cache/graphify-queries.log для перевірки,
+  чи агент ходив у граф; --code-only і tree-sitter-language-pack — альтернативи. Цитати про .graphify_python і --strict
+  дослівно не знайдено — [не перевірено].
+- **Мої помилки:** «34 граматики» — насправді 26 (рахував рядки журналу збирання); критерій G3 «вузлів > 0» пропустив 0 внеску
+  .py (замінено G6); Obsidian відкинув з хибною причиною («немає GUI») — застосунок є в Google Play, а ідея — тека .md.
+- **Падіння сесії 10:37** (код 137, перезапуск tmux, DSH теж): причина не встановлена; graphify виключено виміром.

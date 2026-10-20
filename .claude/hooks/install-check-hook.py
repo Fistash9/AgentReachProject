@@ -20,6 +20,11 @@ Bash `mkdir … && cp …` до повної перевірки; verify-nudge-ho
 (echo '{…}', -m "…") і тіло heredoc не дають хибних спрацювань (клас
 TROUBLES 2026-09-23). /plugin у вікні набирає користувач — це не виклик
 інструмента, PreToolUse його не бачить (code.claude.com/docs/en/hooks).
+Друга гілка (2026-10-20): установка ПАКЕТА (pip/pip3/pipx/uv/npm/pkg/apt/cargo install, python -m pip
+install) → раз на сесію картка TROUBLES «Картка: як ставити «неставне» в Termux». Причина: рецепти (pkg
+python-*, grun/glibc, npm linux-arm64…) були, а troubles-grep на установку мовчить навмисно (pip/npm/
+install/termux — GENERIC_TAGS), тож 20.10 при пробі Graphify я їх не взяв (користувач: «встановлювали,
+працює, а ти не користуєшся»).
 Лог: .claude/logs/install-check.log. Будь-яка помилка — мовчить (fail-open).
 """
 import json
@@ -38,6 +43,10 @@ SCRIPTS = {"python", "python3", "node", "bash", "sh"}
 # запис зі скрипта: makedirs/mkdir, open(..., 'w'/'a'), writeFile, copy, shutil, --dest/--out
 WRITE_MARK = re.compile(r"makedirs|mkdir|open\([^)]*['\"][wa]|write(File|_text)?|copy|shutil|--dest|--out")
 # claude mcp add|add-json|add-from-claude-desktop; claude plugin(s) install|i|update|marketplace add
+CARD = "## Картка: як ставити «неставне» в Termux"
+PKG_MGR = {"pip": {"install"}, "pip3": {"install"}, "pipx": {"install"}, "uv": {"pip", "tool", "add"},
+           "npm": {"install", "i", "add"}, "pkg": {"install", "i"}, "apt": {"install"}, "apt-get": {"install"},
+           "cargo": {"install"}}
 CLI = re.compile(r"(mcp\s+add(-json|-from-claude-desktop)?|plugins?\s+(install|i|update|marketplace\s+add))\b")
 
 
@@ -99,6 +108,32 @@ def bash_target(cmd):
     return None
 
 
+def pkg_install(cmd):
+    """Сегмент, що ставить пакет: «pip install …», «python3 -m pip install …», «venv/bin/pip install …»."""
+    try:
+        segs = list(segments(strip_heredocs(cmd)))
+    except ValueError:
+        return None
+    for seg in segs:
+        while seg and (seg[0] in WRAPPERS or re.match(r"^\w+=", seg[0]) or seg[0] == "timeout" or re.match(r"^\d+$", seg[0])):
+            seg = seg[1:]
+        if len(seg) >= 3 and os.path.basename(seg[0]).startswith("python") and seg[1] == "-m":
+            seg = seg[2:]
+        if len(seg) >= 2 and "--help" not in seg and seg[1] in PKG_MGR.get(os.path.basename(seg[0]), ()):
+            return os.path.basename(seg[0])
+    return None
+
+
+def card():
+    text = open(os.path.join(PROJECT, "TROUBLES.md"), encoding="utf-8").read()
+    i = text.find(CARD)
+    if i < 0:
+        return None
+    body = text[i:].split("\n## ", 1)[0]
+    lines = [l for l in body.splitlines() if re.match(r"^\d\. ", l) or l.startswith("   ")]
+    return "\n".join(lines)
+
+
 def write_target(path, cwd):
     path = os.path.abspath(os.path.join(cwd or PROJECT, os.path.expanduser(path)))
     m = re.search(r"/\.claude/(skills|plugins)/([^/]+)", path)
@@ -113,6 +148,19 @@ def main():
     tool = data.get("tool_name")
     inp = data.get("tool_input") or {}
     if tool == "Bash":
+        mgr = pkg_install(inp.get("command") or "")
+        if mgr:
+            key = f"{data.get('session_id', '?')}\tpkg-card"
+            seen = open(LOG).read() if os.path.exists(LOG) else ""
+            body = card()
+            if body and key + "\t" not in seen:
+                os.makedirs(os.path.dirname(LOG), exist_ok=True)
+                with open(LOG, "a") as f:
+                    f.write(f"{key}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
+                print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "additionalContext":
+                    f"install-check: установка пакета ({mgr}). Перш ніж збирати чи обходити — рецепти, що вже "
+                    f"працюють у Termux (TROUBLES «Картка: як ставити…»):\n{body}"}}, ensure_ascii=False))
+                return
         target = bash_target(inp.get("command") or "")
     elif tool == "Write":
         target = write_target(inp.get("file_path") or "", data.get("cwd"))
