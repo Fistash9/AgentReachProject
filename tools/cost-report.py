@@ -553,8 +553,10 @@ def dsh_session_files(dsh_dir: str):
 def read_zstd(path: str):
     """Розпакування через subprocess (stdlib-only, без python-zstd)."""
     try:
+        # 2026-10-20 (dsh, T10): -dcf, не -dc. З Termux журнали сесій -- ярлики (l2s),
+        # а `zstd -dc` ярлики мовчки пропускає («is a symbolic link, ignoring») -> $0.
         out = subprocess.run(
-            ["zstd", "-dc", path], capture_output=True, timeout=120
+            ["zstd", "-dcf", path], capture_output=True, timeout=120
         )
     except FileNotFoundError:
         raise SystemExit("Не знайдено `zstd` у PATH -- потрібен для сесій DSH")
