@@ -10,6 +10,10 @@ answer-gate бачили сесію з 10 віконцями як один хі�
   queue  — у відрізку немає «черг» → deny: дописати рядок «Черга: …» і спитати знову.
   verify — питання пропонує зміну (RE_CHANGE / «план», як answer-gate check), а у відрізку немає ні
            verify-before-show / delegate, ні рядка «Звірено перед показом» / «Звірка не потрібна: <чому>».
+  records — (2026-10-20) питання показує бриф чи план («бриф», «план»), а у відрізку немає пошуку в моїх записах
+           (kb-map.py / trees-index.py / grep по TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT / Read цих файлів) і рядка
+           «Записи не потрібні: <чому>». Причина: клас Р1 «дія до перевірки» — ⚠ ліки не діють (error-registry --loop
+           20.10); бриф v1 проби Graphify без уроків TROUBLES; рішення користувача «Так, зараз».
 Перевірки — з answer-gate-shadow-hook.py (ті самі регулярні вирази). Журнал: .claude/logs/ask-gate.jsonl.
 Будь-яка помилка — мовчки (fail-open). Відкат: прибрати запис з PreToolUse у .claude/settings.local.json.
 """
@@ -23,6 +27,12 @@ import sys
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LOG = os.environ.get("ASK_GATE_LOG") or os.path.join(ROOT, ".claude", "logs", "ask-gate.jsonl")
 RE_SKIP_VERIFY = re.compile(r"Звірено перед показом|Звірка не потрібна:", re.I)
+RE_BRIEF = re.compile(r"бриф\w*", re.I)
+RE_PLAN_WORD = re.compile(r"план\w*", re.I)
+RE_COMMIT_Q = re.compile(r"коміт", re.I)  # «закомітити… план уже звірено» — питання про коміт, не план (бектест 20.10)
+RE_SKIP_RECORDS = re.compile(r"Записи не потрібні:", re.I)
+RE_RECORDS_CMD = re.compile(r"kb-map\.py|trees-index\.py|\b(grep|rg)\b[^\n]*\b(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md")
+RE_RECORDS_FILE = re.compile(r"(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md$")
 
 
 def load_ag():
@@ -59,6 +69,18 @@ def misses_for(ag, lines, question):
                  for n, s in seg["tools"]) or RE_SKIP_VERIFY.search(text)
         if not ok:
             out.append("verify")
+    brief = RE_BRIEF.search(q0) or (RE_PLAN_WORD.search(q0) and not RE_COMMIT_Q.search(q0))
+    if brief and not RE_SKIP_RECORDS.search(text):
+        found = False
+        for ev in seg.get("events", []):
+            if ev[0] != "tool" or not isinstance(ev[2], dict):
+                continue
+            if ev[1] == "Bash" and RE_RECORDS_CMD.search(str(ev[2].get("command", ""))):
+                found = True
+            if ev[1] == "Read" and RE_RECORDS_FILE.search(str(ev[2].get("file_path", ""))):
+                found = True
+        if not found:
+            out.append("records")
     return out
 
 
@@ -68,6 +90,9 @@ REASONS = {
     "verify": "питання пропонує зміну, а звірки плану в цьому відрізку немає (RULES.md: verify-before-show) — "
               "звір план або допиши в текст питання «Звірка не потрібна: <чому>» (дописування запису й коміт "
               "показаного — не план)",
+    "records": "питання показує бриф чи план, а пошуку в моїх записах у цьому відрізку немає (клас Р1 «дія до "
+               "перевірки», 20.10) — спершу python3 tools/kb-map.py <тема> або grep по TROUBLES/BACKLOG і врахуй "
+               "знайдене; якщо пошук справді не потрібен — допиши «Записи не потрібні: <чому>»",
 }
 
 
