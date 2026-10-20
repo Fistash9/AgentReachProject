@@ -407,6 +407,18 @@ def main():
     rows.append(("✅" if good else "❌", "answer-gate: голос на підказки edit-gate", "без дії → голос; Read/причина → ні", note))
     bad += not good
 
+    # Голос «питання без кнопок» (2026-10-20): «?» у кінці без AskUserQuestion → ask; з віконцем чи без «?» → ні.
+    try:
+        t = lambda txt, tools: {"texts": [txt], "tools": tools, "hints": [], "events": []}  # noqa
+        res = ["ask" in agv.check(t("Черга: x → y. Почати з першого?", [])),
+               "ask" not in agv.check(t("Черга: x → y. Почати з першого?", [("AskUserQuestion", "")])),
+               "ask" not in agv.check(t("Черга: x → y. Готово.", []))]
+        good, note = all(res), f"{sum(res)}/{len(res)} випадків"
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    rows.append(("✅" if good else "❌", "answer-gate: голос «питання без кнопок»", "«?» без віконця → ask; інакше → ні", note))
+    bad += not good
+
     # edit-gate: mv/rm у теці знімків естафети → ask зі списком читачів; інший mv — ні (2026-10-19). Рядки з частин.
     try:
         import importlib.util

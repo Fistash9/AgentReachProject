@@ -28,6 +28,8 @@
             а в тому ж абзаці не названо вибірки («прогін», «вибірк», «n=», «оцінка», «шум», «не перевірено»).
             Рецензія сесії f0af8e0e (DeepSeek, п.6): «найсильніший результат» на n=1 — застереження лише після
             нагадування; механізм 2 рецензента; рішення користувача «2,1» (замок зараз).
+  ask     — (2026-10-20, ГОЛОС) остання відповідь закінчується «?», а віконця AskUserQuestion у ході нема
+            (пам'ять ask-questions-one-at-a-time-plainly; користувач 20.10: «Питання без кнопок»).
 Розбір журналу — iter_turns з number-claim-shadow-hook.py (той самий «хід»),
 плюс записи attachment/hook_additional_context.
 
@@ -206,6 +208,12 @@ def check(turn):
         misses.append("codes:" + ",".join(codes))
     tail = last  # уся остання відповідь: план часто вище за підсумкове питання
     qline = last.splitlines()[-1] if last else ""
+    # ask (2026-10-20, сесія 0f35e97e, користувач: «сесія ніби почалась якось не так» → «Питання без
+    # кнопок»): відповідь закінчується питанням, а віконця AskUserQuestion у ході нема — правило пам'яті
+    # ask-questions-one-at-a-time-plainly без механізму. ГОЛОС того ж дня: бектест 1/105 справжнє, хибних 0 →
+    # рішення «Голос і коміт».
+    if last.endswith("?") and not any(n == "AskUserQuestion" for n, _ in turn["tools"]):
+        misses.append("ask")
     if last.endswith("?") and (RE_CHANGE.search(tail) or RE_PLAN_Q.search(qline)):
         ok = any(n == "Skill" and s == "verify-before-show" or n in VERIFY_TOOLS
                  for n, s in turn["tools"])
@@ -293,6 +301,9 @@ QUEUE_REASON = ("Ворота 4 (голос черги, 2026-10-13): у відп
 SINGLE_REASON = ("Голос «один вимір ≠ висновок» (2026-10-20, рецензія f0af8e0e п.6): у відповіді ефект числом "
                  "(відсотки/«у N разів»/економія) без вибірки в тому ж абзаці. Допиши в той абзац, на чому число "
                  "тримається («1 прогін», «3 питання», «оцінка, не вимір»). Нічого іншого не повторюй.")
+ASK_REASON = ("Голос «питання без кнопок» (2026-10-20, користувач: «Питання без кнопок»): відповідь закінчується "
+              "питанням, а віконця AskUserQuestion у ході нема. Постав це питання віконцем AskUserQuestion (прості "
+              "слова, 2–3 варіанти, рекомендований першим, рядок «Черга: …» у тексті питання). Відповідь не повторюй.")
 CODES_REASON = ("Голос «коди без назви» (2026-10-16, користувач: «розшифровувати потрібно раз у "
                 "повідомленні»): у відповіді коди задач без назви словами: {codes}. Допиши в кінці один "
                 "рядок «Словами: <код> — <назва>; …» (назви — python3 tools/trees-index.py <код>; хеш коміту чи сесії — що зроблено словами). "
@@ -356,11 +367,13 @@ def run(data):
                     nudges += ["egate"] if egate else []
                     voice = "+".join((["queue"] if "queue" in misses else [])
                                      + (["single"] if "single" in misses else [])
+                                     + (["ask"] if "ask" in misses else [])
                                      + (["codes"] if codes else [])
                                      + (["nudge"] if nudges else [])) or None
                     if voice:
                         reasons = ([QUEUE_REASON] if "queue" in voice else []) + \
                             ([SINGLE_REASON] if "single" in voice else []) + \
+                            ([ASK_REASON] if "ask" in misses else []) + \
                             ([CODES_REASON.format(codes=codes[0][6:].replace(",", ", "))]
                              if codes else []) + \
                             ([BRIEF_REASON] if "brief" in nudges else []) + \
