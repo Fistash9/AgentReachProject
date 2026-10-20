@@ -78,9 +78,9 @@ echo "=== КОМІТИ З ОСТАННЬОГО BATON PICK-UP ==="
 if [ -n "$BASE_COMMIT" ]; then
   if [ "$FALLBACK" -eq 1 ]; then
     echo "(увага: фолбек — це НЕ коміти сесії, а історія від першого коміту; показано останні 20)"
-    LOG="$(git log "$BASE_COMMIT"..HEAD -n 20 --format='- %s')"
+    LOG="$(git log "$BASE_COMMIT"..HEAD -n 20 --format='  %h %s')"
   else
-    LOG="$(git log "$BASE_COMMIT"..HEAD --format='- %s')"
+    LOG="$(git log "$BASE_COMMIT"..HEAD --format='  %h %s')"
   fi
   if [ -z "$LOG" ]; then
     echo "(нових комітів немає)"
