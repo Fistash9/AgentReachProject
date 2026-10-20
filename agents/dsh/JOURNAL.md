@@ -579,3 +579,10 @@ per-key), а не факт його існування; тут це видно �
 3. Тека `/root/tmp/graphify-test` (v, repo, pip.whl) і клон `/root/tmp/ss-test-1910` лишаються — не видаляв.
 4. Ярлики l2s: *на момент закриття* `git status` чистий, `cost-zero-2026-10-20.md` і `graphify-proot-2026-10-20.md` — звичайні файли (не симлінки); названо, не лагодив.
 @dsh на наступну сесію (для baton next): (а) перевірити `cost-report --dsh --dsh-dir /data/data/com.termux/files/usr/var/lib/proot-distro/containers/ubuntu/rootfs/root/.dsh/sessions` — чи ті самі $6.27; (б) скоротити graphify-звіт до ≤15 рядків, якщо користувач скаже; (в) хуки/плагіни для DSH (асиметрія нагляду) і один запит `x-ratelimit-*` — лише з дозволом на мережу.
+
+## Закриття cc-20-1…cc-20-3 (2026-10-20)
+— [dsh, 2026-10-20T15:49+0300]
+1. M14: звіт `agents/dsh/baton-design-2026-10-20.md` (коміт `dea05cd`) — `baton_pick_up` не ріже нічого (`server.mjs:128`, `renderHandoff` 45-83), `done`/`watchOut` append (157/160), лімітів обсягу в `inputSchema` 133-146 немає; PROTOCOL:53 закріплює кумулятивність. npm-реєстр — 404, git-тегів немає → версій понад 0.1.0 не існує, «короткої передачі» автор не передбачив.
+2. T10 (хвіст а): `tools/cost-report.py` `zstd -dc` → `-dcf` (коміт `b721566`), причина — l2s-ярлики з Termux мовчки пропускались; прогін 236 сесій, $6.3047 off-peak.
+Незавершене: (a) рішення про скорочення `done`/`watchOut` (ліміту в сервері немає, треба зовнішній); (b) розбіжність $6.3047 проти $6.3033 з Termux (Δ$0.0014) не досліджена; (c) graphify-звіт досі 20 рядків > ліміту 15; (d) `/root/tmp/graphify-test` і `/root/tmp/ss-test-1910` не прибрані (лише через TRASH.md).
+@dsh на наступну сесію (для baton next): (а) вирішити з користувачем, чи чистити `done`/`watchOut` у `.baton/baton.json` вручну; (б) знайти джерело Δ$0.0014 (round vs record count) одним прогоном; (в) скоротити graphify-звіт до ≤15, якщо буде «так».
