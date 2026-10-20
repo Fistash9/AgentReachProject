@@ -365,6 +365,10 @@ def main():
         cases = [("віддалений main = `45d5e0e`", ["45d5e0e"]), ("М2 внесено.", ["М2"]),
                  ("Замок на обхід (b66adbf) запушено.", []), ("файл 1f94aac.py тут", [])]
         res = [pcm.undecoded(t) == want for t, want in cases]
+        # strict (2026-10-20, питання у віконцях): код у дужках після назви — теж ловиться; шлях і хеш з описом — ні
+        sc = [("коротший старт естафети (M14) → перевірка", ["M14"]), ("див. trees/pam-yat-proyektu.md:167", []),
+              ("Замок на обхід (b66adbf) запушено.", []), ("віддалений main = `45d5e0e`", ["45d5e0e"])]
+        res += [pcm.strict(t) == want for t, want in sc]
         good, note = all(res), f"{sum(res)}/{len(res)} випадків"
     except Exception as ex:  # noqa — перевірка не має падати сама
         good, note = False, f"{type(ex).__name__}: {ex}"

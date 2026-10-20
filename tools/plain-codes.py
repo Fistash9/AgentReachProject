@@ -10,7 +10,7 @@
   - після нього йдуть ≥2 слова («G2.4 нагадування при переході», рядок дерева «[ ] T7 Відео-агент…»), або
   - він стоїть у дужках після слів («перевірка підказки в DeepSeek-сесіях (M4.4)»).
 Інлайн `команди й шляхи` не рахуються (крім хешів комітів — 2026-10-19); блоки ``` — рахуються.
-Читачі: .claude/hooks/plain-ask-hook.py (питання — до показу), answer-gate-shadow-hook.py
+Читачі: .claude/hooks/plain-ask-hook.py (питання — до показу, strict з 2026-10-20), answer-gate-shadow-hook.py
 (відповідь — голос «codes»). Лише stdlib.
 
   python3 tools/plain-codes.py <jsonl>   # бектест журналу сесії
@@ -48,6 +48,14 @@ def undecoded(text):
         if after.search(t) or before.search(t):
             ok.add(c)
     return sorted(found - ok)
+
+
+def strict(text):
+    """Для питань у віконцях (2026-10-20, «знов шифри» на «назва (код)»; реєстр: клас «незрозуміла мова» —
+    ⚠ ліки не діють): будь-який код вузла — навіть у дужках після назви; хеші — як undecoded (опис + хеш у
+    дужках можна). Шляхи «trees/x.md:12» і інлайн `команди` кодом не вважаються."""
+    t = visible(text)
+    return sorted(set(TOK.findall(t)) | {c for c in undecoded(text) if HASH.fullmatch(c)})
 
 
 def ask_text(tool_input):

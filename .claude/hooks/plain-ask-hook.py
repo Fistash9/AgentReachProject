@@ -1,5 +1,6 @@
 #!/data/data/com.termux/files/usr/bin/python3
-"""PreToolUse AskUserQuestion: питання з кодом задачі без назви словами — не показувати (2026-10-16).
+"""PreToolUse AskUserQuestion: питання з кодом задачі без назви словами — не показувати (2026-10-16);
+з 2026-10-20 — будь-який код вузла, і в дужках (plain-codes.strict; рішення користувача «Так, зараз»).
 
 Навіщо: користувач 15.10 — «я вже казав що не розумію шифри … і відповідаю не зрозумівши»:
 «так» на питання з шифром — не його рішення. Правило 16.10: «розшифровувати потрібно раз у
@@ -32,17 +33,18 @@ def main():
     if data.get("tool_name") != "AskUserQuestion":
         return
     pc = load()
-    codes = pc.undecoded(pc.ask_text(data.get("tool_input")))
+    codes = pc.strict(pc.ask_text(data.get("tool_input")))  # 2026-10-20: і коди в дужках («знов шифри»)
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     with open(LOG, "a", encoding="utf-8") as f:
         f.write(json.dumps({"t": datetime.datetime.now().isoformat(timespec="seconds"),
                             "session": data.get("session_id"), "codes": codes},
                            ensure_ascii=False) + "\n")
     if codes:
-        reason = ("plain-ask: у питанні коди задач без назви словами: " + ", ".join(codes)
-                  + ". Користувач їх не розуміє і відповідає не зрозумівши. Перепиши питання: "
-                  "назва словами, код — хіба в дужках після неї (назву бери з "
-                  "python3 tools/trees-index.py <код>; хеш коміту чи сесії — що зроблено словами, напр. «замок на обхід (b66adbf)»), і задай його знову.")
+        reason = ("plain-ask: у питанні коди задач: " + ", ".join(codes)
+                  + ". Користувач їх не розуміє і відповідає не зрозумівши (2026-10-20: «знов шифри» — і на код у "
+                  "дужках після назви). Перепиши питання БЕЗ кодів вузлів, лише назви словами (назву бери з "
+                  "python3 tools/trees-index.py <код>), і в рядку «Черга:» теж; хеш коміту чи сесії — що зроблено "
+                  "словами, хеш хіба в дужках, напр. «замок на обхід (b66adbf)». Задай питання знову.")
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                                  "permissionDecision": "deny",
                                                  "permissionDecisionReason": reason}},
