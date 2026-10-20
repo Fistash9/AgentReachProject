@@ -7,6 +7,20 @@ cd "$(git rev-parse --show-toplevel)"
 
 SINCE_TS="${1:-}"
 
+# Підсумок першим рядком (2026-10-20): 20.10 вивід обрізали `| head -60`, розділ комітів стояв на 60-му рядку —
+# заголовок лишився, список ні, і в TROUBLES пішло хибне «скрипт не бачить коміт». Головне — на початку.
+echo "=== ПІДСУМОК ==="
+SUM_BASE=""
+if [ -n "$SINCE_TS" ]; then
+  SUM_BASE="$(git log --before="$SINCE_TS" -1 --format=%H -- . || true)"
+fi
+if [ -n "$SUM_BASE" ]; then
+  echo "Комітів після старту ($SINCE_TS): $(git rev-list --count "$SUM_BASE"..HEAD); незакомічених файлів: $(git status --short | wc -l). Список комітів — у кінці; обрізаний вивід ≠ «немає»."
+else
+  echo "Комітів після старту: невідомо (точку відліку не задано або не знайдено); незакомічених файлів: $(git status --short | wc -l)."
+fi
+echo
+
 echo "=== GIT STATUS ==="
 STATUS="$(git status --short)"
 if [ -z "$STATUS" ]; then
