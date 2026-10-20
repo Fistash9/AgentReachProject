@@ -107,7 +107,7 @@ def main():
     pv2, rows = rc.prompt_v2(), rc.cases()
     if a.only:
         rows = [r for r in rows if r["id"] in set(a.only.split(","))]
-    path = os.path.join(rc.HERE, f"results-{a.provider}-{model.split('/')[-1].split(':')[0]}-v3.jsonl")
+    path = os.path.join(rc.HERE, f"results-{a.provider}-{model.split('/')[-1].split(':')[0]}-{rc.SET}.jsonl")
     done = set()
     if os.path.exists(path):
         for l in open(path, encoding="utf-8"):

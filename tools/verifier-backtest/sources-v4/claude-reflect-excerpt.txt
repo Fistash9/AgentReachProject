@@ -1,0 +1,111 @@
+# claude-reflect: уривки README.md (рядки 1-20, 50-60, 88-98) і scripts/lib/reflect_utils.py (рядки 1195-1240, 1361-1380), з нумерацією
+## README.md
+1: # claude-reflect
+2: 
+3: [![GitHub stars](https://img.shields.io/github/stars/BayramAnnakov/claude-reflect?style=flat-square)](https://github.com/BayramAnnakov/claude-reflect/stargazers)
+4: [![Version](https://img.shields.io/badge/version-3.3.1-blue?style=flat-square)](https://github.com/BayramAnnakov/claude-reflect/releases)
+5: [![License: MIT](https://img.shields.io/badge/License-MIT-green?style=flat-square)](https://opensource.org/licenses/MIT)
+6: [![Tests](https://img.shields.io/badge/tests-332%20passing-brightgreen?style=flat-square)](https://github.com/BayramAnnakov/claude-reflect/actions)
+7: [![Platform](https://img.shields.io/badge/platform-macOS%20%7C%20Linux%20%7C%20Windows-lightgrey?style=flat-square)](https://github.com/BayramAnnakov/claude-reflect#platform-support)
+8: 
+9: A self-learning system for Claude Code that captures corrections and discovers workflow patterns — turning them into permanent memory and reusable skills.
+10: 
+11: **Two ways to run it:**
+12: 
+13: | | **Plugin** (Python) | **Mod** (`reflect-mod`, new in 3.3) |
+14: |---|---|---|
+15: | You correct Claude | a hook queues it | a model check sees it at once, in any language |
+16: | You review | later, with `/reflect` | right away, in a band above the prompt |
+17: | Runs on | Claude Code, plus Codex/Cursor via AGENTS.md | Claude Code 2.1.286+ with mods |
+18: 
+19: ![reflect-mod: a correction becomes a rule you can save with one press](assets/reflect-mod-band.png)
+20: 
+50: 
+51: ## Key Features
+52: 
+53: | Feature | What it does |
+54: |---------|--------------|
+55: | **Permanent Memory** | Corrections sync to CLAUDE.md — Claude remembers across sessions |
+56: | **Skill Discovery** | Finds repeating patterns in your history → generates commands |
+57: | **Multi-language** | AI understands corrections in any language |
+58: | **Skill Improvement** | Corrections during `/deploy` improve the deploy skill itself |
+59: 
+60: ## Installation
+88: 
+89: Claude Code [mods](https://claude.dev/blog/getting-started-with-claude-code-mods/) run inside the session, so the
+90: same idea works without a queue you have to remember to review:
+91: 
+92: - **Every short prompt** (500 characters or less, not "ok"/"continue", not a slash command) goes to a one-shot
+93:   model check (`haiku` by default) that decides whether it holds a reusable rule. It reads intent, not keywords,
+94:   so corrections in any language count ("нет, используй pnpm" works).
+95: - **A band above the prompt** shows each rule it finds, with **Save**, **Global/This repo instead**, **Edit** and
+96:   **Skip**. You decide in the moment; repeats merge into one row with a count (`×3`).
+97: - **Save** adds a bullet inside a marked section of `~/.claude/CLAUDE.md` or `./CLAUDE.md`, and the rule applies
+98:   in the current session at once. Nothing is written without a press.
+## scripts/lib/reflect_utils.py
+1195: # =============================================================================
+1196: 
+1197: # Explicit marker patterns (highest confidence)
+1198: EXPLICIT_PATTERNS = [
+1199:     (r"remember:", "remember:", 0.90, 120),  # pattern, name, confidence, decay_days
+1200: ]
+1201: 
+1202: # Positive feedback patterns
+1203: POSITIVE_PATTERNS = [
+1204:     (r"perfect!|exactly right|that's exactly", "perfect", 0.70, 90),
+1205:     (r"that's what I wanted|great approach", "great-approach", 0.70, 90),
+1206:     (r"keep doing this|love it|excellent|nailed it", "keep-doing", 0.70, 90),
+1207: ]
+1208: 
+1209: # Correction patterns (conservative set to minimize false positives)
+1210: # Format: (regex_pattern, pattern_name, is_strong)
+1211: #
+1212: # DESIGN NOTES:
+1213: # - These patterns are English-centric as a FAST first-pass filter
+1214: # - Non-English corrections are caught by semantic filtering during /reflect
+1215: # - We use STRUCTURAL signals (length, questions, task requests) for language-agnostic filtering
+1216: # - Users can use explicit markers like "remember:" in any language
+1217: #
+1218: CORRECTION_PATTERNS = [
+1219:     # Deliberately broad. An allowlist of continuations was tried and it
+1220:     # dropped the highest-value captures this plugin exists for -- project
+1221:     # rules like "no semicolons in this codebase", "no emojis in commit
+1222:     # messages", "no typescript any, ever" -- while still admitting benign
+1223:     # replies, because "it", "this", "you" and "i" are exactly the words that
+1224:     # open one. The benign shapes are denied by name in NON_CORRECTION_PHRASES
+1225:     # instead, and anything that slips past is caught by the semantic pass at
+1226:     # /reflect time. A false positive costs one queue line; a false negative
+1227:     # costs the learning.
+1228:     (r"^no[,.!:;\u2014\u2013-]+\s*\S", "no,", True),
+1229:     (r"^no\s+\S", "no-bare", True),
+1230:     (r"^don't\b|^do not\b", "don't", True),  # Starts with don't/do not
+1231:     (r"^stop\b|^never\b", "stop/never", True),  # Starts with stop/never
+1232:     (r"that's (wrong|incorrect)|that is (wrong|incorrect)", "that's-wrong", True),
+1233:     (r"^actually[,. ]", "actually", False),  # Starts with "actually"
+1234:     (r"^I meant\b|^I said\b", "I-meant/said", True),  # Clarification
+1235:     (r"^I told you\b|^I already told\b", "I-told-you", True),  # Higher confidence
+1236:     (r"use .{1,30} not\b", "use-X-not-Y", True),  # "use X not Y" - limited gap
+1237: ]
+1238: 
+1239: # Guardrail patterns - "don't do X unless" constraints (highest confidence for corrections)
+1240: # These detect user frustrations about Claude making unwanted changes
+1361: def detect_patterns(text: str) -> Tuple[Optional[str], str, float, str, int]:
+1362:     """
+1363:     Detect patterns in text and return classification.
+1364: 
+1365:     Returns:
+1366:         Tuple of (type, matched_patterns, confidence, sentiment, decay_days)
+1367:         type: "explicit", "positive", "auto", "guardrail", or None
+1368:         matched_patterns: Space-separated pattern names
+1369:         confidence: 0.0 to 1.0
+1370:         sentiment: "correction" or "positive"
+1371:         decay_days: Number of days until decay
+1372:     """
+1373:     # Slash-command guard — /loop, /reflect, /ia:full-review etc. expand
+1374:     # into long skill bodies that incidentally contain correction tokens
+1375:     # (e.g. "use" + "not" in unrelated text). Slash commands are skill
+1376:     # invocations, never user feedback, so they should never enter the
+1377:     # queue. This is the FIRST check because no downstream pattern
+1378:     # (explicit, positive, correction, guardrail) should fire on them.
+1379:     # A slash COMMAND, not any leading slash. The earlier startswith("/")
+1380:     # also ate absolute paths and comments -- "/etc/hosts is wrong, use

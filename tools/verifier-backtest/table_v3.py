@@ -8,7 +8,7 @@ K — хибна тривога = «НІ», «НЕ МОЖУ» на K — зай�
 
   python3 table_v3.py
 """
-import collections, glob, json, os
+import collections, glob, json, os, re
 
 import run_claude_v3 as rc
 
@@ -22,6 +22,9 @@ def load():
     for p in sorted(glob.glob(os.path.join(HERE, "results-*.jsonl"))):
         name = os.path.basename(p)[8:-6]
         if "grepbroken" in name or name in ("nvidia-gpt-oss-20b",):  # v2 і зламаний пошук — не в порівняння
+            continue
+        other = re.search(r"-(v\d+)$", name)  # набір за суфіксом; v3 — і без суфікса (results-claude-haiku)
+        if (other.group(1) if other else "v3") != rc.SET:
             continue
         by = collections.defaultdict(list)
         for l in open(p, encoding="utf-8"):
@@ -44,7 +47,9 @@ def main():
     cases = {c["id"]: c for c in rc.cases()}
     runs = load()
     miss = {}
-    print(f"{'модель':<44} кейс. збіг E(НІ)/13 U(НЕМОЖУ)/5 P/1 Kтрив/13 K-НЕМОЖУ згода-без-опори збої розбіжні  вх.ток  вих.ток  $")
+    kc = collections.Counter(c[0] for c in cases)
+    print(f"набір {rc.SET}: кейсів {len(cases)} — E {kc['E']}, U {kc['U']}, P {kc['P']}, K {kc['K']}")
+    print(f"{'модель':<44} кейс. збіг E(НІ) U(НЕМОЖУ) P Kтрив K-НЕМОЖУ згода-без-опори збої розбіжні  вх.ток  вих.ток  $")
     for name, by in runs.items():
         cnt = collections.Counter()
         tin = tout = cost = fails = 0

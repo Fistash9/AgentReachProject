@@ -1,0 +1,14 @@
+$ ls -lAR agents/deepseek-search  (2026-10-20)
+agents/deepseek-search:
+total 8
+drwx------. 3 user user 3452 Sep 27 15:25 .claude
+-rw-------. 1 user user 2871 Oct  6 22:03 discipline.md
+
+agents/deepseek-search/.claude:
+total 8
+drwx------. 2 user user 3452 Sep 27 15:25 agents
+-rw-------. 1 user user  985 Sep 27 16:22 settings.json
+
+agents/deepseek-search/.claude/agents:
+total 4
+-rw-------. 1 user user 3612 Sep 27 15:25 deepseek-search.md

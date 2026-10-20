@@ -1,0 +1,14 @@
+$ ls -l --time-style=+%F ~/.claude/projects/-data-data-com-termux-files-home-AgentReachProject-agents-deepseek-search/  (2026-10-20; журнали сесій, запущених з теки агента)
+total 1283
+-rw-------. 1 user user  88221 2026-09-27 4af2941a-b847-408c-9e4d-1216589d844b.jsonl
+drwx------. 3 user user   3452 2026-09-27 54d9d85b-4030-4be1-b0c5-45b9f02c5bb2
+-rw-------. 1 user user 220180 2026-09-27 54d9d85b-4030-4be1-b0c5-45b9f02c5bb2.jsonl
+-rw-------. 1 user user  29482 2026-09-27 6aaa4ec8-bc6d-435d-a582-20a32bcfc212.jsonl
+-rw-------. 1 user user  24911 2026-09-27 6c923481-9381-4ff5-b9be-0ccbd85ecea2.jsonl
+drwx------. 3 user user   3452 2026-09-27 7c584896-4399-4435-91f6-074176fd26b6
+-rw-------. 1 user user 202601 2026-09-27 7c584896-4399-4435-91f6-074176fd26b6.jsonl
+-rw-------. 1 user user  27342 2026-09-27 959401a2-bcab-4d8a-93d3-0909cb70d379.jsonl
+-rw-------. 1 user user 282011 2026-10-01 95bea67a-8bce-4352-82de-ed049e5a4575.jsonl
+-rw-------. 1 user user 166235 2026-09-27 bf2ffa18-b650-4b2b-bd7b-5847ccad57f5.jsonl
+-rw-------. 1 user user 125531 2026-09-27 da959d29-731a-486d-86cc-30ba51b18de2.jsonl
+-rw-------. 1 user user 121736 2026-09-27 ee640206-248c-4d1d-a749-69236dc732a9.jsonl

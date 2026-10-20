@@ -18,9 +18,11 @@
 import argparse, json, os, random, re, shutil, subprocess, sys, time
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-SRC = os.path.join(HERE, "sources-v3")
+SET = os.environ.get("VBT_SET", "v3")  # набір кейсів: v3 (за замовчуванням) або v4 (2026-10-20, T11)
+SRC = os.path.join(HERE, f"sources-{SET}")
 TMP = os.environ.get("TMPDIR", "/data/data/com.termux/files/usr/tmp")
-WORK = os.path.join(TMP, "verifier-v3")
+WORK = os.path.join(TMP, f"verifier-{SET}")
+SUFFIX = "" if SET == "v3" else f"-{SET}"  # v3 — старі імена results-*, без суфікса
 
 
 def prompt_v2():
@@ -33,14 +35,15 @@ def prompt_v2():
 
 def cases():
     rows = []
-    for l in open(os.path.join(HERE, "cases-v3.md"), encoding="utf-8"):
+    for l in open(os.path.join(HERE, f"cases-{SET}.md"), encoding="utf-8"):
         m = re.match(r"\| ([EUPK]\d+) \| [^|]* \| (.+?) \| (.+?) \| (.+?) \| (.+?) \| (.+?) \|$", l.strip())
         if m:
             cid, claim, ctx, srcs, exp, _ = m.groups()
             files = [s.strip() for s in re.sub(r"\([^)]*\)", "", srcs).split(",") if s.strip()]
             rows.append({"id": cid, "claim": claim, "context": ctx, "files": files, "expected": exp})
-    if len(rows) != 32:
-        print(f"увага: кейсів {len(rows)}, очікувалось 32", file=sys.stderr)
+    want = {"v3": 32, "v4": 22}.get(SET)
+    if len(rows) != want:
+        print(f"увага: кейсів {len(rows)}, очікувалось {want}", file=sys.stderr)
     return rows
 
 
@@ -110,7 +113,7 @@ def main():
         print(f"тека {WORK}; кейсів {len(rows)}; seed {a.seed}; перший {r['id']}:\n")
         print(pv2.replace("{claim}", r["claim"]).replace("{context}", r["context"])[-600:])
         return
-    path = os.path.join(HERE, f"results-claude-{a.model}{a.suffix}.jsonl")
+    path = os.path.join(HERE, f"results-claude-{a.model}{a.suffix}{SUFFIX}.jsonl")
     with open(path, "a", encoding="utf-8") as f:
         for i, r in enumerate(rows, 1):
             res = run_case(r, a.model, pv2)
