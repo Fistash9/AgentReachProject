@@ -291,3 +291,16 @@
   project-audit, achieved-map, focus-tree, edit-gate — після mv перезапуск.
 - Як: mv (не rm) у .trash/baton-history-2026-10-20/ — відновлюване: mv назад.
 — [claude-code, 2026-10-20; старт сесії, рішення користувача «Так, прибрати»]
+
+## 2026-10-20 — 4 старі знімки естафети .baton/history/pass-62…pass-65.json → .trash/baton-history-2026-10-20b/
+- Що: знімки .baton/history/pass-62.json, pass-63.json, pass-64.json, pass-65.json (поза git — .baton/ у .gitignore).
+- Чому: правило RULES «Baton» — baton-diff на старті показав 19 випалих пунктів (#62→#67); звірено за змістом
+  (надруковані рядки): 5 зроблено (коміти 7e20307, 96a35d0, ланцюжок verify-before-show 2d989ff, ярлики l2s тепер
+  100644, git чистий), решта — у BACKLOG:39–73,176, деревах (derevo-i-golograma:250–275, yakist-roboty-agentiv:206–214,
+  zvyazok-dvoh-agentiv:46, pidrozdil-deepseek:110,395) або в естафеті #67. pass-66 лишаю (так погоджено).
+  Читачі перевірені ДО mv: baton-diff, project-audit, edit-gate, session-close — беруть історію за маскою.
+- Як: mv (не rm) у .trash/baton-history-2026-10-20b/ — відновлюване: mv назад.
+— [claude-code, 2026-10-20; старт сесії, рішення користувача «Так, прибрати»]
+- Поправка до запису вище: читачів 6, не 4 — ще tools/achieved-map.py:198 і tools/focus-tree.py:101 (шлях через
+  os.path.join, мій grep «baton/history» їх не бачив; назвав хук edit-gate). Після mv усі 5 скриптів exit 0,
+  baton-diff: версій 2 (#66…#67), випало 0. — [claude-code, 2026-10-20]
