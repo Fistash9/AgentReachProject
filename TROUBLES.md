@@ -5751,3 +5751,17 @@ TAGS: старт, естафета, backlog, далі, записано не з�
   Termux 16–25 процесів, тобто саме Obsidian (proot, dbus, openbox, ~10 процесів Electron) переводить через межу.
   Ліки (рішення користувача): «Вимкнути обмеження дочірніх процесів» у параметрах розробника (Android 14+). Побічно: той
   самий механізм — найімовірніша причина падіння 20.10 (SIGKILL 137) [не перевірено]. — [claude-code, 2026-10-21]
+
+
+## Рілс DdQxr38AcHT: «5 скілів Claude» — перевірено існування, нічого не встановлено (2026-10-21)
+TAGS: instagram, рілс, скіл, remotion, stop-slop, ui-ux-pro-max, marketingskills, context engineering, не встановлено
+— [claude-code, 2026-10-21; користувач надіслав рілс на старті сесії «як раніше» → «Записати всі»]
+- Рілс — vlad.ushakov.ai («Амбасадор AI»), 14.09.2026, 66 с; опису в info.json немає (description: None), тож суть —
+  зі звуку: yt-dlp --write-info-json -f ba → ffmpeg 16 кГц → whisper-cli small -l auto (визначив uk, p=0.98).
+- Перевірено (gh api 21.10): coreyhaines31/marketingskills — MIT, ★55 802, push 19.10, у skills/ 52 записи (рілс
+  «23» — на 14.09); hardikpandya/stop-slop — MIT, ★18 218, push 17.03; nextlevelbuilder/ui-ux-pro-max-skill — MIT,
+  ★138 426, push 15.10; remotion-dev/skills — ліцензія в API порожня, ★5 483, push 19.10;
+  muratcankoylan/Agent-Skills-for-Context-Engineering — MIT, ★18 185, push 12.10.
+- Граблі: посилань у рілсі немає — відповідність назва→репо встановлено пошуком за назвою; для «23 агенти» число
+  репо інше, бо рілс старший за репо на 5 тижнів — числа з рілсів звіряти з поточним станом, не переносити.
+- Кандидати й зв'язок з цілями — BACKLOG «П'ять скілів з рілса DdQxr38AcHT».
