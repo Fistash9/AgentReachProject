@@ -67,6 +67,19 @@
      обидві гілки з однаковими інструментами, перевірка ~/.cache/graphify-queries.log (чи агент ходив у граф), кеш —
      graphify-out/ у .claudeignore-відповіднику; (б) Obsidian як переглядач теки пам'яті / trees/ на телефоні — спершу доступ
      до файлів Termux зі спільної пам'яті; (в) короткий старт /resume — повторити ≥3 прогони. Пісочниці поки НЕ прибирати.
+     (б) ПЕРЕВІРЕНО 21.10: Obsidian Android (встановив користувач) у «Open folder as vault» → ☰ пункту Termux НЕ показує
+     (користувач: «termux немає в меню»); дока obsidian-docs en/Obsidian/Obsidian for Android.md — лише «device storage»
+     (спільна пам'ять, дозвіл «All files») або власна тека застосунку. Напряму — ні; лишається копія лише для читання у
+     ~/storage/shared/Documents (запис туди з Termux є). У trees/ посилань [[…]] — 0 → граф Obsidian буде порожній.
+     — [claude-code, 2026-10-21]
+     Статус змінився (того ж дня; користувач: «шукай обхід щоб без копій» → «зроби сам»): БЕЗ КОПІЙ ПРАЦЮЄ через Chrome.
+     Termux віддає ~ системному перегляду файлів (AndroidManifest v0.119.0-beta.3: TermuxDocumentsProvider, BASE_DIR =
+     TERMUX_HOME_DIR, читання й запис). Перевірено на телефоні (Xiaomi, Android 16): `am start` Google DocumentsUI на
+     корені Termux — теки видно; `am start -a VIEW -p com.android.chrome --grant-read-uri-permission -t text/plain -d
+     content://com.termux.documents/document/<шлях %2F>` — Chrome показав файл, після дописування й оновлення — новий
+     рядок. Не відкривають (unable to resolve): Obsidian, Нотатки/редактор Xiaomi, Google Docs. Markor — теку через
+     системне вікно не вміє (gsantner/markor#2793), окремий файл — так; не встановлено. Chrome показує сирий Markdown
+     (без форматування). — [claude-code, 2026-10-21]
   8. @claude-code Проба голосу `single` («один вимір ≠ висновок», TROUBLES 2026-10-20) — після 3 сесій: скільки спрацювань
      справжні; хибні — доналаштувати RE_SAMPLE.
 
