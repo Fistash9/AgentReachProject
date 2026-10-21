@@ -51,3 +51,4 @@ tools/verifier-backtest/sources-v3/*.txt
 tools/verifier-backtest/sources-v3/claude-*.md
 !tools/verifier-backtest/sources-v3/ls-hooks-tests-2026-10-07.txt
 !tools/verifier-backtest/sources-v3/*.numbered.txt
+.obsidian/

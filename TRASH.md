@@ -309,3 +309,11 @@
 - Що: ~/viewer-test.md (поза проєктом) — мій пробний файл перевірки перегляду через Chrome.
 - Чому: проба завершена (Chrome показав рядок 1 і після оновлення — рядок 2); вміст не потрібен.
 - Як: rm. — [claude-code, 2026-10-21; проба «перегляд дерев на телефоні без копій»]
+
+## 2026-10-21 — сміття проби настільного Obsidian: APK Termux:X11 і архів Obsidian
+- Що: ~/storage/downloads/termux-x11/ (termux-x11-universal-debug.apk, 14 693 944 Б — застосунок уже встановлено,
+  com.termux.x11) і ~/sandbox-obsidian/dl/obsidian.tar.gz (132 065 265 Б — уже розпаковано в obsidian-debian:/opt).
+- Чому: рішення користувача «Лише сміття, Obsidian лишити» (пам'ять remind-to-remove-failed-installs); обидва файли
+  можна завантажити знову з офіційних випусків (termux/termux-x11 nightly, obsidianmd/obsidian-releases v1.14.4).
+- Лишаються: obsidian-debian, ~/sandbox-obsidian/{run.sh,test-vault,mem.log,run.log}, пакети X11, застосунки.
+- Як: rm. — [claude-code, 2026-10-21]
