@@ -317,3 +317,11 @@
   можна завантажити знову з офіційних випусків (termux/termux-x11 nightly, obsidianmd/obsidian-releases v1.14.4).
 - Лишаються: obsidian-debian, ~/sandbox-obsidian/{run.sh,test-vault,mem.log,run.log}, пакети X11, застосунки.
 - Як: rm. — [claude-code, 2026-10-21]
+
+## 2026-10-22 — правило проби memory MCP: .claude/rules/memory-mcp-trial.md → .trash/memory-mcp-trial-2026-10-22.md
+- Що: .claude/rules/memory-mcp-trial.md (промпт автора @modelcontextprotocol/server-memory для проби, вантажиться на
+  старті кожної сесії — «Remembering…», ведення графа).
+- Чому: рішення користувача «Завершити пробу» (22.10) — граф двічі не дав того, чого немає у файлах (оцінка 07.10 у
+  trees/yakist-roboty-agentiv.md; звірка 22.10: 53 спостереження, унікальних 0–1); звірено verify-before-show (3 так).
+- Лишаються: сервер memory MCP і граф memory.jsonl (+ .bak); записи історії, що згадують файл, не чіпаються.
+- Як: mv у .trash/ (не rm). Відкат: mv назад у .claude/rules/. — [claude-code, 2026-10-22]
