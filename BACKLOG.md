@@ -31,6 +31,22 @@
   3. @claude-code Ворота старту естафети: не планувати, поки «Зроблено»/«Обережно» не прочитані або не скорочені до
      порогу (вузол «Легкий стан»); голос ask-req — після проби 3 сесій. Критерій: старт без «не читав» у першій відповіді.
 
+- **Проба Replica: легка копія Obsidian і порівняння з оригіналом — продовжити в новій сесії — [claude-code, 2026-10-22]**
+  Запит користувача: «хочу спробувати скіл перевірити на скільки якісно працює копія… і цікаво копія буде меньше жерти
+  процесів». Мета: копія 4 функцій (дерево, читання, пошук, правка) одним процесом Python на копії дерев; готово, коли —
+  кожен сценарій перевірено запуском на копії й оригіналі, є оцінка parity.py і таблиця процесів.
+  Зроблено: перевірка набору за 4 кроками RULES (пункт про рілс нижче: 5 з 11 скілів, 8 цитат делегата звірено grep); recon — ~/sandbox-replica/replica/features.csv (31 функція, must 13); копія дерев ~/sandbox-replica/vault (7 файлів).
+  Далі: (0) після старту Termux — `ps -e | wc -l` (чи дали exec −5); (1) лист DSH: згода на правку run-dsh.sh;
+  (2) design → build → test → diff за скілами; знімки оригіналу — `import -display :1 -window root` і xdotool з Termux;
+  DSH і agent.py закрити ДО запуску Obsidian, установок поверх Obsidian не робити (TROUBLES «Збій 22.10 13:11»).
+  Встановлено для проби (прибрати після — пам'ять remind-to-remove-failed-installs): Termux xdotool+imagemagick — 30 пакетів,
+  106 МБ; obsidian-debian: xdotool 174 КБ, libxdo3 94 КБ, x11-apps 3,4 МБ, netpbm 24,7 МБ (контейнер разом 1016 МБ);
+  ~/sandbox-replica 590 КБ; ~/sandbox-obsidian 219 КБ.
+- **Рілс DeKPXSrkZvy (milanko.ai, 06.10): Replica — 11 скілів «клонувати будь-який застосунок» — [claude-code, 2026-10-22]**
+  github.com/Jakeschincariol/replica-skill — MIT, ★4 220, 1 коміт 03.10, 12 issues (частина сміття), PR #4: плагін не
+  ставиться («Path escapes plugin directory»); стек за замовчуванням Next.js+Postgres+Stripe. Для нас — лише метод
+  recon/design/build/test/diff (5 скілів), без architect/backend/brand/deploy/entrepreneur/launch. Проба — пункт вище.
+
 - **Готове рішення для «пункти випадають з естафети» — список, де пункт не зникає без статусу — [claude-code, 2026-10-22]**
   Звідки: пошук сесії 21.10 (користувач: «пошукай можливо є рішення в інтернеті» — сказано про обхід Obsidian, але
   знахідка стосується естафети, тож записано тут). anthropic.com/engineering/effective-harnesses-for-long-running-agents

@@ -5807,3 +5807,19 @@ TAGS: obsidian, phantom, вбивця процесів, pkg install, apt, signal
   (`tail mem.log` + `date`); (2) pkill/pgrep -f — завжди з `[x]`-шаблоном (`'/opt/[o]bsidian'`); (3) перед будь-якою
   установкою (pkg/apt/npm) — `ps -e | wc -l` і запас ≥12 до 32; поверх Obsidian установок не робити; (4) сторож раз на
   5 с не ловить сплеск 27→38 за <11 с — він захищає лише від повільного росту.
+
+## Менше процесів під межею 32: exec у tmux і прямий запуск DSH; lazy-mcp не беремо (2026-10-22)
+TAGS: процеси, phantom, tmux, exec, run-dsh, npx, lazy-mcp, mcp, об'єднувач, хук, trash-md-guard
+— [claude-code, 2026-10-22; користувач: «а можливо пошукати які є рішення для оптимізації процесів» → «Ще й об'єднувач
+lazy-mcp» → «Обидва файли зараз»]
+- Зроблено (діє з наступного старту Termux, ще не виміряно): tmux-work.sh — `exec` для claude/agent/dsh (bash вікна не
+  висить; вийшли з програми — вікно закривається); run-dsh.sh — `exec /root/dsh-app/node_modules/.bin/dsh` замість `npx
+  dsh` (мінус npm exec і sh -c; .bin/dsh → @deepseek-ai/dsh/lib/bin.js, `#!/usr/bin/env node`; `--version` → 0.2.0-rc.2,
+  код 0). Очікування −5 [не виміряно]. run-dsh.sh створив DSH — його згоду ще треба взяти (листом).
+- lazy-mcp 2.7.2 (gitlab.com/gitlab-org/ai/lazy-mcp, MIT, ★20; PyPI wheel = Python-обгортка + мініфікований JS 819 КБ)
+  зменшує КОНТЕКСТ («reducing initial context usage by 90%+»), не процеси: на старті `probeAllServers` запускає всі
+  сервери; простоєві гасить через idleTimeout 3e5 (5 хв) [прочитано з мініфікату, не запуском]; інструменти стають 4
+  мета-інструментами → ламає 9 прив'язок у .claude/settings*.json (baton-guard, ask-замок deepseek, delegate). sdist має
+  член `lazy_mcp-2.7.2/../README.md` (tar відмовив). Не беремо; multi-mcp і 1mcp не перевірені.
+- Хук «Перед rm …: хто його читає?» спрацював 25 разів на слова `rm -rf` усередині КОМЕНТАРЯ в python-heredoc — хибні
+  тривоги (розбір команди бере текст рядка, не виклик rm).
