@@ -31,6 +31,15 @@ RE_BRIEF = re.compile(r"бриф\w*", re.I)
 RE_PLAN_WORD = re.compile(r"план\w*", re.I)
 RE_COMMIT_Q = re.compile(r"коміт", re.I)  # «закомітити… план уже звірено» — питання про коміт, не план (бектест 20.10)
 RE_SKIP_RECORDS = re.compile(r"Записи не потрібні:", re.I)
+# 2026-10-22 (сесія 940a8b9a; користувач: «правила перечитай…» → «Виправити зараз»): рядок «Звірка не потрібна:»
+# пропустив 4 плани змін механізмів (запуск, 2 хуки, claimcheck, plain-codes) — verify-before-show 0 викликів; а «Робимо ці
+# зміни запуску?» / «Які механізми робимо?» RE_CHANGE не бачив зовсім. Тепер зміна механізму впізнається й за ВАРІАНТАМИ
+# (механізм + дієслово зміни), і для неї «Звірка не потрібна» не приймається (крім питань про коміт). Бектест сесії:
+# справжніх/сумнівних 5, хибних 2 («замки» в описі відповіді), старе правило — 1.
+RE_MECH = re.compile(r"хук\w*|скрипт\w*|\.py\b|\.sh\b|RULES|settings|налаштуван\w*|замк\w*|замок|tmux-work|run-dsh|"
+                     r"claimcheck|plain-codes", re.I)
+RE_MECH_VERB = re.compile(r"правлю|правк\w*|зміни\b|змін\w*|додати|додам|додаю|підключ\w*|вмика\w*|переписа\w*|"
+                          r"розшир\w*|ставлю|exec\b|зробити зараз|Усі 4", re.I)
 RE_RECORDS_CMD = re.compile(r"kb-map\.py|trees-index\.py|\b(grep|rg)\b[^\n]*\b(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md")
 RE_RECORDS_FILE = re.compile(r"(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md$")
 
@@ -64,9 +73,10 @@ def misses_for(ag, lines, question):
     if not ag.RE_QUEUE.search(text):
         out.append("queue")
     q0 = question.split("\n", 1)[0]  # лише саме питання, не описи варіантів
-    if ag.RE_CHANGE.search(q0) or ag.RE_PLAN_Q.search(q0):
+    mech = bool(RE_MECH.search(text) and RE_MECH_VERB.search(text)) and not RE_COMMIT_Q.search(q0)
+    if ag.RE_CHANGE.search(q0) or ag.RE_PLAN_Q.search(q0) or mech:
         ok = any(n == "Skill" and s == "verify-before-show" or n in ag.VERIFY_TOOLS
-                 for n, s in seg["tools"]) or RE_SKIP_VERIFY.search(text)
+                 for n, s in seg["tools"]) or (RE_SKIP_VERIFY.search(text) and not mech)
         if not ok:
             out.append("verify")
     brief = RE_BRIEF.search(q0) or (RE_PLAN_WORD.search(q0) and not RE_COMMIT_Q.search(q0))
@@ -89,7 +99,8 @@ REASONS = {
              "рядок «Черга: <назва словами> → <що далі>» У ТЕКСТ ПИТАННЯ (текст перед віконцем хук не бачить)",
     "verify": "питання пропонує зміну, а звірки плану в цьому відрізку немає (RULES.md: verify-before-show) — "
               "звір план або допиши в текст питання «Звірка не потрібна: <чому>» (дописування запису й коміт "
-              "показаного — не план)",
+              "показаного — не план). Для змін хуків, скриптів, правил і налаштувань цей рядок не приймається — "
+              "лише Skill verify-before-show або delegate (2026-10-22)",
     "records": "питання показує бриф чи план, а пошуку в моїх записах у цьому відрізку немає (клас Р1 «дія до "
                "перевірки», 20.10) — спершу python3 tools/kb-map.py <тема> або grep по TROUBLES/BACKLOG і врахуй "
                "знайдене; якщо пошук справді не потрібен — допиши «Записи не потрібні: <чому>»",
