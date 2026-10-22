@@ -5765,3 +5765,45 @@ TAGS: instagram, рілс, скіл, remotion, stop-slop, ui-ux-pro-max, marketi
 - Граблі: посилань у рілсі немає — відповідність назва→репо встановлено пошуком за назвою; для «23 агенти» число
   репо інше, бо рілс старший за репо на 5 тижнів — числа з рілсів звіряти з поточним станом, не переносити.
 - Кандидати й зв'язок з цілями — BACKLOG «П'ять скілів з рілса DdQxr38AcHT».
+
+## Obsidian без зміни параметрів Android: точний склад процесів і хибна команда в плані ADB (2026-10-22)
+TAGS: obsidian, phantom, вбивця процесів, signal 9, hyperos, adb, device_config, procs.log, termux-x11, proot
+— [claude-code, 2026-10-22; користувач: «а казав пошук звязаний з обходом обсідіана» → «я казав про інші способи без
+зміни внутрішніх параметрів» → «а скільки процесів запускає обсідіан?» → «перевір усе… пробуй якщо в цьому є сенс»]
+- Склад (з ~/sandbox-obsidian/procs.log — останній знімок 21.10 13:41:15, за секунди до обвалу; підрахунок кодом за PID):
+  обвіс Obsidian = 13 (run.sh, termux-x11, proot, obsidian, openbox, dbus-launch, dbus-daemon, zygote ×2, utility
+  network, renderer, gpu-process, proot --shm-helper), лічильник 2, решта Termux 20 (з них DSH 5, agent.py+MCP 3).
+  Сценарії від 35: без DSH і agent.py — 27; те саме без zygote — 25; лише без DSH і без zygote — 28.
+- Як Android рахує (github.com/agnostic-apollo/Android-Docs, phantom-cached-and-empty-processes.md): фантом — будь-який
+  процес, породжений застосунком (рядок 89); межа 32 «of all apps combined» (1557) — фонові процеси ІНШИХ застосунків з
+  Termux не видно, запас невідомий; першими вбиває старіші (213) — тому падали tmux/сесії, а не Obsidian.
+- План ADB з естафети #69 хибний для HyperOS: `settings put global settings_enable_monitor_phantom_procs false` на
+  HyperOS/ColorOS або «requires WRITE_SECURE_SETTINGS», або ключ null і не діє (github.com/Droid-Deck/DroidDeck/issues/713,
+  13.10.2026, Xiaomi 15 Pro / HyperOS 2.0). Дієве: `device_config put activity_manager max_phantom_processes 2147483647`
+  (agnostic-apollo :566); скидається через 3–4 хв після перезавантаження (:483), «persistent» — «at your own risk» (:577).
+  Перемикача в параметрах розробника HyperOS немає (#713). Цей телефон: Android 16 (SDK 36), HyperOS 3.0, 2210132G;
+  з Termux `settings get` → Permission Denial, `device_config` → «Can't find service» — без ADB навіть не прочитати.
+- Прапорці Electron: документовано лише `--no-zygote` (Chromium, разом із --no-sandbox, яке вже є) — знімає 2 zygote;
+  `--in-process-gpu` джерел не знайдено; `--single-process` — ненадійний (третя сторона).
+- Граблі: (1) я відповів «точного списку немає», прочитавши mem.log вибірково (awk NR%10, перші 200 рядків), а procs.log
+  не відкривши — знімок лежав у тій самій теці. Рецепт: перед «даних немає» — `ls` теки виміру і хвіст КОЖНОГО логу.
+  (2) пошук на рішення «дай раді» / «пошукай» спершу зрозумів як про естафету, хоча відповідь була на питання черги про
+  Obsidian — рішення в черзі стосується пункту, на який відповідають, а не першого пункту питання.
+- Зв'язок з цілями: Obsidian — переглядач trees/ (BACKLOG:68); у trees/ посилань [[…]] — 0, тож граф Obsidian порожній,
+  а Chrome уже показує оригінали. «Легкий Termux» = DSH і agent.py стоять, поки відкрито Obsidian — суперечить
+  паралельній роботі DSH; отже Obsidian — разовий переглядач, не постійне робоче місце.
+
+## Збій 22.10 13:11: pkg install поверх «закритого» Obsidian → 38 процесів → Android убив сесію (2026-10-22)
+TAGS: obsidian, phantom, вбивця процесів, pkg install, apt, signal 9, 137, pkill, pgrep, самозбіг, сторож, replica
+— [claude-code, 2026-10-22; користувач: «зупинився процес, завис термукс»]
+- Факт (~/sandbox-obsidian/mem.log і procs.log, знімок 13:11:39): процесів 26–27 до 13:11:28, о 13:11:39 — 38; у знімку
+  живі процеси ТРЕТЬОГО запуску Obsidian (з 11:24, `--no-zygote`, renderer, gpu, proot) + pkgtruth (хук install-check).
+  Моя команда `pkg install -y xdotool imagemagick` → код 137; старі bash/tmux (з 11:00) убито, termux-x11 (11:24) уцілів —
+  збігається з «першими вбиває старіші». Пакети не встановились, `dpkg --audit` чистий.
+- Корінь (мій): об 11:44 «закрив» Obsidian і перевірив `ps -A -o args | awk '$1 ~ /^\/opt\/obsidian/' | wc -l` → 0, хоча
+  процеси жили до 13:11 (чому перевірка дала 0 — НЕ з'ясовано); `pkill -f 'obsidian-…'` першим вбив мою ж оболонку
+  (код 144, самозбіг — той самий клас, що pgrep TROUBLES:4871, двічі за сесію). Потім установка без перерахунку процесів.
+- Рецепти: (1) «закрито» — лише за двома незалежними ознаками: процесу нема в ps І лог лічильника перестав рости
+  (`tail mem.log` + `date`); (2) pkill/pgrep -f — завжди з `[x]`-шаблоном (`'/opt/[o]bsidian'`); (3) перед будь-якою
+  установкою (pkg/apt/npm) — `ps -e | wc -l` і запас ≥12 до 32; поверх Obsidian установок не робити; (4) сторож раз на
+  5 с не ловить сплеск 27→38 за <11 с — він захищає лише від повільного росту.
