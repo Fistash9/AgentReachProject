@@ -8,7 +8,11 @@
   E1 — число з іменником, якого нема як окремого токена у виводі
        інструментів цього ходу чи в повідомленнях користувача;
   E3 — "працює/перевірено" у ході без жодного запуску Bash;
-  E5 — "неможливо/не існує" у ході без пошуку (Web*, deepseek, curl…).
+  E5 — "неможливо/не існує" у ході без пошуку (Web*, deepseek, curl…);
+  E6 — заява про СТАН ("закрито/не працює/даних немає/недоступно") у БУДЬ-ЯКОМУ тексті ходу, а в
+       командах ходу менше двох різних доказів (ps/pgrep, tail/cat/wc логу, ls/find, curl). Рецензія
+       сесії 940a8b9a (DeepSeek, 22.10, механізм M3): «Obsidian закрито» за одним ps (процеси жили),
+       «точного списку немає» без ls теки, «github.com не відповідає» після одного збою.
 Код виходу завжди 0. Нічого не пише, не блокує.
 
 Тест на історії (2026-09-23, TROUBLES.md): E1 шумить (~1/3 відповідей
@@ -42,6 +46,14 @@ E5_RE = re.compile(r"(неможлив\w*|зробити не можна|не і
                    r"impossible|can't be done|cannot be done)", re.I)
 SEARCH_TOOLS = ("WebSearch", "WebFetch", "mcp__deepseek__deepseek", "mcp__delegate__delegate")
 SEARCH_CMD = re.compile(r"\b(curl|wget|gh |npm view|pip index)\b")
+E6_RE = re.compile(r"(закрито|закритий|закрита|закриті|закрився|закрилась|закрилися|не працює|не запущен\w*|"
+                   r"(?:списку|даних|логу|запису|знімка)\b[^.\n]{0,40}немає|немає (?:даних|списку)|"
+                   r"недоступн\w*|не відповіда\w*|зупинено|убито|вбито)", re.I)
+E6_KINDS = {"ps": re.compile(r"\b(ps|pgrep|pidof)\b"),
+            "log": re.compile(r"\b(tail|cat|head|sed -n)\b[^|;\n]*\.(log|jsonl|txt)\b"),
+            "ls": re.compile(r"(^|[;&|]\s*|\s)ls\s|\bfind\s|\bstat\s"),
+            "net": re.compile(r"\b(curl|wget|ping)\b")}
+E6_WINDOW = 3  # доказ — лише останні 3 Bash-команди ПЕРЕД текстом із заявою (хід з віконцями триває годинами)
 
 
 def parse_turns(path):
@@ -60,7 +72,7 @@ def parse_turns(path):
             c = m.get("content")
             if isinstance(c, str) and not d.get("isMeta"):
                 cur = {"user": c, "final": "", "tools": [], "evidence": [], "model": "",
-                       "ts": d.get("timestamp", "")}
+                       "ts": d.get("timestamp", ""), "texts": [], "cmds": [], "seq": []}
                 turns.append(cur)
             elif isinstance(c, list) and cur is not None:
                 for x in c:
@@ -74,8 +86,13 @@ def parse_turns(path):
             for x in m.get("content", []):
                 if x.get("type") == "text":
                     cur["final"] = x.get("text", "")  # останній текстовий блок = відповідь на Stop
+                    cur["texts"].append(x.get("text", ""))
+                    cur["seq"].append(("text", x.get("text", "")))
                 elif x.get("type") == "tool_use":
                     cur["tools"].append(x.get("name", ""))
+                    if x.get("name") == "Bash":
+                        cur["cmds"].append(str((x.get("input") or {}).get("command", "")))
+                        cur["seq"].append(("cmd", cur["cmds"][-1]))
                     cur["evidence"].append(json.dumps(x.get("input", ""), ensure_ascii=False))
     return turns
 
@@ -103,6 +120,23 @@ def decide(final, tools, evidence, user_texts, model=""):
         if not ran:
             flags.append(("E3", m.group(1)))
     return flags
+
+
+def decide_e6(seq):
+    """E6: для кожного тексту із заявою про стан — різновиди доказів у E6_WINDOW Bash-командах перед ним."""
+    found, cmds = [], []
+    for kind, val in seq:
+        if kind == "cmd":
+            cmds.append(val)
+            continue
+        m = E6_RE.search(strip_quoted(val))
+        if not m:
+            continue
+        recent = cmds[-E6_WINDOW:]
+        kinds = {k for k, r in E6_KINDS.items() if any(r.search(c) for c in recent)}
+        if len(kinds) < 2:
+            found.append(("E6", f"{m.group(1)} (доказів: {', '.join(sorted(kinds)) or 'жодного'})"))
+    return found[:3]
 
 
 PROJECT_LOGS = os.path.expanduser(
@@ -145,6 +179,8 @@ def main(argv):
     for i, t in enumerate(turns, 1):
         users.append(t["user"])
         fl = decide(t["final"], t["tools"], t["evidence"], users, t["model"])
+        if not t["model"].startswith("deepseek"):
+            fl += decide_e6(t["seq"])
         if fl:
             rows.append((i, t["ts"][11:16], fl))
     print(f"claimcheck: {os.path.basename(path)[:8]} — відповідей {len(turns)}, "
