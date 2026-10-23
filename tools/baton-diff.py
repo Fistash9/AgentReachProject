@@ -28,15 +28,19 @@ def norm(s):
 
 
 def words(s):
-    return {w for w in re.findall(r"\w+", norm(s).lower()) if len(w) > 2}
+    # тег власника «@claude-code»/«@dsh» на початку не рахуємо: він давав кожній парі 2 спільні слова, і короткий
+    # новий пункт «накривав» старий (живий тест baton-guard 23.10: 10 зниклих → показано 9)
+    return {w for w in re.findall(r"\w+", re.sub(r"^\s*@[\w-]+", "", norm(s)).lower()) if len(w) > 2}
 
 
 def same(a, b, threshold=0.5):
-    """Той самий пункт, навіть переформульований: частка спільних слів."""
+    """Старий пункт a живе в новому тексті b (навіть переформульований): частка слів a, знайдених у b.
+    До 2026-10-23 ділили на min(|a|,|b|) — короткий b («тест», «@claude-code …») «накривав» довгий a, і зниклий
+    пункт не показувався (живий тест baton-guard: 10 зниклих → 9; з історії #66…#73 — 5 прихованих)."""
     wa, wb = words(a), words(b)
     if not wa or not wb:
         return norm(a) == norm(b)
-    return len(wa & wb) / min(len(wa), len(wb)) >= threshold
+    return len(wa & wb) / len(wa) >= threshold
 
 
 def load(path):

@@ -20,6 +20,14 @@ from datetime import datetime, timezone
 LOG_PATH = "/data/data/com.termux/files/home/AgentReachProject/.claude/logs/delegate-calls.jsonl"
 ERROR_RE = re.compile(r'\b(error|failed|exception)\b|"exit_code"\s*:\s*[1-9]', re.IGNORECASE)
 BACKGROUND_RE = re.compile(r"moved to (?:the )?background", re.IGNORECASE)
+# 2026-10-23 (TROUBLES «Висновки сесії cfca89fe…» п.3–4): після 429 BazaarLink я вирішив «незалежної звірки сьогодні
+# нема» і відклав механізми — а в verify-before-show є ланка Haiku, і ліміт (~3 великі виклики) був записаний в
+# «Обережно». Урок → підказка в момент збою (PostToolUseFailure підтримує additionalContext — hooks.md, розділ).
+FAIL_RE = re.compile(r"\b429\b|daily limit|capacity|ETIMEDOUT|ENOTFOUND|ECONNRESET|ECONNABORTED|aborted", re.IGNORECASE)
+FAIL_HINT = ("Збій делегата ({}). Це не «НІ» і не «звірки нема»: verify-before-show має запасну ланку Haiku з порожньої "
+             "теки (.claude/skills/verify-before-show/SKILL.md, «Ланцюжок»); BazaarLink free ≈3 великі виклики (~80–96K ток.) "
+             "на добу, скидання 00:00 UTC; мережа — один діагностичний curl до слова «недоступно»; платний DeepSeek — "
+             "лише з «так» користувача і ціною з виходу минулого прогону.")
 
 
 def as_text(value):
@@ -81,6 +89,12 @@ def main():
             f.write(json.dumps(entry, ensure_ascii=False) + "\n")
     except OSError:
         pass
+    if outcome == "error":
+        m = FAIL_RE.search(resp)
+        if m:
+            print(json.dumps({"hookSpecificOutput": {"hookEventName": hook_event or "PostToolUseFailure",
+                                                     "additionalContext": FAIL_HINT.format(m.group(0))}},
+                             ensure_ascii=False))
 
 
 if __name__ == "__main__":

@@ -27,6 +27,9 @@ DSH працює не на хуках Claude — ворота 1 його pass н
    tools/baton-diff.py), зникає. Є такі — ask зі списком (рішення
    користувача «Будь-яку втрату»). Бектест 45 передач #1…#58: питав би
    в 31, ловить 4 відкриті питання #56→#57.
+   2026-10-23: ask → deny (BACKLOG «План на наступну сесію…», доповнення 23.10 п.2; TROUBLES
+   «Висновки сесії cfca89fe…» п.1: запити «ask» погоджують за звичкою). Статус — текстом пункту в done/handoffNote.
+5. PostToolUse baton_pick_up — будує .baton/HANDOFF-view.md і підказує прочитати його цілим (23.10).
 Fail-open: будь-яка помилка читання — тиша.
 """
 import json
@@ -96,7 +99,7 @@ def lost_items(new):
     # непередане поле сервер лишає як було (server.mjs:158-159)
     pool = [str(x) for k in ("next", "openQuestions") for x in
             (new[k] if isinstance(new.get(k), list) else old.get(k) or [])]
-    pool += [str(x) for x in new.get("done") or []] + [str(new.get("handoffNote") or "")]
+    pool += [str(x) for k in ("done", "watchOut") for x in new.get(k) or []] + [str(new.get("handoffNote") or "")]
     return [(label, str(item)) for key, label in FIELDS if isinstance(new.get(key), list)
             for item in old.get(key) or [] if not any(bd.same(item, y) for y in pool)]
 
@@ -131,20 +134,45 @@ def main():
         except Exception:
             lost = []
         if lost:
-            emit("PreToolUse", permissionDecision="ask",
+            emit("PreToolUse", permissionDecision="deny",
                  permissionDecisionReason=(
-                     f"baton-guard: передача прибирає {len(lost)} пункт(ів) поточної естафети — "
-                     "вони зникнуть (19.10: 4 відкриті питання #56→#57 жили лише в TROUBLES). "
-                     "Кожен — зроблено / у BACKLOG / відкинути: "
-                     + " | ".join(f"[{l}] {' '.join(i.split())[:70]}" for l, i in lost)
-                     + ". Дозволити передачу?"))
+                     f"baton-guard: передача прибирає {len(lost)} пункт(ів) поточної естафети без статусу — "
+                     "вони зникнуть (19.10: 4 відкриті питання #56→#57 жили лише в TROUBLES; 23.10: «ask» "
+                     "погоджують за звичкою — тому deny). Для кожного: лиши в next/openQuestions, або перенеси його "
+                     "ДОСЛІВНИЙ текст (не скорочений вказівник — він не пройде: рахується частка слів пункту) у "
+                     "done («зроблено: <текст>»), watchOut або handoffNote («відкинуто: <текст> — причина» / "
+                     "«у BACKLOG: <текст>») і передай знову: "
+                     + " | ".join(f"[{l}] {' '.join(i.split())[:70]}" for l, i in lost)))
         return
 
     if (event == "PostToolUse" and tool.endswith("baton_pick_up")) or \
             event == "UserPromptSubmit":
         dp = double_pickup()
-        if dp:
-            emit(event, additionalContext=warn_text(dp))
+        parts = [warn_text(dp)] if dp else []
+        if event == "PostToolUse":
+            v = view_hint()
+            if v:
+                parts.append(v)
+        if parts:
+            emit(event, additionalContext="\n".join(parts))
+
+
+def view_hint():
+    """5. (2026-10-23, BACKLOG «План на наступну сесію…» п.1) Після pick_up — стислий вигляд
+    .baton/HANDOFF-view.md (≤15 000 Б, tools/handoff-view.py): повний вивід pick_up 23.10 —
+    87 338 симв., не вміщувався в одне читання, «Обережно» не прочитано. Помилка — тиша."""
+    import subprocess
+    out = f"{REPO}/.baton/HANDOFF-view.md"
+    try:  # власний try: збій тут не має глушити попередження про подвійний pick_up (звірка Haiku 23.10)
+        r = subprocess.run([sys.executable, f"{REPO}/tools/handoff-view.py", "--in", CURRENT,
+                            "--out", out, "--check"], capture_output=True, text=True, timeout=4)
+    except Exception:
+        return ""
+    if not r.stdout.startswith("view ok"):
+        return ""
+    return (f"Стислий стан естафети — {out} ({r.stdout.split(' Б')[0][8:]} Б): прочитай його ЦІЛИМ одним "
+            "Read до плану (у ньому всі «Далі», «Відкриті питання» і «Обережно» за словами задачі); "
+            "повний вивід pick_up — лише коли бракує деталей.")
 
 
 if __name__ == "__main__":

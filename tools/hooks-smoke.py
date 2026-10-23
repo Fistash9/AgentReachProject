@@ -95,6 +95,26 @@ def main():
     with open(os.path.join(tmp, "baton-old.json"), "w", encoding="utf-8") as f:  # baton-guard: втрата #56→#57
         json.dump({"passCount": 56, "next": ["@claude-code a"],
                    "openQuestions": ["Розбіжність 486 vs 457 комітів у двох бектестах замка — не пояснено"]}, f)
+    # baton-guard: same() 23.10 — короткий «тест» раніше «накривав» довгі пункти (10 зниклих → показано 9).
+    # Відома відповідь: 10 викинуто → 10 названо; мутація до старої формули валить випадок (перевірено 23.10).
+    old10 = [f"@claude-code {' '.join(w)}" for w in (
+        "перевірити журнал подвійних підхоплень естафети після сварки агентів".split(),
+        "оновити картку вузла пам'яті проєкту новими висновками сесії".split(),
+        "звірити бектест замка комітів на двох різних історіях".split(),
+        "прибрати старі знімки передач після рішення користувача щодо випалих".split(),
+        "написати рецепт відновлення налаштувань локального сервера через резервну копію".split(),
+        "дослідити причину повільного старту хуків на телефоні вранці".split(),
+        "переглянути чергу відкритих рішень разом із другим агентом".split(),
+        "порахувати витрати безкоштовної квоти делегата за минулий тиждень".split(),
+        "скласти короткий план перевірки детектора хибних тривог і пропусків".split(),
+        "додати приклад розбору відео для профілю каналу кулінарної ніші".split())]
+    with open(os.path.join(tmp, "baton-old2.json"), "w", encoding="utf-8") as f:
+        json.dump({"passCount": 70, "next": old10, "openQuestions": []}, f, ensure_ascii=False)
+    with open(os.path.join(tmp, "baton-small.json"), "w", encoding="utf-8") as f:  # pick_up → HANDOFF-view
+        json.dump({"task": "тест", "goal": "тест", "status": "тест", "handoffNote": "тест",
+                   "next": ["@claude-code тест"], "openQuestions": [], "files": [], "done": [],
+                   "watchOut": [], "passCount": 1}, f, ensure_ascii=False)
+    open(os.path.join(tmp, "empty-ledger.jsonl"), "w").close()
     with open(os.path.join(tmp, "cost.jsonl"), "w", encoding="utf-8") as f:  # cost-nudge: $10.50
         f.write(json.dumps({"session_id": SID, "cost": 10.5, "pct": 25}) + "\n")
     base ={"session_id": SID, "cwd": ROOT, "transcript_path": fake}
@@ -144,12 +164,31 @@ def main():
          {**base, "hook_event_name": "PreToolUse", "tool_name": "mcp__baton__baton_pass",
           "tool_input": {"handoffNote": "x", "next": ["@claude-code a"], "openQuestions": []}},
          {"BATON_GUARD_CURRENT": os.path.join(tmp, "baton-old.json")},
-         lambda rc, o, e: ctx(o)[1] == "ask" and "486 vs 457" in o, "ask зі списком"),
+         lambda rc, o, e: ctx(o)[1] == "deny" and "486 vs 457" in o, "deny зі списком (23.10: ask → deny)"),
         ("baton-guard: подвійний pick_up (журнал 18.10)", "PostToolUse", "baton-guard-hook.py",
          "mcp__baton__baton_pick_up",
          {**base, "hook_event_name": "PostToolUse", "tool_name": "mcp__baton__baton_pick_up"},
          {"BATON_GUARD_LEDGER": os.path.join(tmp, "ledger.jsonl")},
          lambda rc, o, e: "#52" in ctx(o)[0], "⚠ про #52"),
+        ("baton-guard: 10 викинуто → 10 названо (same() 23.10)", "PreToolUse", "baton-guard-hook.py",
+         "mcp__baton__baton_pass",
+         {**base, "hook_event_name": "PreToolUse", "tool_name": "mcp__baton__baton_pass",
+          "tool_input": {"handoffNote": "тест", "next": ["@claude-code тест"]}},
+         {"BATON_GUARD_CURRENT": os.path.join(tmp, "baton-old2.json")},
+         lambda rc, o, e: ctx(o)[1] == "deny" and "прибирає 10 пункт" in o, "deny, «прибирає 10 пункт»"),
+        ("baton-guard: пункт переписано в handoffNote — тиша", "PreToolUse", "baton-guard-hook.py",
+         "mcp__baton__baton_pass",
+         {**base, "hook_event_name": "PreToolUse", "tool_name": "mcp__baton__baton_pass",
+          "tool_input": {"handoffNote": f"відкинуто: {old10[-1]} — причина", "next": old10[:-1]}},
+         {"BATON_GUARD_CURRENT": os.path.join(tmp, "baton-old2.json")},
+         lambda rc, o, e: rc == 0 and not o.strip(), "тиша"),
+        ("baton-guard: після pick_up — підказка стислого стану", "PostToolUse", "baton-guard-hook.py",
+         "mcp__baton__baton_pick_up",
+         {**base, "hook_event_name": "PostToolUse", "tool_name": "mcp__baton__baton_pick_up"},
+         {"BATON_GUARD_LEDGER": os.path.join(tmp, "empty-ledger.jsonl"),
+          "BATON_GUARD_CURRENT": os.path.join(tmp, "baton-small.json")},
+         lambda rc, o, e: "Стислий стан естафети" in ctx(o)[0],
+         "підказка (справжній .baton/HANDOFF-view.md відновлюється після прогону)"),
         ("cost-nudge: поріг $10 (тимч. журнал)", "UserPromptSubmit", "cost-nudge-hook.py", None,
          {**base, "hook_event_name": "UserPromptSubmit", "prompt": "тест"},
          {"COST_NUDGE_LOG": os.path.join(tmp, "cost.jsonl"), "COST_NUDGE_STATE": os.path.join(tmp, "cn.json")},
@@ -209,7 +248,15 @@ def main():
 
     bad, rows = 0, []
     used = set()
+    # baton-guard після pick_up пише справжній .baton/HANDOFF-view.md (REPO зашитий у хуку) — зберегти й повернути
+    hv = os.path.join(ROOT, ".baton", "HANDOFF-view.md")
+    try:
+        hv_saved = open(hv, "rb").read()
+    except OSError:
+        hv_saved = None
     for name, ev, needle, mt, payload, env, ok, want in cases:
+        if os.environ.get("HOOKS_SMOKE_ONLY") and os.environ["HOOKS_SMOKE_ONLY"] not in name:
+            continue  # прогін одного випадку (мутаційна перевірка)
         if needle is None:  # бектест тіньового хука — без запису в його лог
             p = os.path.join(ROOT, ".claude", "hooks", "node-label-shadow-hook.py")
             r = subprocess.run([sys.executable, p, "--backtest", fake], capture_output=True, text=True)
@@ -234,6 +281,16 @@ def main():
             good, note = False, f"{type(ex).__name__}: {ex}"
         rows.append(("✅" if good else "❌", name, want, note))
         bad += not good
+    if hv_saved is not None:
+        with open(hv, "wb") as f:
+            f.write(hv_saved)
+    elif os.path.exists(hv):
+        os.remove(hv)  # до прогону файлу не було — створений тестом прибираємо
+    if os.environ.get("HOOKS_SMOKE_ONLY"):
+        for r in rows:
+            print(f"{r[0]} {r[1]} — очікую: {r[2]} — {r[3]}")
+        print(f"\nполомок: {bad}")
+        return 1 if bad else 0
 
     # Решта: пропущені навмисно й ті, для яких випадку немає — лише «файл є і компілюється»
     for ev, mt, cmd in hs:
