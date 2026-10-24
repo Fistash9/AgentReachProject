@@ -325,3 +325,15 @@
   trees/yakist-roboty-agentiv.md; звірка 22.10: 53 спостереження, унікальних 0–1); звірено verify-before-show (3 так).
 - Лишаються: сервер memory MCP і граф memory.jsonl (+ .bak); записи історії, що згадують файл, не чіпаються.
 - Як: mv у .trash/ (не rm). Відкат: mv назад у .claude/rules/. — [claude-code, 2026-10-22]
+
+## 2026-10-24 — 9 старих знімків естафети .baton/history/pass-66…pass-74.json → .trash/baton-history-2026-10-24/
+- Що: знімки .baton/history/pass-66.json … pass-74.json (9 файлів, поза git — .baton/ у .gitignore).
+- Чому: правило RULES «Baton» — baton-diff на старті показав 21 випалий пункт (#66→#76); звірено за змістом: 4 зроблено
+  (073e66e, tools/handoff-view.py, baton-guard:144 «відкинуто», сліпа перевірка «З» — pam-yat-proyektu:178), Р1 — ліки
+  e175cdc/2c4ed22, 2 у BACKLOG (:69, :151), 7 у «Далі» п.10–11 / відкритих питаннях #76, 2 відкинуто рішенням 22.10 «без
+  зміни внутрішніх параметрів» (ADB), замір процесів зроблено (TROUBLES 24.10: 19, було 25), зависання з Obsidian —
+  з'ясовано (TROUBLES:5923). pass-75 лишаю.
+  Читачі перевірені ДО mv: baton-diff, achieved-map, focus-tree, project-audit, edit-gate, session-close — за маскою;
+  hooks-smoke файлів не читає.
+- Як: mv (не rm) у .trash/baton-history-2026-10-24/ — відновлюване: mv назад.
+— [claude-code, 2026-10-24; розбір baton-diff, рішення користувача «Так, перенести»]
