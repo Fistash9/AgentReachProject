@@ -17,6 +17,12 @@ git add -A / . / commit -am / pathspec і вона хибно блокувала
 ОБХІД ХУКІВ (2026-10-19, зовнішня перевірка сесії 1fe9acd7, п.17; рішення «Так, 1–3 зараз»): git commit
 --no-verify / -n / -c core.hooksPath=… вимикає і commit-msg (вузол), і pre-commit (сканування ключів) —
 запит на дозвіл, якщо в останньому рішенні користувача нема «no-verify». Тіла heredoc не перевіряються (текст).
+ASK → DENY (2026-10-23, план виправлень п.3; рішення «Так, старі запити прибрати»): запит погоджували «за звичкою»
+(TROUBLES «Висновки сесії cfca89fe…» п.1), тому без слова — заборона, а питає агент у розмові. Той самий замок —
+на git push (слово «пуш/push») і платний DeepSeek (mcp__deepseek__deepseek/-reply і Bash tools/deepseek-search.py:
+«платн» у словах користувача або питання з «платн»/ціною «$» + «так»); permissions.ask для них прибрано. Лазівка
+«commit у питанні агента» (п.2): у тексті питання не рахуються `…`, команди git commit/push, рядки «Черга:» і
+«Звірка не потрібна:». Збій розбору для цих дій — запит (ask), не тиша.
 """
 import json
 import os
@@ -32,6 +38,49 @@ RE_NO = re.compile(r"(?:не|без|ні,?)\s+(?:за)?коміт|не\s+commit|
 RE_ANSWERED = re.compile(r"\s*(?:User has answered your questions|The user answered|"
                          r"Your questions have been answered):(.*)", re.S)
 RE_HEREDOC = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?\n(.*?)\n\1\b", re.S)
+RE_PUSH = re.compile(r"(?:^|[;&|(\n]|\$\()\s*git(?:\s+-C\s+\S+|\s+-c\s+\S+)*\s+push\b")
+RE_PAID_CMD = re.compile(r"^\s*(?:\w+=\S+\s+)*(?:(?:\S*/)?python3?(?:\s+-\w+)*\s+)?\S*deepseek-search\.py\b")
+PAID_TOOLS = ("mcp__deepseek__deepseek", "mcp__deepseek__deepseek-reply")
+# слово користувача (yes), заперечення (no), ознака того, що ПИТАННЯ агента саме про цю дію (q)
+KINDS = {
+    "commit": (RE_YES, RE_NO, RE_YES),
+    "push": (re.compile(r"пуш|push", re.I),
+             re.compile(r"(?:не|без|ні,?)\s+(?:за)?пуш|не\s+push|don'?t\s+push|no\s+push", re.I),
+             re.compile(r"пуш|push", re.I)),
+    "paid": (re.compile(r"(?<!без)платн|paid", re.I),
+             re.compile(r"(?:не|без|ні,?)\s+платн|безкоштовн|безплатн", re.I),
+             re.compile(r"(?<!без)платн|\$\s?\d", re.I)),
+}
+
+
+def clean_question(q):
+    """Текст питання без місць, де «commit/push» — назва, а не прохання (лазівка 23.10: «так» на питання про
+    `git commit --dry-run` зараховано як згоду): `…`, команди git, рядки «Черга:» і «Звірка не потрібна:»."""
+    q = re.sub(r"`[^`]*`", " ", q)
+    q = re.sub(r"\bgit(?:\s+-\S+)*\s+(?:commit|push)\b\S*(?:\s+-\S+)*", " ", q)
+    q = re.sub(r"Черга:[^?\n]*?(?:\.(?:\s|$)|\n|$)", " ", q)
+    return re.sub(r"Звірка не потрібна:.*", " ", q, flags=re.S)
+
+
+def kinds_of(data):
+    """Які важливі дії в цьому виклику: commit / push / paid."""
+    if data.get("tool_name") in PAID_TOOLS:
+        return ["paid"]
+    if data.get("tool_name") != "Bash":
+        return []
+    # тіла heredoc — текст, не команди (23.10: python-скрипт з рядком «Bash(git push *)» хибно дав «push»;
+    # той самий клас, що TROUBLES 2026-09-23 «Блокуючі хуки на regex по сирому рядку команди»)
+    # і текст у лапках (23.10: рядок багаторядкового -m "…" почався з «tools/deepseek-search.py» → хибне «платне»)
+    cmd = RE_HEREDOC.sub(" ", str((data.get("tool_input") or {}).get("command", "")))
+    cmd = re.sub(r"\"(?:[^\"\\]|\\.)*\"|'[^']*'", " ", cmd)
+    out = []
+    if RE_COMMIT.search(cmd):
+        out.append("commit")
+    if RE_PUSH.search(cmd):
+        out.append("push")
+    if any(RE_PAID_CMD.match(s) for s in re.split(r"&&|\|\||;|\n|\|", cmd)):
+        out.append("paid")
+    return out
 
 
 def bypass(cmd):
@@ -52,25 +101,28 @@ def bypass(cmd):
 RE_PAIR = re.compile(r'"((?:[^"\\]|\\.)*)"\s*=\s*"((?:[^"\\]|\\.)*)"', re.S)
 
 
-def consent(text, labels=()):
+def consent(text, labels=(), kind="commit"):
     """Чи дає це рішення користувача дозвіл на коміт.
     М2 (2026-10-19, рецензія сесії 1fe9acd7, рішення «М2: коміт лише з голого «так»»): вибраний у віконці
     ВАРІАНТ, який написав агент («Так, внести і закомітити»), дозволом не є, якщо саме питання не про коміт —
     інакше агент сам вирішує, чи стрельне замок. Свій текст користувача («Other») з «коміт» — дозвіл, як раніше."""
+    yes, no, qyes = KINDS[kind]
     m = RE_ANSWERED.match(text)
     if not m:  # набране повідомлення
-        return bool(RE_YES.search(text)) and not RE_NO.search(text)
+        return bool(yes.search(text)) and not no.search(text)
     body = re.split(r"You can now continue|Read the answers carefully", m.group(1))[0]
     for q, a in RE_PAIR.findall(body):
-        if RE_NO.search(a):
+        if no.search(a):
             continue
         own = a
         for lb in sorted(labels, key=len, reverse=True):  # вибрані варіанти (і кілька через «, ») — текст агента
             own = own.replace(lb, " ")
-        if RE_YES.search(own):  # власні слова користувача
+        if yes.search(own):  # власні слова користувача
             return True
-        if RE_YES.search(q) and (re.match(r"\s*(?:так|yes|добре|коміть)\b", a, re.I) or RE_YES.search(a)):
-            return True  # питання саме про коміт: «так» або вибраний варіант зі словом «коміт» (не «без коміту»)
+        # питання саме про цю дію І у вибраній відповіді її слово («Так, закомітити»; не «без коміту»). Голе «так»
+        # не рахується з 2026-10-23: питання «замки на push?» + «Так» інакше було б згодою на push.
+        if qyes.search(clean_question(q)) and yes.search(a):
+            return True
     return False
 
 
@@ -112,40 +164,50 @@ def last_decision(transcript_path):
 
 
 
-def main():
-    data = json.load(sys.stdin)
-    if data.get("tool_name") != "Bash":
-        return
-    cmd = str((data.get("tool_input") or {}).get("command", ""))
-    if not RE_COMMIT.search(cmd):
-        return
-    tp = data.get("transcript_path")
-    if not (isinstance(tp, str) and os.path.isfile(tp)):
-        return
-    last, labels = last_decision(tp)
-    if bypass(cmd) and "no-verify" not in last.lower():
-        os.makedirs(os.path.dirname(LOG), exist_ok=True)
-        with open(LOG, "a") as f:
-            f.write(f"{data.get('session_id', '?')}\tbypass-ask\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\t"
-                    f"{re.sub(r'\s+', ' ', cmd)[:120]}\n")
-        print(json.dumps({"hookSpecificOutput": {
-            "hookEventName": "PreToolUse", "permissionDecision": "ask",
-            "permissionDecisionReason": ("Коміт з обходом git-хуків (--no-verify / -n / core.hooksPath): вимикає й "
-                                         "перевірку вузла, й сканування ключів (pre-commit). Дозволити? «Ні» — "
-                                         "агент комітить без обходу.")}}, ensure_ascii=False))
-        return
-    ok = consent(last, labels)
+REASONS = {
+    "commit": ("Коміт заборонено: у останньому рішенні користувача немає слова «коміт» (RULES-WHY 2026-10-16: дозвіл "
+               "на роботу ≠ дозвіл на коміт; з 2026-10-23 — заборона замість запиту). Спитай віконцем «…і закомітити?»."),
+    "push": ("git push заборонено: у останньому рішенні користувача немає слова «пуш/push» (2026-10-23). Спитай "
+             "віконцем «…і запушити?»."),
+    "paid": ("Платний виклик DeepSeek заборонено: у останньому рішенні немає «платн», а питання не про платне з ціною "
+             "«$» (CLAUDE.md «Платне — завжди спершу питати», 2026-10-23). Назви ціну з виходу минулого прогону і спитай."),
+    "bypass": ("Коміт з обходом git-хуків (--no-verify / -n / core.hooksPath) заборонено: вимикає й перевірку вузла, й "
+               "сканування ключів (pre-commit). Дозвіл — лише словом «no-verify» від користувача; інакше комітити без обходу."),
+}
+
+
+def out(decision, reason):
+    print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse", "permissionDecision": decision,
+                                             "permissionDecisionReason": reason}}, ensure_ascii=False))
+
+
+def log(data, status, text):
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     with open(LOG, "a") as f:
-        f.write(f"{data.get('session_id', '?')}\t{'ok' if ok else 'ask'}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\t"
-                f"{re.sub(r'\s+', ' ', last)[:120]}\n")
-    if ok:
+        f.write(f"{data.get('session_id', '?')}\t{status}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\t"
+                f"{re.sub(r'\s+', ' ', text)[:120]}\n")
+
+
+def main():
+    data = json.load(sys.stdin)
+    kinds = kinds_of(data)
+    if not kinds:
         return
-    reason = ("Коміт без слова «коміт» у вашому останньому рішенні (RULES-WHY 2026-10-16: дозвіл на роботу ≠ "
-              "дозвіл на коміт). Дозволити коміт? «Ні» — агент спершу спитає «закомітити?».")
-    print(json.dumps({"hookSpecificOutput": {
-        "hookEventName": "PreToolUse", "permissionDecision": "ask",
-        "permissionDecisionReason": reason}}, ensure_ascii=False))
+    try:
+        tp = data.get("transcript_path")
+        last, labels = last_decision(tp) if isinstance(tp, str) and os.path.isfile(tp) else ("", ())
+        cmd = str((data.get("tool_input") or {}).get("command", ""))
+        if "commit" in kinds and bypass(cmd) and "no-verify" not in last.lower():
+            log(data, "bypass-deny", cmd)
+            return out("deny", REASONS["bypass"])
+        for k in kinds:
+            ok = consent(last, labels, k)
+            log(data, ("" if k == "commit" else k + ":") + ("ok" if ok else "deny"), last)
+            if not ok:
+                return out("deny", REASONS[k])
+    except Exception as ex:  # збій розбору для важливої дії — запит, не тиша (2026-10-23)
+        out("ask", f"Замок згоди ({', '.join(kinds)}) не зміг перевірити рішення користувача: "
+                   f"{type(ex).__name__}. Дозволити?")
 
 
 if __name__ == "__main__":

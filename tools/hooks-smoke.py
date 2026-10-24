@@ -412,6 +412,36 @@ def main():
     rows.append(("✅" if good else "❌", "commit-consent: М2 дозвіл на коміт", "варіант агента ≠ дозвіл", note))
     bad += not good
 
+    # Замок згоди 2026-10-23 (план виправлень п.3): лазівка «commit у питанні агента» закрита; push і платний
+    # DeepSeek — слово користувача; які дії бачить хук (текст у grep/heredoc/echo — ні). Рядки з частин.
+    try:
+        A = lambda q, a: f'Your questions have been answered: "{q}"="{a}". You can now continue.'  # noqa: E731
+        G, P, DS = "git " + "commit", "git " + "push", "tools/deepseek-" + "search.py"
+        LB = ("Так, коміт-тест", "Ні")  # варіант агента зі словом: без чистки питання всі три → так (мутант 23.10)
+        cases = [(A(f"Перевірити замок: `{G} --dry-run`?", LB[0]), LB, "commit", False),
+                 (A(f"Запустити {G} --dry-run як тест?", LB[0]), LB, "commit", False),
+                 (A("Робити замки? Черга: замки → коміт записів.", LB[0]), LB, "commit", False),
+                 (A("Закомітити записи?", "Так"), (), "commit", False),
+                 (A("Закомітити записи?", "Так, закомітити"), (), "commit", True),
+                 (A("Робити замки на push і платне?", "Так"), (), "push", False),
+                 ("так, роби", (), "push", False), ("закомітити і запушити", (), "push", True),
+                 ("коміт, але не пуш", (), "push", False),
+                 (A("Запустити рецензію DeepSeek (≈$0.04)?", "Так"), (), "paid", False),
+                 (A("Запустити рецензію DeepSeek (≈$0.04)?", "Так, платно"), (), "paid", True),
+                 (A("Як перевірити?", "Платний DeepSeek"), ("Платний DeepSeek", "Haiku"), "paid", False),
+                 ("роби безплатно", (), "paid", False), ("давай платно", (), "paid", True)]
+        res = [cc.consent(t, lb, k) == want for t, lb, k, want in cases]
+        kc = [(f"python3 -I {DS} x", ["paid"]), (f"grep {DS} f", []), (f"cat <<'E'\npython3 {DS}\nE", []),
+              (f"{P} origin main", ["push"]), (f"python3 - <<'E'\nrm=['Bash({P} *)']\nE", []), (f'{G} -m "x\n{DS} y\n{P} z"', ["commit"]), (f"{G} -m y && {P}", ["commit", "push"]), (f"echo '{P}'", [])]
+        res += [cc.kinds_of({"tool_name": "Bash", "tool_input": {"command": c}}) == want for c, want in kc]
+        res.append(cc.kinds_of({"tool_name": "mcp__deepseek__deepseek-reply"}) == ["paid"])
+        good, note = all(res), f"{sum(res)}/{len(res)} випадків"
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    rows.append(("✅" if good else "❌", "commit-consent: замок згоди (коміт/push/платне)",
+                 "без слова → ні; питання про дію + слово у відповіді → так; лазівка закрита", note))
+    bad += not good
+
     # Шифри в тексті користувачу (2026-10-19, «знов шифри тільки замітив»): хеш у лапках-коді й кирилична «М2» —
     # ловляться; хеш у дужках після опису, шлях/файл з хешем — ні.
     try:
