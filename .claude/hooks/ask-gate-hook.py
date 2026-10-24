@@ -40,7 +40,15 @@ RE_MECH = re.compile(r"хук\w*|скрипт\w*|\.py\b|\.sh\b|RULES|settings|н
                      r"claimcheck|plain-codes", re.I)
 RE_MECH_VERB = re.compile(r"правлю|правк\w*|зміни\b|змін\w*|додати|додам|додаю|підключ\w*|вмика\w*|переписа\w*|"
                           r"розшир\w*|ставлю|exec\b|зробити зараз|Усі 4", re.I)
-RE_RECORDS_CMD = re.compile(r"kb-map\.py|trees-index\.py|\b(grep|rg)\b[^\n]*\b(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md")
+# 2026-10-24 (рецензія сесії 67228d1a, S8; користувач: «так, починай з ask-gate» → «Так, вносити»): «…і закомітити?» у
+# питанні про механізм вимикало вимогу звірки («Внести ці дві поправки в RULES.md … і закомітити замок?» 23.10 пройшло),
+# а «поправки» RE_CHANGE не бачить (\b перед «правк»). Тепер коміт знімає вимогу лише як питання саме про коміт; у
+# складеному «… і закомітити» механізм шукається в самому питанні без рядка «Черга: …» (у варіантах «замок» — хибні 22.10).
+# «поправк» — лише тут: спільну RE_CHANGE читає ще Stop-перевірка answer-gate. Бектест 1381 питання: змін 5 (справжніх 3).
+RE_CHANGE_LOCAL = re.compile(r"поправк\w*", re.I)
+RE_COMMIT_COMPOUND = re.compile(r"\b(?:і|й|та)\s+(?:за)?коміт", re.I)
+RE_QUEUE_LINE = re.compile(r"Черга:.*?(?:[.?](?=\s|$)|$)")
+RE_RECORDS_CMD =re.compile(r"kb-map\.py|trees-index\.py|\b(grep|rg)\b[^\n]*\b(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md")
 RE_RECORDS_FILE = re.compile(r"(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md$")
 
 
@@ -73,8 +81,10 @@ def misses_for(ag, lines, question):
     if not ag.RE_QUEUE.search(text):
         out.append("queue")
     q0 = question.split("\n", 1)[0]  # лише саме питання, не описи варіантів
-    mech = bool(RE_MECH.search(text) and RE_MECH_VERB.search(text)) and not RE_COMMIT_Q.search(q0)
-    if ag.RE_CHANGE.search(q0) or ag.RE_PLAN_Q.search(q0) or mech:
+    commit_q = RE_COMMIT_Q.search(q0)
+    scope = RE_QUEUE_LINE.sub("", q0) if commit_q else text
+    mech = bool(RE_MECH.search(scope) and RE_MECH_VERB.search(scope)) and not (commit_q and not RE_COMMIT_COMPOUND.search(q0))
+    if ag.RE_CHANGE.search(q0) or RE_CHANGE_LOCAL.search(q0) or ag.RE_PLAN_Q.search(q0) or mech:
         ok = any(n == "Skill" and s == "verify-before-show" or n in ag.VERIFY_TOOLS
                  for n, s in seg["tools"]) or (RE_SKIP_VERIFY.search(text) and not mech)
         if not ok:
