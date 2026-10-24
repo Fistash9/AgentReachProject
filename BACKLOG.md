@@ -16,6 +16,8 @@
   2. tools/handoff-view.py: handoffNote >15 000 Б → «view FAIL» без підказки, файл усе одно перезаписується (досі так:
      рядок 159 лише друкує FAIL).
   3. tools/hooks-smoke.py: відновлення справжнього .baton/HANDOFF-view.md (рядок 251) без try/finally — grep «finally» 0.
+     ЗРОБЛЕНО 23.10 разом із п.2 (TROUBLES «Дві знахідки рецензії cfca89fe виправлено…»). Нове з цього: ask-gate не визнає
+     ланку Haiku verify-before-show через Bash — механізм з «так». — [claude-code, 2026-10-23]
   4. .unlazy/q6/decisions.md і GATES.md поза git (.gitignore:22) — рішення аудиту зникнуть при очищенні; перенести суть
      у вузол «Ціль і зв'язки» або в agents/claude-code/.
   5. зміна виводу delegate-outcome-logger і суворість deny на «злитий пункт» вирішені без окремого «так».

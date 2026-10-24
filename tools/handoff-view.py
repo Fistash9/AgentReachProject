@@ -140,7 +140,7 @@ def main():
         f.write(text)
     if not a.check:
         return 0
-    with open(a.out, encoding="utf-8") as f:
+    with open(a.out, encoding="utf-8", newline="") as f:  # без перетворення \r\n — інакше пункт з \r\n «не знайдено»
         got = f.read()
     real = b(got)
     ok = real <= BUDGET

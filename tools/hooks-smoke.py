@@ -114,6 +114,10 @@ def main():
         json.dump({"task": "тест", "goal": "тест", "status": "тест", "handoffNote": "тест",
                    "next": ["@claude-code тест"], "openQuestions": [], "files": [], "done": [],
                    "watchOut": [], "passCount": 1}, f, ensure_ascii=False)
+    with open(os.path.join(tmp, "baton-big.json"), "w", encoding="utf-8") as f:  # handoffNote > 15 000 Б
+        json.dump({"task": "тест", "goal": "тест", "status": "тест", "handoffNote": "x" * 16000,
+                   "next": ["@claude-code тест"], "openQuestions": [], "files": [], "done": [],
+                   "watchOut": [], "passCount": 1}, f, ensure_ascii=False)
     open(os.path.join(tmp, "empty-ledger.jsonl"), "w").close()
     with open(os.path.join(tmp, "cost.jsonl"), "w", encoding="utf-8") as f:  # cost-nudge: $10.50
         f.write(json.dumps({"session_id": SID, "cost": 10.5, "pct": 25}) + "\n")
@@ -189,6 +193,12 @@ def main():
           "BATON_GUARD_CURRENT": os.path.join(tmp, "baton-small.json")},
          lambda rc, o, e: "Стислий стан естафети" in ctx(o)[0],
          "підказка (справжній .baton/HANDOFF-view.md відновлюється після прогону)"),
+        ("baton-guard: після pick_up — вигляд не вмістився → «НЕПОВНИЙ»", "PostToolUse", "baton-guard-hook.py",
+         "mcp__baton__baton_pick_up",
+         {**base, "hook_event_name": "PostToolUse", "tool_name": "mcp__baton__baton_pick_up"},
+         {"BATON_GUARD_LEDGER": os.path.join(tmp, "empty-ledger.jsonl"),
+          "BATON_GUARD_CURRENT": os.path.join(tmp, "baton-big.json")},
+         lambda rc, o, e: "НЕПОВНИЙ" in ctx(o)[0], "підказка «НЕПОВНИЙ», не тиша (рецензія cfca89fe 23.10)"),
         ("cost-nudge: поріг $10 (тимч. журнал)", "UserPromptSubmit", "cost-nudge-hook.py", None,
          {**base, "hook_event_name": "UserPromptSubmit", "prompt": "тест"},
          {"COST_NUDGE_LOG": os.path.join(tmp, "cost.jsonl"), "COST_NUDGE_STATE": os.path.join(tmp, "cn.json")},
@@ -254,38 +264,40 @@ def main():
         hv_saved = open(hv, "rb").read()
     except OSError:
         hv_saved = None
-    for name, ev, needle, mt, payload, env, ok, want in cases:
-        if os.environ.get("HOOKS_SMOKE_ONLY") and os.environ["HOOKS_SMOKE_ONLY"] not in name:
-            continue  # прогін одного випадку (мутаційна перевірка)
-        if needle is None:  # бектест тіньового хука — без запису в його лог
-            p = os.path.join(ROOT, ".claude", "hooks", "node-label-shadow-hook.py")
-            r = subprocess.run([sys.executable, p, "--backtest", fake], capture_output=True, text=True)
-            good = "усього розбіжностей: 1" in r.stdout
-            used.add("node-label-shadow-hook.py")
-            rows.append(("✅" if good else "❌", name, want, r.stdout.strip().splitlines()[-1:] or r.stderr[-200:]))
+    try:  # відновлення HANDOFF-view — у finally (рецензія cfca89fe 23.10: збій гілки бектесту чи Ctrl+C)
+        for name, ev, needle, mt, payload, env, ok, want in cases:
+            if os.environ.get("HOOKS_SMOKE_ONLY") and os.environ["HOOKS_SMOKE_ONLY"] not in name:
+                continue  # прогін одного випадку (мутаційна перевірка)
+            if needle is None:  # бектест тіньового хука — без запису в його лог
+                p = os.path.join(ROOT, ".claude", "hooks", "node-label-shadow-hook.py")
+                r = subprocess.run([sys.executable, p, "--backtest", fake], capture_output=True, text=True)
+                good = "усього розбіжностей: 1" in r.stdout
+                used.add("node-label-shadow-hook.py")
+                rows.append(("✅" if good else "❌", name, want, r.stdout.strip().splitlines()[-1:] or r.stderr[-200:]))
+                bad += not good
+                continue
+            cmd = find(hs, ev, needle, mt)
+            if not cmd:
+                rows.append(("❌", name, want, "хук не знайдено в налаштуваннях"))
+                bad += 1
+                continue
+            used.add(cmd)
+            try:
+                rc, o, e, dt = run(cmd, payload, env)
+                good = ok(rc, o, e)
+                note = f"код {rc}, {dt:.1f} с" + (f", stderr: {e.strip()[:120]}" if e.strip() and not good else "")
+            except subprocess.TimeoutExpired:
+                good, note = False, "ТАЙМАУТ"
+            except Exception as ex:  # noqa — перевірка не має падати сама
+                good, note = False, f"{type(ex).__name__}: {ex}"
+            rows.append(("✅" if good else "❌", name, want, note))
             bad += not good
-            continue
-        cmd = find(hs, ev, needle, mt)
-        if not cmd:
-            rows.append(("❌", name, want, "хук не знайдено в налаштуваннях"))
-            bad += 1
-            continue
-        used.add(cmd)
-        try:
-            rc, o, e, dt = run(cmd, payload, env)
-            good = ok(rc, o, e)
-            note = f"код {rc}, {dt:.1f} с" + (f", stderr: {e.strip()[:120]}" if e.strip() and not good else "")
-        except subprocess.TimeoutExpired:
-            good, note = False, "ТАЙМАУТ"
-        except Exception as ex:  # noqa — перевірка не має падати сама
-            good, note = False, f"{type(ex).__name__}: {ex}"
-        rows.append(("✅" if good else "❌", name, want, note))
-        bad += not good
-    if hv_saved is not None:
-        with open(hv, "wb") as f:
-            f.write(hv_saved)
-    elif os.path.exists(hv):
-        os.remove(hv)  # до прогону файлу не було — створений тестом прибираємо
+    finally:
+        if hv_saved is not None:
+            with open(hv, "wb") as f:
+                f.write(hv_saved)
+        elif os.path.exists(hv):
+            os.remove(hv)  # до прогону файлу не було — створений тестом прибираємо
     if os.environ.get("HOOKS_SMOKE_ONLY"):
         for r in rows:
             print(f"{r[0]} {r[1]} — очікую: {r[2]} — {r[3]}")
@@ -522,6 +534,20 @@ def main():
     except Exception as ex:  # noqa — перевірка не має падати сама
         good, note = False, f"{type(ex).__name__}: {ex}"
     rows.append(("✅" if good else "❌", "edit-gate: mv знімків естафети → ask", "знімок → ask; інше → ні; читачі", note))
+    bad += not good
+
+    # handoff-view --check: пункт з \r\n — «дослівно» (23.10, рецензія cfca89fe: читання з перетворенням кінців рядків).
+    try:
+        cj, cm = os.path.join(tmp, "hv-crlf.json"), os.path.join(tmp, "hv-crlf.md")
+        with open(cj, "w", encoding="utf-8") as f:
+            json.dump({"task": "t", "goal": "g", "status": "s", "handoffNote": "n", "next": ["@claude-code a\r\nb"],
+                       "openQuestions": [], "files": [], "done": [], "watchOut": []}, f)
+        r = subprocess.run([sys.executable, os.path.join(ROOT, "tools", "handoff-view.py"), "--in", cj, "--out", cm,
+                            "--check"], capture_output=True, text=True)
+        good, note = r.stdout.startswith("view ok"), r.stdout.strip()[:80]
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    rows.append(("✅" if good else "❌", "handoff-view: пункт з \\r\\n", "view ok", note))
     bad += not good
 
     # Маска експорту сесії (2026-10-18): «task-notification» — не ключ; sk-/nvapi- — ключі.

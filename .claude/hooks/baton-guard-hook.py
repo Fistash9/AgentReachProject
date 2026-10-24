@@ -30,6 +30,7 @@ DSH працює не на хуках Claude — ворота 1 його pass н
    2026-10-23: ask → deny (BACKLOG «План на наступну сесію…», доповнення 23.10 п.2; TROUBLES
    «Висновки сесії cfca89fe…» п.1: запити «ask» погоджують за звичкою). Статус — текстом пункту в done/handoffNote.
 5. PostToolUse baton_pick_up — будує .baton/HANDOFF-view.md і підказує прочитати його цілим (23.10).
+   «view FAIL» (не вмістилось / неповний) — підказка «НЕПОВНИЙ», а не тиша (23.10, рецензія cfca89fe).
 Fail-open: будь-яка помилка читання — тиша.
 """
 import json
@@ -168,6 +169,9 @@ def view_hint():
                             "--out", out, "--check"], capture_output=True, text=True, timeout=4)
     except Exception:
         return ""
+    if r.stdout.startswith("view FAIL"):  # 23.10 рецензія cfca89fe: при FAIL була тиша — агент не знав, що вигляд неповний
+        return (f"Стислий стан естафети НЕПОВНИЙ ({r.stdout.strip()[10:]}): {out} прочитай, а чого в ньому бракує "
+                "(«Далі», «Відкриті питання», «Обережно») — з повного виводу pick_up частинами (Read з offset).")
     if not r.stdout.startswith("view ok"):
         return ""
     return (f"Стислий стан естафети — {out} ({r.stdout.split(' Б')[0][8:]} Б): прочитай його ЦІЛИМ одним "
