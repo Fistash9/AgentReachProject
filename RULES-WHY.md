@@ -389,3 +389,13 @@
   рядки RULES.md описують новий замок. Звірено verify-before-show (Haiku, 5 тверджень: 2 так, 3 добрано grep,
   1 виправлено; $0.021). Перевірка: hooks-smoke 22/22, мутант ловиться, наживо 4/4 deny (TROUBLES 23.10 «Замок згоди…»).
 - Відкат: `git revert` коміту + .claude/settings.local.json з .bak-20261023-172826 (стан до підключення). — [claude-code, 2026-10-23]
+
+## Оновлення 2026-10-25: effort і модель під-агентів (новий розділ «Під-агенти: effort і модель»)
+- Чому: за сесію 4dc8a94e ≈20 під-агентів пішли на Opus без effort — помітна частина ціни сесії (>$20); інструмент Agent
+  дозволяє ставити effort лише коли «the user, or instructions such as CLAUDE.md or a skill, explicitly ask», тож без
+  правила оркестратор не може підбирати рівень сам. Можливість — дока code.claude.com/docs/en/sub-agents «Choose an effort
+  level»: «it can also pass an effort parameter for that invocation»; варіанти low…max (звірено DeepSeek flash, 4 з 4, $0).
+  Користувач: «прочитай як ти можеш користуватись effort через агентів» → «Так, цими трьома рівнями».
+- Що змінено: RULES.md — три рівні за типом задачі (збирання — low + Sonnet; пошук і звіти — medium; діагноз, код, схема —
+  high). Ціна — не перевірено; через 2–3 сесії звірити cost-report і якість звітів.
+- Відкат: прибрати розділ «Під-агенти: effort і модель» з RULES.md. — [claude-code, 2026-10-25]
