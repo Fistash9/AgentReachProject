@@ -190,6 +190,28 @@ def remedies(path=REGISTRY):
     return out
 
 
+# 2026-10-25 («5 чому», agents/dsh/five-whys-2026-10-25.md; користувач: «що найголовніше… знайшли і не виправили зразу» →
+# виправляй): вирок «ліки діють» видавав детектор, який не бачив 36% поправок («без класу» в коло не входило) і при чужому
+# HOME мовчки давав «0». Тепер: «без класу» понад поріг — детектор зламаний, вироки «ок» недійсні; немає журналів — помилка.
+# Нові слова в детектор навмисно не додано: латка під останню фразу — і є корінь (ліки під симптом).
+UNCLASSIFIED_MAX = 0.10
+
+
+def detector_broken(rows):
+    """(зламаний?, частка без класу, кількість без класу) для рядків corrections()."""
+    n = sum(1 for r in rows if r[2] is None)
+    share = n / len(rows) if rows else 0.0
+    return share > UNCLASSIFIED_MAX, share, n
+
+
+def require_logs():
+    """Немає журналів — не «0 поправок», а помилка (exit 2): 25.10 з proot HOME=/root реєстр мовчки давав 0 замість 120."""
+    if not glob.glob(LOGS + "/*.jsonl"):
+        sys.stderr.write(f"error-registry: не бачу журналів сесій у {LOGS} (HOME={os.environ.get('HOME')}) — "
+                         f"числа були б хибним «0». Запусти з HOME=/data/data/com.termux/files/home.\n")
+        sys.exit(2)
+
+
 def report_loop():
     """Коло «клас → ліки → повторилось після ліків?» + частка поправок від повідомлень по тижнях (2026-10-19;
     ідея — cc-retrospective-learner «昇格», мірило — shenxingy/Clade «correction rate»)."""
@@ -212,6 +234,12 @@ def report_loop():
                 w[1] += cnt["msgs"]
     allrows = [r for rows in sess.values() for r in rows]
     print(f"Коло реєстру: поправок {len(allrows)} у {len(sess)} сесіях; ліки — {REGISTRY.split('/')[-1]} «## Ліки»")
+    broken, share, nunc = detector_broken(allrows)
+    if broken:
+        print(f"⚠ ДЕТЕКТОР ЗЛАМАНИЙ: без класу {nunc} з {len(allrows)} ({share:.0%}) > {UNCLASSIFIED_MAX:.0%} — "
+              f"вироки «ок» нижче недійсні (поправки без класу в коло не входять). Останні без класу:")
+        for t, text, _, rep in [r for r in allrows if r[2] is None][-3:]:
+            print(f"      {t[:16]}{' · повтор' if rep else ''}  «{re.sub(chr(10), ' ', text)[:90]}»")
     warn = 0
     for c, name, _ in CLASSES:
         rs = [r for r in allrows if r[2] == c]
@@ -223,7 +251,8 @@ def report_loop():
             continue
         last = lk[-1][0]
         after = [r for r in rs if r[0] > last]
-        mark = "⚠ ліки не діють" if after else "ок: після ліків повторів нема"
+        mark = ("⚠ ліки не діють" if after else
+                "ок? недійсне — детектор зламаний" if broken else "ок: після ліків повторів нема")
         warn += bool(after)
         print(f"  {c} {name}: поправок {len(rs)} (до останніх ліків {len(rs) - len(after)}, після {len(after)}); "
               f"ліків {len(lk)}, останні {last[:10]} {lk[-1][1]} — {mark}")
@@ -234,6 +263,7 @@ def report_loop():
     for wk in sorted(week):
         n, m = week[wk]
         print(f"  {wk}: {n}/{m} = {n / m:.1%}")
+    return 1 if (warn or broken) else 0
 
 
 def evaluate(labels_path, jsonl_path):
@@ -258,10 +288,12 @@ def evaluate(labels_path, jsonl_path):
 
 if __name__ == "__main__":
     a = sys.argv[1:]
+    if a[:1] != ["--eval"]:
+        require_logs()
     if a[:1] == ["--all"]:
         report_all()
     elif a[:1] == ["--loop"]:
-        report_loop()
+        sys.exit(report_loop())
     elif a[:1] == ["--eval"] and len(a) > 2:
         evaluate(a[1], a[2])
     elif a[:1] == ["--session"] and len(a) > 1:
