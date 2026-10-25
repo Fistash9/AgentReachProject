@@ -75,6 +75,73 @@ RE_TRIED = re.compile(r"шукав|спробував|перевіряв|про�
                       r"наступн\w* (сесі|хід|ход)|блоку\w*|з вашого «так»|з твого «так»|лише після|"
                       r"приклад|чек", re.I)
 VERIFY_TOOLS = ("mcp__delegate__delegate", "mcp__delegate__deepseek")
+# 2026-10-25 (Q5; «Далі» п.4 естафети, рецензія cfca89fe п.3; користувач: «чому не у віконці, і зразу виправляй якщо
+# помилка це вже було»): ланка 3 verify-before-show — Haiku через Bash (`claude -p … --model haiku` з промптом
+# перевіряльника, SKILL.md «Ланцюжок»). Три хуки (цей, ask-gate, verify-nudge) мали кожен свою копію перевірки «Skill або
+# delegate» → після збою DeepSeek звірку Haiku не визнавав жоден, питання йшло текстом (24–25.10 — 2 рази). Одна функція.
+RE_CLAUDE_P = re.compile(r"\bclaude\W{1,4}-p\b")
+RE_HAIKU = re.compile(r"--model\W{1,4}haiku")
+RE_VERIFIER = re.compile(r"verifier-prompt\.md|незалежний верифікатор|run_claude_v3\.py")
+
+
+def is_verify_call(name, inp):
+    """Чи є виклик інструмента звіркою verify-before-show: скіл, delegate або Haiku-перевіряльник через Bash
+    (claude -p + --model haiku + промпт перевіряльника; голий «claude -p … haiku» не рахується)."""
+    inp = inp if isinstance(inp, dict) else {}
+    if name == "Skill":
+        return str(inp.get("skill", "")) == "verify-before-show"
+    if name in VERIFY_TOOLS:
+        return True
+    if name == "Bash":
+        c = str(inp.get("command", ""))
+        return bool(RE_CLAUDE_P.search(c) and RE_HAIKU.search(c) and RE_VERIFIER.search(c))
+    return False
+
+
+def has_verdict(d):
+    """Чи є запис журналу результатом інструмента з вердиктом перевіряльника («VERDICT:», verifier-prompt.md).
+    Пошук по журналах 25.10: команда-форма без вердикту дала 2 хибні з 8 (echo з текстом команди, тест), тому
+    Bash-ланка Haiku зараховується лише разом із вердиктом у виводі."""
+    content = (d.get("message") or {}).get("content") if isinstance(d.get("message"), dict) else None
+    for c in content if isinstance(content, list) else []:
+        if isinstance(c, dict) and c.get("type") == "tool_result":
+            cc = c.get("content")
+            text = cc if isinstance(cc, str) else " ".join(
+                str(p.get("text", "")) for p in cc or [] if isinstance(p, dict))
+            if "VERDICT:" in text:
+                return True
+    return False
+
+
+def failed_ids(d):
+    """tool_use_id результатів-помилок у записі журналу (is_error: True). 25.10: упалий delegate (429 BazaarLink,
+    5 разів за сесію 4cab3538) три хуки рахували звіркою — «звірку зараховано без звірки»."""
+    content = (d.get("message") or {}).get("content") if isinstance(d.get("message"), dict) else None
+    return {c.get("tool_use_id") for c in (content if isinstance(content, list) else [])
+            if isinstance(c, dict) and c.get("type") == "tool_result" and c.get("is_error")}
+
+
+def verify_in(events):
+    """Чи була звірка серед подій ходу/відрізка (iter_turns: ("tool", name, inp), ("id", tool_use_id),
+    ("failed", tool_use_id), ("result", "VERDICT")): скіл чи delegate — виклик без помилки в результаті;
+    Haiku через Bash — команда перевіряльника І після неї вивід з «VERDICT:»."""
+    ok, bash, last = set(), False, None
+    for ev in events or []:
+        if not ev:
+            continue
+        if ev[0] == "tool":
+            last = ev if len(ev) >= 3 and is_verify_call(ev[1], ev[2]) else None
+        elif ev[0] == "id" and last is not None:
+            if last[1] == "Bash":
+                bash = True
+            else:
+                ok.add(ev[1])
+            last = None
+        elif ev[0] == "failed":
+            ok.discard(ev[1])
+        elif ev[0] == "result" and bash:
+            return True
+    return bool(ok)
 RE_EFFECT_NUM = re.compile(r"[−-]\s?\d+[,.]?\d*\s?%|\d+[,.]?\d*\s?%\s+(?:менше|дешевше|швидше|економ)|"
                            r"\b(?:у|в)\s+\d+[,.]?\d*\s+раз\w*\s+(?:менше|дешевш\w*|швидш\w*|дорожч\w*)|"
                            r"(?:економі\w*|виграш\w*)[^\n.]{0,40}\d+[,.]?\d*\s?(?:%|×|раз)|"
@@ -183,6 +250,11 @@ def iter_turns(lines, merge_notifications=False):
                 cur["hints"].append(" ".join(c) if isinstance(c, list) else str(c or ""))
                 cur["events"].append(("hint", cur["hints"][-1]))
             continue
+        if d.get("type") == "user":  # 2026-10-25: для verify_in — вивід перевіряльника і результати-помилки
+            if has_verdict(d):
+                cur["events"].append(("result", "VERDICT"))
+            cur["events"] += [("failed", i) for i in failed_ids(d)]
+            continue
         if d.get("type") != "assistant":
             continue
         for x in (d.get("message") or {}).get("content") or []:
@@ -192,6 +264,7 @@ def iter_turns(lines, merge_notifications=False):
                 inp = x.get("input") or {}
                 cur["tools"].append((x.get("name", ""), str(inp.get("skill", ""))))
                 cur["events"].append(("tool", x.get("name", ""), inp))
+                cur["events"].append(("id", x.get("id", "")))  # 2026-10-25: пара до ("failed", id) у verify_in
             elif x.get("type") == "text" and x.get("text", "").strip():
                 cur["texts"].append(x["text"])
     if cur is not None:
@@ -226,8 +299,7 @@ def check(turn):
     elif no_box and RE_REQ.search(last) and not RE_LATER.search(last):
         misses.append("ask-req")
     if last.endswith("?") and (RE_CHANGE.search(tail) or RE_PLAN_Q.search(qline)):
-        ok = any(n == "Skill" and s == "verify-before-show" or n in VERIFY_TOOLS
-                 for n, s in turn["tools"])
+        ok = verify_in(turn.get("events"))  # 2026-10-25: і ланка Haiku (is_verify_call)
         if not ok:
             misses.append("verify")
     for para in re.split(r"\n\s*\n|\n(?=- |\d+\. |\* )", last):

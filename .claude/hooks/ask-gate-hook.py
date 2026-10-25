@@ -85,8 +85,8 @@ def misses_for(ag, lines, question):
     scope = RE_QUEUE_LINE.sub("", q0) if commit_q else text
     mech = bool(RE_MECH.search(scope) and RE_MECH_VERB.search(scope)) and not (commit_q and not RE_COMMIT_COMPOUND.search(q0))
     if ag.RE_CHANGE.search(q0) or RE_CHANGE_LOCAL.search(q0) or ag.RE_PLAN_Q.search(q0) or mech:
-        ok = any(n == "Skill" and s == "verify-before-show" or n in ag.VERIFY_TOOLS
-                 for n, s in seg["tools"]) or (RE_SKIP_VERIFY.search(text) and not mech)
+        # 2026-10-25: спільна перевірка з answer-gate (визнає й ланку Haiku через Bash)
+        ok = ag.verify_in(seg.get("events")) or (RE_SKIP_VERIFY.search(text) and not mech)
         if not ok:
             out.append("verify")
     brief = RE_BRIEF.search(q0) or (RE_PLAN_WORD.search(q0) and not RE_COMMIT_Q.search(q0))

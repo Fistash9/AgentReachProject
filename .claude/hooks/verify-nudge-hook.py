@@ -78,7 +78,7 @@ def verified_this_turn(transcript_path):
     для дедупу запиту — час останньої відповіді у віконці, інакше час ходу)."""
     ag = _load("answer-gate-shadow-hook.py")
     lines = ag.current_turn_lines(transcript_path, merge_notifications=True)
-    turn_ts, seg_ts, boxes = "", "", 0
+    turn_ts, seg_ts, boxes, verdict, failed = "", "", 0, False, set()
     for l in lines[:1]:
         try:
             turn_ts = json.loads(l).get("timestamp", "")
@@ -98,12 +98,18 @@ def verified_this_turn(transcript_path):
             if boxes > 1:
                 break
             continue
+        if d.get("type") == "user":  # ідемо назад: результати бачимо раніше за їхні виклики
+            verdict = verdict or ag.has_verdict(d)
+            failed |= ag.failed_ids(d)  # упалий delegate (429) — не звірка (25.10)
+            continue
         if d.get("type") != "assistant":
             continue
         for x in (d.get("message") or {}).get("content") or []:
             if isinstance(x, dict) and x.get("type") == "tool_use":
-                n, s = x.get("name", ""), str((x.get("input") or {}).get("skill", ""))
-                if (n == "Skill" and s == "verify-before-show") or n in ag.VERIFY_TOOLS:
+                # 2026-10-25: спільна перевірка з answer-gate; Haiku через Bash — лише з «VERDICT:» у виводі
+                n = x.get("name", "")
+                if (ag.is_verify_call(n, x.get("input")) and (n != "Bash" or verdict)
+                        and x.get("id") not in failed):
                     return True, seg_ts or turn_ts
     return False, seg_ts or turn_ts
 
