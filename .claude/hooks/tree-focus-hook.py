@@ -49,6 +49,10 @@ import sys
 
 MAX_NODES = 6
 MAX_WORK = 3
+# 2026-10-25 (Q4.4, рішення «Так, вносити»): посилання на рілс/коротке відео → підказка інструмента розбору (урок з
+# рілса Deh5yf2xL3s «повторюване — у скіл»: 8 розборів вручну, -l auto губив початок)
+RE_REEL = re.compile(r"https?://(?:www\.)?(?:instagram\.com/(?:reels?|p)/\S+|youtube\.com/shorts/\S+|youtu\.be/\S+"
+                     r"|(?:vm\.)?tiktok\.com/\S+)")
 MAX_HOWTO = 1600  # 1600: щоб влазили всі три правила списку HOWTO_RULES (M11.1, 2026-10-03)
 HOWTO_RULES = ("check-content-not-titles",
                "fix-root-cause-of-every-bug",
@@ -394,6 +398,14 @@ def main():
                    + ", ".join(os.path.basename(f.rstrip("/")) for f in dirty[:3])
                    + more(dirty, 3) + ")"
                    + (" — перевір і закоміть або познач вузол [?]." if start else ""))
+    if not start:
+        try:  # окремий try: помилка тут не гасить «В роботі» (звірка Haiku 25.10)
+            urls = RE_REEL.findall(data.get("prompt") or "")
+            if urls:
+                out.append("Посилання на відео → розбір: python3 tools/reel-read.py " + urls[0]
+                           + " (мова окремим кроком, перелік на суцільність; не вручну yt-dlp/whisper)")
+        except Exception:
+            pass
     if start:
         try:
             goals = goals_lines(cwd, cards, mine)
