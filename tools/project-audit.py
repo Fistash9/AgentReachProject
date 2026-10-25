@@ -10,6 +10,9 @@
   1. Черга baton: пункти next у знімках .baton/history/pass-*.json (знімки #24…#34, #36, #38 з 2026-10-12 —
      у .trash/baton-history-2026-10-12/, #39…#54 з 2026-10-19 — у .trash/baton-history-2026-10-19/,
      #55…#57 — у .trash/baton-history-2026-10-19b/, #58…#61 — у .trash/baton-history-2026-10-20/,
+     #66…#74 — у .trash/baton-history-2026-10-24/, #75…#78 — у .trash/baton-history-2026-10-25/,
+     #62…#65 — у .trash/baton-history-2026-10-20b/ (дописано 25.10, звірка DSH: в archive-2026-09-28/ лише
+     pass-74 і pass-75 старої естафети),
      #1…#76 — .baton/history/archive-2026-09-28/) —
      дублі, час життя, «носій vs якір», наявність у BACKLOG.
   2. Що є, але не використовується: хуки (файл vs реєстрація), скіли,
