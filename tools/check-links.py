@@ -4,7 +4,8 @@
 Запуск: python3 ~/AgentReachProject/tools/check-links.py
 Код виходу 0 — усе ціле, 1 — є проблеми (перелік у виводі).
 Викликається в session-close (крок 2.5) перед baton_pass. Група 11 —
-карта README.md (кожен .md у корені і tools/).
+карта README.md (кожен .md у корені і tools/). Група 12 — порядок дерев
+(закриті вниз, у кожної відкритої гілки рядок «черга»).
 
 Лише читає: файли, git, settings. Хуки запускає на нейтральному вході
 (ls / правка TROUBLES.md) і перевіряє, що вони не падають і не блокують;
@@ -148,6 +149,22 @@ def main():
             continue
         chk(f"[{f}]" in readme, f"README.md: у карті немає [{f}]")
     chk("[tools/]" in readme, "README.md: у карті немає [tools/]")
+
+    # 12. порядок дерев (G2.6, 2026-10-25): закриті [x]/[~] — після всіх
+    #     відкритих; кожна відкрита гілка має рядок «черга» з причиною місця
+    for f in sorted(glob.glob("trees/*.md")):
+        L = read(f).split("\n")
+        st = [i for i, l in enumerate(L) if re.match(r"- \[.\] ", l)]
+        seen = False
+        for k, s in enumerate(st):
+            e = st[k + 1] if k + 1 < len(st) else len(L)
+            stt, code = re.match(r"- \[(.)\] (\S+)", L[s]).groups()
+            if stt in "x~":
+                seen = True
+                continue
+            chk(not seen, f"{f}: {code} відкрита після закритої — закриті вниз")
+            chk(any(re.match(r"\s+черга", l) for l in L[s:e]),
+                f"{f}: {code} без рядка «черга» (причина місця)")
 
     print(f"check-links: OK перевірок {ok}, проблем {len(bad)}")
     for b in bad:

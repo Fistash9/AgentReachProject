@@ -360,3 +360,10 @@
   538 101 Б. «Втрат 0» у пункті «Чому» стосується лише next/openQuestions — див. «Статус змінився» вище. files (як і
   next/openQuestions) замінюються лише тоді, коли їх передано: сервер зливає стан.
 — [claude-code, 2026-10-25]
+
+## 2026-10-25 — 2 старі знімки естафети .baton/history/pass-79.json, pass-80.json → .trash/baton-history-2026-10-25c/
+- Чому: старт сесії 25.10 (третя), правило «Після baton_pick_up — baton-diff… лише потім старіші знімки прибрати». baton-diff
+  #80→#81: випало 2 — обидва в «Зроблено» (№370, №371). Звірено й записки/files/openQuestions/watchOut (TROUBLES:6227):
+  files/openQuestions/watchOut втрат 0; із записки #80 втрачено 1 пункт (error:no-transcript у тіні answer-gate) → BACKLOG
+  «Активні». Розміри: pass-79 137 893 Б, pass-80 137 082 Б. Відкат — mv назад у .baton/history/.
+— [claude-code, 2026-10-25]
