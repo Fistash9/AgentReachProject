@@ -48,6 +48,31 @@ RE_MECH_VERB = re.compile(r"правлю|правк\w*|зміни\b|змін\w*|
 RE_CHANGE_LOCAL = re.compile(r"поправк\w*", re.I)
 RE_COMMIT_COMPOUND = re.compile(r"\b(?:і|й|та)\s+(?:за)?коміт", re.I)
 RE_QUEUE_LINE = re.compile(r"Черга:.*?(?:[.?](?=\s|$)|$)")
+# 2026-10-25 (звуження після 3 сесій заміру: хибних більше третини 22.10, 23.10, 25.10; користувач: «Беремо перший пункт тут»):
+# хибні збіги — не зміна механізму. Перед пошуком зміни з тексту прибираємо те, що само не є пропозицією: (1) рядок «Черга: …»
+# (назва вузла «Реєстр…», «план» у назві) — раніше лише для питань про коміт; (2) заперечення в рядку-обході «Звірка не потрібна: <чому>.»
+# (там пишуть «жоден файл не змінюється»); (3) іменник «реєстру»
+# (родовий відмінок назви вузла) — на відміну від дієслова «реєструю/реєструємо», яке лишається словом зміни.
+# НЕ чіпаємо: RE_MECH, RE_CHANGE_LOCAL (RE_MECH_VERB — лише «правлю» не після «від»), «Звірка не потрібна» для механізмів — не приймається, як і раніше.
+RE_QUEUE_LINE_M = re.compile(r"Черга:.*?(?:[.?](?=\s|$)|$)", re.M)  # RE_QUEUE_LINE без re.M не знімає рядок, якщо далі є переніс
+# (4) «Відправлю» містить підрядок «правлю» (RE_MECH_VERB без \b) — «Відправлю йому СТОП» у описі варіанта (25.10, 880) вважалось
+# правкою; тому «правлю» не після «від» (виправлю, підправлю, правлю — як було).
+RE_MECH_VERB = re.compile(RE_MECH_VERB.pattern.replace("правлю|", "(?<!від)правлю|", 1), re.I)
+RE_BYPASS_LINE = re.compile(r"Звірка не потрібна:.*?(?:\.(?=\s|$)|$)", re.I | re.M)
+# Рядок-обхід вирізається НЕ ЦІЛИМ (знахідка перевірки шкоди 25.10: «Змінити? Звірка не потрібна: це лише дрібна правка хука.» —
+# пропозиція названа тільки в причині обходу): в ньому прибираємо лише заперечення «не змінюється/не змінюють…»,
+# решта слів (хук, правка) лишається у перевірці зміни механізму.
+RE_NEG_IN_BYPASS = re.compile(r"\bне\s+змін\w*|\bбез\s+змін\b", re.I)
+RE_NOUN_REGISTRY = re.compile(r"реєстру\b", re.I)
+
+
+def scrub(t):
+    """Текст без того, що само не пропонує змін: рядок черги, рядок-обхід, іменник «реєстру»."""
+    t = RE_QUEUE_LINE_M.sub("", t)
+    t = RE_BYPASS_LINE.sub(lambda m: "Звірка не потрібна: " + RE_NEG_IN_BYPASS.sub("", m.group(0)[len("Звірка не потрібна:"):]), t)
+    return RE_NOUN_REGISTRY.sub("", t)
+
+
 RE_RECORDS_CMD =re.compile(r"kb-map\.py|trees-index\.py|\b(grep|rg)\b[^\n]*\b(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md")
 RE_RECORDS_FILE = re.compile(r"(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md$")
 
@@ -81,15 +106,17 @@ def misses_for(ag, lines, question):
     if not ag.RE_QUEUE.search(text):
         out.append("queue")
     q0 = question.split("\n", 1)[0]  # лише саме питання, не описи варіантів
+    q0c = scrub(q0)  # питання без рядка черги, рядка-обходу й іменника «реєстру»
+    # «коміт» шукаємо в СИРОМУ q0, як і до звуження: так «коміт» у рядку черги, як і раніше, знімає вимогу (звуження не додає зупинок)
     commit_q = RE_COMMIT_Q.search(q0)
-    scope = RE_QUEUE_LINE.sub("", q0) if commit_q else text
+    scope = q0c if commit_q else scrub(text)
     mech = bool(RE_MECH.search(scope) and RE_MECH_VERB.search(scope)) and not (commit_q and not RE_COMMIT_COMPOUND.search(q0))
-    if ag.RE_CHANGE.search(q0) or RE_CHANGE_LOCAL.search(q0) or ag.RE_PLAN_Q.search(q0) or mech:
+    if ag.RE_CHANGE.search(q0c) or RE_CHANGE_LOCAL.search(q0c) or ag.RE_PLAN_Q.search(q0c) or mech:
         # 2026-10-25: спільна перевірка з answer-gate (визнає й ланку Haiku через Bash)
         ok = ag.verify_in(seg.get("events")) or (RE_SKIP_VERIFY.search(text) and not mech)
         if not ok:
             out.append("verify")
-    brief = RE_BRIEF.search(q0) or (RE_PLAN_WORD.search(q0) and not RE_COMMIT_Q.search(q0))
+    brief = RE_BRIEF.search(q0c) or (RE_PLAN_WORD.search(q0c) and not RE_COMMIT_Q.search(q0))
     if brief and not RE_SKIP_RECORDS.search(text):
         found = False
         for ev in seg.get("events", []):
