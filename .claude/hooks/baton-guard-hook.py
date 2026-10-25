@@ -31,6 +31,12 @@ DSH працює не на хуках Claude — ворота 1 його pass н
    «Висновки сесії cfca89fe…» п.1: запити «ask» погоджують за звичкою). Статус — текстом пункту в done/handoffNote.
 5. PostToolUse baton_pick_up — будує .baton/HANDOFF-view.md і підказує прочитати його цілим (23.10).
    «view FAIL» (не вмістилось / неповний) — підказка «НЕПОВНИЙ», а не тиша (23.10, рецензія cfca89fe).
+6. (2026-10-25, m3-diag варіант Б) PreToolUse baton_pass — handoffNote сервер ЗАМІНЮЄ (server.mjs:156):
+   речення поточної записки з ознакою кроку (STEP у baton-diff.py), яких нема в новому
+   next/openQuestions/done/watchOut/handoffNote (та сама same()), — ПІДКАЗКА (additionalContext), не ask/deny.
+   Чому не deny: на краю ліміту deny може не дати передати (#81 — «на 5% ліміту»). Чому не ask: бектест
+   155 сусідніх передач ledger — 44 тривоги у 36 передачах (кожна ~4-та), у вибірці 10 (seed 2510) хибних 9;
+   ask на 90% хибних погоджують за звичкою (23.10). Відома відповідь: #78→#79 1, #80→#81 1, #76→#77 0.
 Fail-open: будь-яка помилка читання — тиша.
 """
 import json
@@ -86,23 +92,44 @@ def warn_text(dp):
             f"(@власник у next), або скажи користувачу.")
 
 
-def lost_items(new):
-    """[(мітка, пункт)] з поточної естафети, яких нема в переданому pass."""
+DIFF = os.environ.get("BATON_GUARD_DIFF") or f"{REPO}/tools/baton-diff.py"
+
+
+def _ctx(new):
+    """(baton_diff, поточна естафета, рядки нової естафети) або None."""
     import importlib.util
-    spec = importlib.util.spec_from_file_location("baton_diff", f"{REPO}/tools/baton-diff.py")
+    spec = importlib.util.spec_from_file_location("baton_diff", DIFF)
     bd = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(bd)
     try:
         with open(CURRENT, encoding="utf-8") as f:
             old = json.load(f)
     except (OSError, ValueError):
-        return []
+        return None
     # непередане поле сервер лишає як було (server.mjs:158-159)
     pool = [str(x) for k in ("next", "openQuestions") for x in
             (new[k] if isinstance(new.get(k), list) else old.get(k) or [])]
     pool += [str(x) for k in ("done", "watchOut") for x in new.get(k) or []] + [str(new.get("handoffNote") or "")]
+    return bd, old, pool
+
+
+def lost_items(new):
+    """[(мітка, пункт)] з поточної естафети, яких нема в переданому pass."""
+    c = _ctx(new)
+    if not c:
+        return []
+    bd, old, pool = c
     return [(label, str(item)) for key, label in FIELDS if isinstance(new.get(key), list)
             for item in old.get(key) or [] if not any(bd.same(item, y) for y in pool)]
+
+
+def lost_note(new):
+    """Пункти поточної записки (речення з ознакою кроку), яких нема в переданому pass (6)."""
+    c = _ctx(new)
+    if not c:
+        return []
+    bd, old, pool = c
+    return bd.note_lost(old.get("handoffNote") or "", pool)
 
 
 def emit(event, **extra):
@@ -134,6 +161,11 @@ def main():
             lost = lost_items(ti)
         except Exception:
             lost = []
+        try:
+            note = lost_note(ti)
+        except Exception:
+            note = []
+        note_txt = " | ".join(f"[Записка] {' '.join(i.split())[:90]}" for i in note)
         if lost:
             emit("PreToolUse", permissionDecision="deny",
                  permissionDecisionReason=(
@@ -143,7 +175,14 @@ def main():
                      "ДОСЛІВНИЙ текст (не скорочений вказівник — він не пройде: рахується частка слів пункту) у "
                      "done («зроблено: <текст>»), watchOut або handoffNote («відкинуто: <текст> — причина» / "
                      "«у BACKLOG: <текст>») і передай знову: "
-                     + " | ".join(f"[{l}] {' '.join(i.split())[:70]}" for l, i in lost)))
+                     + " | ".join(f"[{l}] {' '.join(i.split())[:70]}" for l, i in lost)
+                     + (f". Також із записки (підказка, не блок): {note_txt}" if note else "")))
+        elif note:
+            emit("PreToolUse", additionalContext=(
+                f"baton-guard (підказка): нова записка замінює стару, і {len(note)} крок(и) з неї ніде в новій естафеті "
+                "не видно (у #78→#79 і #80→#81 такі губились). Якщо крок ще відкритий — додай його в next/handoffNote "
+                "наступною передачею або в BACKLOG; якщо зроблено/відкинуто — нічого. Бектест: 9 з 10 таких підказок "
+                "хибні (стан змінився, переформульовано) — перевір, не переписуй навмання: " + note_txt))
         return
 
     if (event == "PostToolUse" and tool.endswith("baton_pick_up")) or \
