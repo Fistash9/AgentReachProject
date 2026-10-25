@@ -22,6 +22,8 @@ TMP = os.environ.get("PREFIX", "/data/data/com.termux/files/usr") + "/tmp"
 ORD = [("перв", "перш"), ("втор", "друг"), ("трет",), ("четв",), ("пят", "п'ят", "пʼят"), ("шест", "шост"),
        ("седьм", "сьом"), ("восьм",), ("девят", "дев'ят", "девʼят"), ("десят",)]
 CARD = ("пят", "п'ят", "пʼят", "шест", "девят", "дев'ят", "девʼят", "десят")
+PREP = {"в", "во", "у", "на", "и", "і", "а", "ну", "та", "й"}  # слово перед порядковим: «В четвертой…», «А третье…»
+DRUG = ("другий", "друге", "друга", "другі", "другу", "другої")  # «друг*» без цього — «друг», «с другом», не порядкове
 LAST = re.compile(r"^(?:ну\s+)?(?:и\s+|і\s+)?(?:последн|останн)", re.I)
 
 
@@ -31,22 +33,34 @@ def run(cmd, **kw):
 
 def numbers(lines):
     """Номери пунктів переліку за першими двома словами кожного речення; повертає (знайдені, чи є «останнє»)."""
-    found, last = {}, False
+    found, last, prev = {}, False, ""
     for ts, text in lines:
-        for sent in re.split(r"(?<=[.!?])\s+", text):
-            head = sent.strip().lower().split()[:2]
+        fresh = not prev or prev[-1] in ".!?:"  # перше речення рядка починається тут, а не триває з минулого («…вместо\n20.»)
+        prev = text.strip() or prev
+        for k, sent in enumerate(re.split(r"(?<=[.!?])\s+", text)):
+            words = sent.strip().lower().split()
+            head = words[:2]
             if not head:
                 continue
             if LAST.match(" ".join(sent.strip().lower().split()[:3])):
                 last = True
-            m = re.match(r"^(\d{1,2})[.)]?$", head[0])
+            # цифра — лише «N.» / «N)» / «пункт N»; голе «10 сервисов», «20 кусков» — число з розповіді, не пункт
+            m = re.match(r"^(\d{1,2})[.)]$", head[0])
+            if m and k == 0 and not fresh:
+                m = None
+            if not m and head[0] in ("пункт", "пункта", "пункти") and len(head) > 1:
+                m = re.match(r"^(\d{1,2})[.)]?$", head[1])
             if m:
                 found.setdefault(int(m.group(1)), ts)
                 continue
-            for w in head:
+            # порядкове слово — перше в реченні або після прийменника/сполучника («друг» у «с другом» не береться)
+            cand = [words[0]] + ([words[1]] if len(words) > 1 and words[0] in PREP else [])
+            for w in cand:
                 for n, stems in enumerate(ORD, 1):
                     # «ь» після основи — кількісне («п'ять», «шесть», «девять»), не порядкове (перевірка 25.10, DdQxr38AcHT);
                     # лише для основ, спільних з кількісними: «третье» — порядкове (рілс Deh5yf2xL3s)
+                    if stems == ("втор", "друг") and not (w.startswith("втор") or w in DRUG):
+                        continue
                     if any(w.startswith(s) and not (s in CARD and w[len(s):].startswith("ь")) for s in stems):
                         found.setdefault(n, ts)
     return found, last
@@ -91,7 +105,8 @@ def main():
     print("\n".join(f"[{ts}] {x}" for ts, x in lines))
 
     found, last = numbers(lines)
-    if found:
+    # тривога лише за справжнього переліку: ≥2 порядкових/нумерованих пункти (інакше це числа з розповіді)
+    if len(found) >= 2:
         top = max(found)
         miss = [n for n in range(1, top + 1) if n not in found]
         print(f"\nперелік: знайдено {', '.join(f'{n} ({found[n]})' for n in sorted(found))}"
