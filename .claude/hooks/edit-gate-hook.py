@@ -19,6 +19,12 @@ tools/deepseek-search.py — без повного читання й без по
            transcript_path, tool_input…). Ключ — хук + день. (2026-10-13: голос черги хибно
            спрацював, бо читав transcript_path, хоча number-claim-shadow-hook:358 уже брав
            last_assistant_message; 23.09 shlex-фікс двох хуків не дійшов до третього.)
+  agents — (2026-10-25, рішення «Обидві частини»; користувач уп'яте: «знов не користуєшся агентами?») у
+           ПОТОЧНОМУ ході (від справжнього повідомлення людини; iter_turns з answer-gate) n читань і жодного
+           Agent/Task → на 15, 30, 45… permissionDecision "deny" (≤2 рядки). Повтор після deny — пропуск (ключ
+           «agents\t<хід>\t<n//15>» у LOG); «без агента: <причина>» у description — пропуск. Мовчить: DeepSeek
+           (ANTHROPIC_BASE_URL), під-агент (agent_id), не-UUID session_id. Вимикач: EDIT_GATE_AGENTS=0.
+           Read/Grep/Glob ворота бачать, лише якщо matcher у settings їх містить (зараз Edit|Write|MultiEdit|Bash).
 Bash-правки (2026-10-13): python open(…,"w"), sed -i, > / >>, tee, cp у файл коду — теж
 правка (до того ворота їх не бачили: за 12–13.10 лише 3 спрацювання, хоча правок було багато).
 Лог: .claude/logs/edit-gate.log (сесія, ключ, час) — для підрахунку марних спрацювань.
@@ -32,7 +38,10 @@ import sys
 import time
 
 PROJECT = "/data/data/com.termux/files/home/AgentReachProject"
-LOG = os.path.join(PROJECT, ".claude", "logs", "edit-gate.log")
+LOG = os.environ.get("EDIT_GATE_LOG") or os.path.join(PROJECT, ".claude", "logs", "edit-gate.log")
+READ_TOOLS = {"Read", "Grep", "Glob"}
+AGENTS_REASON = ("Ворота «агенти»: у ході {n} читань і жодного Agent. Віддай обмежену частину під-агенту або повтори "
+                 "виклик, додавши в description «без агента: <причина>».")
 EDIT_TOOLS = {"Edit", "Write", "MultiEdit"}
 CODE_DIRS = ("tools/", ".claude/hooks/", ".claude/skills/")
 SAFE_PREFIXES = ("/data/data/com.termux/files/usr/tmp/", "/tmp/")
@@ -314,12 +323,66 @@ def seen_keys(sid):
     return out
 
 
+def answer_gate():
+    """Модуль answer-gate-shadow-hook.py поруч: iter_turns/current_turn_lines (межі ходу) і count_reads."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(
+        "agv", os.path.join(os.path.dirname(os.path.abspath(__file__)), "answer-gate-shadow-hook.py"))
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    return m
+
+
+def agents_check(data, agv=None):
+    """(ключ, n) — якщо цей виклик треба зупинити воротами «агенти», інакше None."""
+    if os.environ.get("EDIT_GATE_AGENTS") == "0" or data.get("agent_id"):
+        return None
+    if "deepseek" in os.environ.get("ANTHROPIC_BASE_URL", ""):
+        return None
+    name, inp = data.get("tool_name", ""), data.get("tool_input") or {}
+    if "без агента:" in str(inp.get("description", "")):
+        return None
+    tp = data.get("transcript_path")
+    if not (isinstance(tp, str) and os.path.isfile(tp)):
+        return None
+    agv = agv or answer_gate()
+    if agv.is_test_session(data.get("session_id")):
+        return None
+    # сповіщення фонових задач хід не відкривають — лише повідомлення людини
+    turns = list(agv.iter_turns(agv.current_turn_lines(tp, merge_notifications=True), merge_notifications=True))
+    if not turns or not turns[-1].get("user"):
+        return None
+    ev = turns[-1]["events"]
+    tools = [e for e in ev if e and e[0] == "tool"]
+    if tools and tools[-1][1] == name and tools[-1][2] == inp:  # поточний виклик уже може бути в журналі
+        ev = [e for e in ev if e is not tools[-1]]
+    reads, agent = agv.count_reads(ev)
+    n = reads + (1 if agv.is_read(name, inp) else 0)
+    if agent or n < agv.AGENTS_N or not agv.is_read(name, inp):
+        return None
+    return f"agents\t{turns[-1]['ts']}\t{n // agv.AGENTS_N}", n
+
+
 def main():
     if len(sys.argv) > 2 and sys.argv[1] == "--backtest":
         return backtest(sys.argv[2])
     data = json.load(sys.stdin)
     name, inp = data.get("tool_name", ""), data.get("tool_input") or {}
-    if name not in EDIT_TOOLS and name != "Bash":
+    if name not in EDIT_TOOLS and name != "Bash" and name not in READ_TOOLS:
+        return
+    try:
+        ag = agents_check(data)
+    except Exception:
+        ag = None
+    if ag and ag[0] not in seen_keys(data.get("session_id", "?")):
+        os.makedirs(os.path.dirname(LOG), exist_ok=True)
+        with open(LOG, "a", encoding="utf-8") as f:
+            f.write(f"{data.get('session_id', '?')}\t{ag[0]}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "PreToolUse", "permissionDecision": "deny",
+            "permissionDecisionReason": AGENTS_REASON.format(n=ag[1])}}, ensure_ascii=False))
+        return
+    if name in READ_TOOLS:
         return
     ev = Evidence()
     tp = data.get("transcript_path")

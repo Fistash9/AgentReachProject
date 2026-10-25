@@ -31,6 +31,11 @@
   ask     — (2026-10-20, ГОЛОС) остання відповідь закінчується «?», а віконця AskUserQuestion у ході нема
             (пам'ять ask-questions-one-at-a-time-plainly; користувач 20.10: «Питання без кнопок»).
   ask-req — (2026-10-20, ТІНЬ 3 сесії) прохання рішення без «?» у кінці («скажіть», «ваше «так»») — RE_REQ.
+  agents  — (2026-10-25, ГОЛОС; користувач уп'яте: «знов не користуєшся агентами?», рішення «Обидві частини»)
+            у ході ≥AGENTS_N читань (Read/Grep/Glob + Bash grep/cat/sed -n/head/tail/ls/find/wc/python3 -c) і жодного
+            Agent/Task, а в тексті нема «Агентів не запускаю:». Мітка agents:<n>; лише весь хід (turns[-1]).
+            Пара — edit-gate «agents» (deny посеред ходу). Бектест: /data/data/com.termux/files/usr/tmp/agnudge/.
+Тестові сесії (session_id не UUID: check, smoke, pipe, test, agtest, hooks-smoke-*) у лог не пишуться (25.10).
 Розбір журналу — iter_turns з number-claim-shadow-hook.py (той самий «хід»),
 плюс записи attachment/hook_additional_context.
 
@@ -44,7 +49,7 @@ import re
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-LOG = os.path.join(ROOT, ".claude", "logs", "answer-gate-shadow.jsonl")
+LOG = os.environ.get("ANSWER_GATE_LOG") or os.path.join(ROOT, ".claude", "logs", "answer-gate-shadow.jsonl")
 LOG_MAX = 2_000_000
 
 RE_QUEUE = re.compile(r"черг", re.I)
@@ -187,6 +192,40 @@ def egate_misses(turn, text):
     return out
 
 
+# agents (2026-10-25): спільний лічильник з edit-gate (той імпортує цей модуль) — одне визначення «читання».
+AGENTS_N = 15
+RE_READ_BASH = re.compile(r"(?:^|[;&|(]\s*|\n\s*)(grep|rg|cat|sed\s+-n|head|tail|ls|find|wc|python3\s+-c)\b")
+RE_NOAG = re.compile(r"Агентів не запускаю:")
+RE_UUID = re.compile(r"^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$", re.I)
+
+
+def is_read(name, inp):
+    if name in ("Read", "Grep", "Glob"):
+        return True
+    return name == "Bash" and bool(RE_READ_BASH.search(str((inp or {}).get("command", ""))))
+
+
+def count_reads(events):
+    """(читань, чи був Agent/Task) серед подій ("tool", name, inp) ходу."""
+    reads, agent = 0, False
+    for e in events or []:
+        if e and e[0] == "tool":
+            if e[1] in ("Agent", "Task"):
+                agent = True
+            elif is_read(e[1], e[2]):
+                reads += 1
+    return reads, agent
+
+
+def is_test_session(sid):
+    """Тестові/службові session_id (check, pipe, hooks-smoke-…) — справжні сесії мають UUID."""
+    return not (isinstance(sid, str) and RE_UUID.match(sid))
+
+
+def is_deepseek():
+    return "deepseek" in os.environ.get("ANTHROPIC_BASE_URL", "")
+
+
 RE_REQ = re.compile(r"скажіть|якщо скажете|ваш\w* (?:«так»|дозвіл|рішенн\w*|слов\w*)|без вашого|на ваше рішення|"
                     r"питання до вас|від вас", re.I)
 RE_LATER = re.compile(r"наступн\w* сесі", re.I)
@@ -318,6 +357,9 @@ def check(turn):
     if RE_VERIFY_HINT.search(hints) and not RE_VERIFY_ANS.search(text):
         misses.append("nudge:verify")
     misses += egate_misses(turn, text)
+    reads, agent = count_reads(turn.get("events"))
+    if reads >= AGENTS_N and not agent and not RE_NOAG.search(text):
+        misses.append(f"agents:{reads}")
     return misses
 
 
@@ -384,6 +426,9 @@ QUEUE_REASON = ("Ворота 4 (голос черги, 2026-10-13): у відп
 SINGLE_REASON = ("Голос «один вимір ≠ висновок» (2026-10-20, рецензія f0af8e0e п.6): у відповіді ефект числом "
                  "(відсотки/«у N разів»/економія) без вибірки в тому ж абзаці. Допиши в той абзац, на чому число "
                  "тримається («1 прогін», «3 питання», «оцінка, не вимір»). Нічого іншого не повторюй.")
+AGENTS_REASON = ("Голос «агенти» (25.10, користувач уп'яте: «знов не користуєшся агентами?»): у ході {n} читань і "
+                 "жодного Agent. Віддай обмежену частину під-агенту зараз або допиши рядок «Агентів не запускаю: "
+                 "<причина>». Нічого не повторюй.")
 ASK_REASON = ("Голос «питання без кнопок» (2026-10-20, користувач: «Питання без кнопок»): відповідь закінчується "
               "питанням, а віконця AskUserQuestion у ході нема. Постав це питання віконцем AskUserQuestion (прості "
               "слова, 2–3 варіанти, рекомендований першим, рядок «Черга: …» у тексті питання). Відповідь не повторюй.")
@@ -408,6 +453,8 @@ EGATE_REASON = ("Голос «підказку edit-gate проігнорова�
 
 
 def write_log(session, misses, voice=None):
+    if is_test_session(session):  # 2026-10-25: check/pipe/smoke засмічували тінь (check 94 рядки)
+        return
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     if os.path.isfile(LOG) and os.path.getsize(LOG) > LOG_MAX:
         os.replace(LOG, LOG + ".1")
@@ -438,8 +485,8 @@ def run(data):
                 for t in {id(seg): seg, id(turns[-1]): turns[-1]}.values():
                     if isinstance(lam, str) and lam.strip() and lam not in t["texts"]:
                         t["texts"].append(lam)
-                misses = [m for m in check(seg) if not m.startswith("nudge:")] + \
-                    [m for m in check(turns[-1]) if m.startswith("nudge:")]
+                misses = [m for m in check(seg) if not m.startswith(("nudge:", "agents:"))] + \
+                    [m for m in check(turns[-1]) if m.startswith(("nudge:", "agents:"))]
                 if turns[-1].get("human") and not data.get("stop_hook_active"):
                     codes = [m for m in misses if m.startswith("codes:")]
                     # 2026-10-16 (користувач «Так, голос на проігноровані підказки»): голос лише на
@@ -448,11 +495,16 @@ def run(data):
                     nudges = [m[6:] for m in misses if m in ("nudge:brief", "nudge:verify")]
                     egate = [m[6:] for m in misses if m.startswith(("nudge:read:", "nudge:movers:"))]
                     nudges += ["egate"] if egate else []
+                    # agents (2026-10-25): не для під-агентів (agent_id) і не в DeepSeek-сесіях
+                    agents = [m for m in misses if m.startswith("agents:")]
+                    if data.get("agent_id") or is_deepseek():
+                        agents = []
                     voice = "+".join((["queue"] if "queue" in misses else [])
                                      + (["single"] if "single" in misses else [])
                                      + (["ask"] if "ask" in misses else [])
                                      + (["codes"] if codes else [])
-                                     + (["nudge"] if nudges else [])) or None
+                                     + (["nudge"] if nudges else [])
+                                     + (["agents"] if agents else [])) or None
                     if voice:
                         reasons = ([QUEUE_REASON] if "queue" in voice else []) + \
                             ([SINGLE_REASON] if "single" in voice else []) + \
@@ -462,7 +514,8 @@ def run(data):
                             ([BRIEF_REASON] if "brief" in nudges else []) + \
                             ([NUDGE_REASON.format(which="verify-before-show")]
                              if "verify" in nudges else []) + \
-                            ([EGATE_REASON.format(items="; ".join(egate))] if egate else [])
+                            ([EGATE_REASON.format(items="; ".join(egate))] if egate else []) + \
+                            ([AGENTS_REASON.format(n=agents[0][7:])] if agents else [])
         except OSError:
             misses = ["error:read"]
     else:
