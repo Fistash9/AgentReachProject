@@ -11,15 +11,31 @@
 (ls / правка TROUBLES.md) і перевіряє, що вони не падають і не блокують;
 delegate-prompt-improver (викликає модель) і delegate-outcome-logger
 (пише лог) пропускає — побічні ефекти.
+
+Інша версія без копії проєкту (2026-10-26; 25.10 для порівняння дерев
+скопіювали ввесь проєкт разом з agent.py у tmp):
+  --rev <ревізія>  розгорнути відстежувані файли ревізії (git archive) у
+                   тимчасову теку, перевірити її і прибрати. agent.py, .env,
+                   settings.local.json поза git — туди не потрапляють;
+                   settings береться живий, шляхи в ньому переносяться на теку.
+  --root <тека>    перевірити вказану теку (без копіювання).
+Без аргументів — поведінка й вивід ті самі, що й раніше. Примітки режиму —
+у stderr, stdout того ж формату.
 """
+import argparse
 import glob
 import json
 import os
 import re
+import shutil
 import subprocess
 import sys
+import tempfile
 
 P = os.environ.get("CHECK_ROOT") or os.path.expanduser("~/AgentReachProject")
+LIVE = P      # жива тека: git-репозиторій і settings.local.json
+ALT = False   # True — перевіряємо іншу теку (--rev / --root)
+REPO = P      # де виконувати git (група 8)
 MEM = os.path.expanduser(
     "~/.claude/projects/-data-data-com-termux-files-home-AgentReachProject/memory")
 SKIP_RUN = ("prompt-improver", "outcome-logger")
@@ -37,6 +53,13 @@ def chk(cond, msg):
 def read(path):
     with open(path, encoding="utf-8") as f:
         return f.read()
+
+
+def remap(tok):
+    """Абсолютний шлях живої теки -> той самий шлях у перевірюваній (лише ALT)."""
+    if ALT and tok.startswith(LIVE + "/"):
+        return P + tok[len(LIVE):]
+    return tok
 
 
 def exists_glob(path):
@@ -85,19 +108,26 @@ def main():
         chk(os.path.exists(f".claude/hooks/{h}-hook.py"), f"RULES.md: хук {h} — файлу немає")
 
     # 6. settings: команди хуків ведуть на наявні файли; кожен хук-файл підключений
-    s = json.load(open(".claude/settings.local.json", encoding="utf-8"))
+    sp = ".claude/settings.local.json"
+    if ALT and not os.path.exists(sp):
+        sp = os.path.join(LIVE, sp)
+        print(f"check-links: settings.local.json поза git — беру живий {sp}",
+              file=sys.stderr)
+    s = json.load(open(sp, encoding="utf-8"))
     hook_paths = []
     for ev, entries in s.get("hooks", {}).items():
         for e in entries:
             for h in e.get("hooks", []):
                 for tok in h.get("command", "").replace("'", " ").split():
                     if tok.startswith("/") and tok.endswith((".py", ".mjs", ".sh")):
+                        tok = remap(tok)
                         hook_paths.append(tok)
                         chk(os.path.exists(tok), f"settings {ev}: {tok} не існує")
     # статуслайн — не хук: лише «підключений» і «існує», без прогону групи 7
     sl_paths = []
     for tok in s.get("statusLine", {}).get("command", "").replace("'", " ").split():
         if tok.startswith("/") and tok.endswith((".py", ".mjs", ".sh")):
+            tok = remap(tok)
             sl_paths.append(tok)
             chk(os.path.exists(tok), f"settings statusLine: {tok} не існує")
     for f in sorted(glob.glob(os.path.join(P, ".claude/hooks/*.py"))):
@@ -125,7 +155,7 @@ def main():
 
     # 8. коміти, на які посилається RULES-WHY.md, існують
     for h in sorted(set(re.findall(r"\(([0-9a-f]{7})\)", why))):
-        r = subprocess.run(["git", "cat-file", "-e", h + "^{commit}"], capture_output=True)
+        r = subprocess.run(["git", "cat-file", "-e", h + "^{commit}"], capture_output=True, cwd=REPO)
         chk(r.returncode == 0, f"RULES-WHY.md: коміт {h} не існує")
 
     # 9. шляхи проєкту в пам'яті Claude Code
@@ -136,7 +166,7 @@ def main():
 
     # 10. menu.sh: цілі пунктів існують
     for p in re.findall(r"(~/AgentReachProject/[\w./-]+)", read("menu.sh")):
-        fp = os.path.expanduser(p)
+        fp = (P + p[len("~/AgentReachProject"):]) if ALT else os.path.expanduser(p)
         chk(os.path.exists(fp), f"menu.sh: {p} не існує")
         if fp.endswith(".sh"):
             chk(os.access(fp, os.X_OK), f"menu.sh: {p} не виконуваний")
@@ -172,5 +202,46 @@ def main():
     return 1 if bad else 0
 
 
+def cli():
+    global P, ALT, REPO
+    ap = argparse.ArgumentParser(description="Перевірка зв'язків проєкту.")
+    g = ap.add_mutually_exclusive_group()
+    g.add_argument("--rev", help="ревізія git (HEAD~5, хеш, гілка)")
+    g.add_argument("--root", help="тека для перевірки замість живої")
+    a = ap.parse_args()
+    if not (a.rev or a.root):
+        return main()
+    ALT = True
+    if a.root:
+        P = os.path.abspath(a.root)
+        REPO = P if os.path.exists(os.path.join(P, ".git")) else LIVE
+        print(f"check-links: корінь {P}", file=sys.stderr)
+        return main()
+    r = subprocess.run(["git", "-C", LIVE, "rev-parse", "--verify", "-q",
+                        a.rev + "^{commit}"], capture_output=True, text=True)
+    if r.returncode != 0:
+        print(f"check-links: ревізію {a.rev} не знайдено", file=sys.stderr)
+        return 2
+    sha = r.stdout.strip()
+    tmp = tempfile.mkdtemp(prefix="check-links-rev-")
+    try:
+        arc = subprocess.Popen(["git", "-C", LIVE, "archive", sha],
+                               stdout=subprocess.PIPE)
+        tx = subprocess.run(["tar", "-x", "-C", tmp], stdin=arc.stdout)
+        arc.stdout.close()
+        if arc.wait() != 0 or tx.returncode != 0:
+            print("check-links: git archive | tar не вдався", file=sys.stderr)
+            return 2
+        P, REPO = tmp, LIVE
+        print(f"check-links: ревізія {a.rev} ({sha[:7]}) у {tmp}", file=sys.stderr)
+        if os.environ.get("CHECK_LINKS_KEEP"):
+            print(f"check-links: KEEP — тека лишається", file=sys.stderr)
+        return main()
+    finally:
+        os.chdir(LIVE)
+        if not os.environ.get("CHECK_LINKS_KEEP"):
+            shutil.rmtree(tmp, ignore_errors=True)
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(cli())
