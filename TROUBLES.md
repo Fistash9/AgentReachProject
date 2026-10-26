@@ -6487,3 +6487,21 @@ TAGS: baton_pick_up, dsh, бриф, під-агенти, write, trash-md-guard, 
 - Хибне: «session-close не завершено» — експорт зроблено посеред закриття (baton_pass після).
 - Рекомендації рецензента → BACKLOG: (1) trash-md-guard — розбір шляху зі змінною в коді хука; (2) крок session-close «числа
   звіту — з лічильника одним виводом»; (3) рядок «Звірено…» лише після всіх вердиктів — місце, де це спрацює саме.
+
+## Дрібні граблі сесії 2487d837 (2026-10-26, друга)
+TAGS: bazaarlink, 429, trash-md-guard, під-агент, write, dsh, tui, zstd, handoff-view, обережно
+— [claude-code, 2026-10-26]
+- BazaarLink free дав 429 на 4-му delegate цієї сесії: «You have reached the daily limit of 60 free-model requests for your
+  account (it resets at 00:00 UTC)» — ліміт рахує ЗАПИТИ (60/добу), а не токени; до того 3 виклики цієї сесії + звірки
+  ранкової сесії 26.10. Дані до відкритого питання естафети «BazaarLink free: ліміт 60/добу…». Запасна ланка Haiku з
+  порожньої теки спрацювала: 2 твердження, ≈$0.011.
+- trash-md-guard заблокував `rm -rf $V` власної теки в usr/tmp (шлях зі змінною) — повтор відомого дефекту (TROUBLES:2844,
+  естафета «Далі» п.2 «розбір шляху зі змінною»). Обійшов без rm (нова тека), дефект не лікував.
+- Під-агент general-purpose: Write у usr/tmp відмовив повідомленням «Subagents should return findings as text, not write report
+  files» (зі звіту під-агента, дослівна цитата; Bash heredoc працював) — відповідь на відкрите питання естафети №8.
+- Екран DSH (TUI) у tmux не має історії: `capture-pane -S -2000` дав 33 рядки — повна відповідь лише в журналі DSH:
+  `proot-distro login ubuntu -- zstd -dc /root/.dsh/sessions/--root-dsh-app--/<id>/session.v4.jsonl.zstd`, записи
+  `type: assistant/message`, `data.message.content[].text`.
+- Моя заміна шляху `sed 's#/q12-ad-2610/#…#'` не зачепила рядок без кінцевої «/» — перший бектест «без фрази» запустив стару
+  копію; помічено за виводом (той самий 20 з 21). Урок: після sed — grep нового шляху в КОЖНОМУ файлі.
+- pick_up 107 558 симв.; стислий вигляд показує «Обережно» 0 з 208 — третій пропуск «Обережно» на старті (вузол M3, крок 26.10).

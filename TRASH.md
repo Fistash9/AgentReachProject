@@ -367,3 +367,12 @@
   files/openQuestions/watchOut втрат 0; із записки #80 втрачено 1 пункт (error:no-transcript у тіні answer-gate) → BACKLOG
   «Активні». Розміри: pass-79 137 893 Б, pass-80 137 082 Б. Відкат — mv назад у .baton/history/.
 — [claude-code, 2026-10-25]
+
+## 2026-10-26 — 2 старі знімки естафети .baton/history/pass-81.json, pass-82.json → .trash/baton-history-2026-10-26/
+- Чому: старт сесії 26.10 (друга), правило «Після baton_pick_up — baton-diff… лише потім старіші знімки прибрати». baton-diff
+  #81→#83: випало 3 пункти «Далі» — усі три в «Зроблено» дослівно (рядки 398, 399, 408 виводу pick_up); записка #82 → #83:
+  випав 1 пункт (73938a4) — записка #83 сама називає його неактуальним (на старті 26.10 закомічено a785ed4). Звірено й
+  files/openQuestions/watchOut/done: watchOut і done втрат 0; openQuestions «BazaarLink…» — не втрата, текст доповнено
+  («26.10: 6 з 6 дійшли»); files у #82 замінено за задумом поля (replaces), шляхи chains-2026-10-25 живуть у «Далі» п.12.
+  Розміри: pass-81 142 038 Б, pass-82 149 648 Б. Відкат — mv назад у .baton/history/.
+— [claude-code, 2026-10-26]

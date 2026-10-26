@@ -70,13 +70,17 @@ CLASSES = [
      r"чому ти не (?:запропонував|користувався|згадав)|не користувався|не згадав|вже розглядали|проходили|"
      r"в арсенал|пам.?ять не та|скіл|не скористал|скориста|використа|не викликав|велосипед|"
      r"готов\w* рішен|не в тому\b|домовлял|\bне\s+\w+\s+агент|"
-     r"не віддаєш[^.?!]{0,30}агент|агент\w*[^.?!]{0,12}не користу"),  # 23.10: «чому не віддаєш процеси агенту опусу?», «знов агентами не користуєшся?»
+     r"не віддаєш[^.?!]{0,30}агент|агент\w*[^.?!]{0,12}не користу|"
+     r"агент(?:ам|ами|ів|и|а)\b|робиш\s+сам|сам\s+робиш"),  # 23.10: «чому не віддаєш процеси агенту опусу?», «знов агентами не користуєшся?»; 26.10: «агентів… не забув запускати?», «ти знов робиш сам»
     # 25.10 ремонт (запропоновано, не затверджено): урок не засвоєно — не вчиться сам, не запам'ятовує
     ("Р10", "Урок не засвоєно: не вчиться й не запам'ятовує",
      r"навчи|навчан|навчит|вчитись|запам.?ят[аоу]|памята|досвід|кожен раз згадув|"
      r"засво|урок\w*\s+не\b|не\s+вивчен|забу"),  # 25.10 тригер: «уроки не засвоєні», «ти міг забути», «все забудеться»
 ]
 CLASSES = [(c, n, re.compile(p, re.I)) for c, n, p in CLASSES]
+# 2026-10-26 (сліпа розмітка q12-ad-2026-10-26: 16 → 19 з 21): виняток із «Правила розкладки» (Р1 першим) — «віддати … діпсіку/делегатору/агенту»
+# — це Р9 «роблю сам замість агентів», навіть коли поруч загальне «перевір» (сліпа розмітка B06, 26.10)
+PRIORITY = [("Р9", re.compile(r"віддат\w*[^.?!]{0,30}(?:діпсік|deepseek|делегатор|агент)", re.I))]
 NAMES = {c: n for c, n, _ in CLASSES}
 # 25.10 ремонт: загальні слова «не працює / не зробилось / знахідки» — лише запасний Р4, коли жоден клас не впізнав
 # (у таблиці вони крали поправки в Р5/Р9: «рівнева система… знов не працює?», «знахідку 3… в арсеналі є скіли»)
@@ -91,6 +95,9 @@ def answer_part(text):
 
 def classify(text):
     text = answer_part(text)
+    for c, rx in PRIORITY:
+        if rx.search(text):
+            return c
     for c, _, rx in CLASSES:
         if rx.search(text):
             return c
@@ -212,20 +219,29 @@ REGISTRY = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__
                         "agents", "claude-code", "q12-classes-2026-10-16", "registry-v1.md")
 
 
+def target_rx(t):
+    """Мішень ліків (2026-10-26, agents/claude-code/q12-ad-2026-10-26/): «*» — увесь клас; інакше основи через кому — поправка має цю мішень,
+    якщо її слова містять хоч одну основу (підрядок, без регістру)."""
+    t = (t or "*").strip()
+    if t in ("*", "", "—", "-"):
+        return None
+    return re.compile("|".join(re.escape(x.strip()) for x in t.split(",") if x.strip()), re.I)
+
+
 def remedies(path=REGISTRY):
-    """{клас: [(час коміту, коміт, ліки)]} з розділу «## Ліки» реєстру; час — з git (UTC)."""
+    """{клас: [(час коміту, коміт, ліки, мішень)]} з розділу «## Ліки» реєстру; час — з git (UTC)."""
     import subprocess
     from datetime import datetime, timezone
     out, on = {}, False
     for l in open(path, encoding="utf-8"):
         on = on or l.startswith("## Ліки")
-        m = on and re.match(r"\|\s*(Р\d+)\s*\|\s*(\d{4}-\d\d-\d\d)\s*\|\s*([0-9a-f]{7,})\s*\|\s*(.+?)\s*\|", l)
+        m = on and re.match(r"\|\s*(Р\d+)\s*\|\s*(\d{4}-\d\d-\d\d)\s*\|\s*([0-9a-f]{7,})\s*\|\s*(.+?)\s*\|(?:\s*(.*?)\s*\|)?", l)
         if m:
             r = subprocess.run(["git", "-C", os.path.dirname(path), "log", "-1", "--format=%ct", m.group(3)],
                                capture_output=True, text=True)
             ts = (datetime.fromtimestamp(int(r.stdout.strip()), timezone.utc).strftime("%Y-%m-%dT%H:%M")
                   if r.stdout.strip().isdigit() else m.group(2) + "T23:59")  # без git — кінець дня (суворіше)
-            out.setdefault(m.group(1), []).append((ts, m.group(3), m.group(4)))
+            out.setdefault(m.group(1), []).append((ts, m.group(3), m.group(4), m.group(5) or "*"))
     return out
 
 
@@ -288,15 +304,33 @@ def report_loop():
         if not lk:
             print(f"  {c} {name}: поправок {len(rs)}; ліків-механізмів немає")
             continue
-        last = lk[-1][0]
-        after = [r for r in rs if r[0] > last]
-        mark = ("⚠ ліки не діють" if after else
+        groups = {}
+        for x in lk:
+            groups.setdefault(x[3], []).append(x)
+        covered, lines = set(), []
+        for tg, g in groups.items():
+            rx = target_rx(tg)
+            rt = [r for r in rs if rx is None or rx.search(answer_part(r[1]))]
+            covered.update(id(r) for r in rt)
+            after = [r for r in rt if r[0] > g[-1][0]]
+            lines.append((tg, rt, g[-1], after))
+        outside = [r for r in rs if id(r) not in covered]
+        out_after = [r for r in outside if r[0] > lk[-1][0]]  # без мішені — як досі: від останніх ліків класу
+        cw = sum(bool(x[3]) for x in lines) + bool(out_after)
+        mark = ("⚠ ліки не діють" if cw else
                 "ок? недійсне — детектор зламаний" if broken else "ок: після ліків повторів нема")
-        warn += bool(after)
-        print(f"  {c} {name}: поправок {len(rs)} (до останніх ліків {len(rs) - len(after)}, після {len(after)}); "
-              f"ліків {len(lk)}, останні {last[:10]} {lk[-1][1]} — {mark}")
-        for t, text, _, rep in after[:3]:
-            print(f"      {t[:16]}{' · повтор' if rep else ''}  «{re.sub(chr(10), ' ', text)[:90]}»")
+        warn += bool(cw)
+        print(f"  {c} {name}: поправок {len(rs)}; ліків {len(lk)}, мішеней {len(groups)}, "
+              f"поза мішенями {len(outside)} — {mark}")
+        if outside:
+            print(f"    без мішені: поправок {len(outside)} (після останніх ліків класу {len(out_after)}){' — ⚠' if out_after else ''}")
+            for t, text, _, rep in out_after[:3]:
+                print(f"      {t[:16]}{' · повтор' if rep else ''}  «{re.sub(chr(10), ' ', text)[:90]}»")
+        for tg, rt, last, after in lines:
+            print(f"    мішень «{tg[:40]}»: поправок {len(rt)} (після {len(after)}); "
+                  f"останні {last[0][:10]} {last[1]}{' — ⚠' if after else ''}")
+            for t, text, _, rep in after[:3]:
+                print(f"      {t[:16]}{' · повтор' if rep else ''}  «{re.sub(chr(10), ' ', text)[:90]}»")
     print(f"⚠ класів з повтором після ліків: {warn}")
     print("Частка поправок (поправки / повідомлення користувача) по тижнях:")
     for wk in sorted(week):
