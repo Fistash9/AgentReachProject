@@ -7,7 +7,13 @@ PreToolUse hook на Bash: перед git add ЗАВЖДИ показує git st
 потрапив у git до того, як файл додали в .gitignore).
 
 Звичайний git add НЕ блокується — лише показує статус як контекст.
+
+2026-10-26: друга перевірка copy_risk — cp/rsync/tar/zip/scp/mv, що копіює agent.py
+або весь корінь проєкту (cp -r . $T/ 25.10, TROUBLES 2026-10-25 «Скопіював увесь
+проєкт (cp -r .)…»), дає «ask» (віконце), не deny. Виняток: --exclude/-x з agent.py.
+Вимикач: KEYGUARD=0. Межі (find -exec, xargs, змінні в джерелі) — див. copy_risk.
 """
+import os
 import sys
 import json
 import re
@@ -108,6 +114,256 @@ def git_add_arg_tokens(command):
     return combined_args if found else None
 
 
+COPY_PROGS = {"cp", "rsync", "tar", "zip", "scp", "mv"}
+WRAPPERS = {"sudo", "env", "command", "nohup", "time"}
+REDIR_RE = re.compile(r"^\d*(>>?|<<?-?|>&|<&)(.*)$")
+# опції, що беруть НАСТУПНИЙ токен як значення (не джерело)
+OPT_ARG = {
+    "cp": {"-t", "--target-directory", "-S", "--suffix"},
+    "scp": {"-P", "-i", "-o", "-F", "-c", "-l", "-S", "-J", "-D", "-X"},
+    "rsync": {"-e", "--rsh", "--exclude", "--include", "--filter", "-f", "--exclude-from",
+              "--include-from", "--files-from", "--link-dest", "--compare-dest", "--copy-dest",
+              "--backup-dir", "--suffix", "--chmod", "--chown", "-T", "--temp-dir", "--partial-dir",
+              "--log-file", "--password-file", "--port", "--timeout", "-M", "--remote-option",
+              "--rsync-path"},
+    "zip": {"-b", "-n", "-t", "-tt", "-O", "--out", "-P", "--password", "-Z"},
+    "mv": {"-t", "--target-directory", "-S", "--suffix"},
+}
+TAR_ARG_LETTERS = set("fCTXbKNgLV")
+TAR_LONG_ARG = {"--file", "--directory", "--exclude", "--files-from", "--exclude-from",
+                "--transform", "--xform", "--owner", "--group", "--mode", "--newer", "--after-date"}
+
+
+def _tokens(command):
+    """shlex-токени з роздільниками ;&|() окремо (redirect-и типу 2>/dev/null — одним словом)."""
+    command = command.replace("$(pwd)", "$PWD").replace("`pwd`", "$PWD")
+    command = command.replace("\\\n", " ").replace("\n", " ; ")
+    lex = shlex.shlex(command, posix=True, punctuation_chars=";&|()")
+    lex.whitespace_split = True
+    lex.commenters = ""
+    return list(lex)
+
+
+def _segments(tokens):
+    seg = []
+    for tok in tokens:
+        if tok and set(tok) <= set(";&|()"):
+            if seg:
+                yield seg
+            seg = []
+        else:
+            seg.append(tok)
+    if seg:
+        yield seg
+
+
+def _clean(seg):
+    """Прибирає коментар (#…), redirect-и (2>/dev/null, > f) і обгортки sudo/env/VAR=."""
+    out, skip = [], False
+    for i, t in enumerate(seg):
+        if skip:
+            skip = False
+            continue
+        if t.startswith("#"):
+            break
+        m = REDIR_RE.match(t)
+        if m:
+            skip = not m.group(2)  # «>» окремо — ціль у наступному токені
+            continue
+        out.append(t)
+    assigns = []
+    while out and (out[0] in WRAPPERS or re.match(r"^\w+=", out[0])):
+        if re.match(r"^\w+=", out[0]):
+            assigns.append(out[0])
+        out = out[1:]
+    # присвоєння змінюють shell-змінні лише в сегменті без команди (VAR=x; …), не в «VAR=x cmd»
+    return out, (assigns if not out else [])
+
+
+def _subst(s, cwd, shvars):
+    """$VAR/${VAR}: PWD → cwd, HOME → ~, прості присвоєння цієї ж команди → їх значення.
+    Невідомі лишаються як є (далі _resolve поверне None)."""
+    home = os.path.expanduser("~")
+
+    def rep(m):
+        name = m.group(1) or m.group(2)
+        if name == "PWD":
+            return cwd if cwd is not None else m.group(0)
+        if name in (shvars or {}):
+            return shvars[name]
+        if name == "HOME":
+            return home
+        return m.group(0)
+    return re.sub(r"\$\{(\w+)\}|\$(\w+)", rep, s)
+
+
+def _is_key(arg, cwd, shvars):
+    """Аргумент — саме файл agent.py (./agent.py, dir/agent.py, $F з F=agent.py), не підрядок."""
+    a = os.path.expanduser(_subst(arg, cwd, shvars))
+    return os.path.basename(os.path.normpath(a)) == "agent.py" if a else False
+
+
+def _resolve(path, cwd, shvars=None):
+    """Шлях → абсолютний (None, якщо не розв'язати: змінна, невідомий cwd)."""
+    path = os.path.expanduser(_subst(path, cwd, shvars))
+    if path == "*":
+        path = "."
+    elif path.endswith("/*"):
+        path = path[:-2] or "/"
+    if "$" in path or "*" in path or "?" in path or ":" in path.split("/")[0]:
+        return None  # невідома змінна, складний глоб, віддалений host:path (scp/rsync)
+    if not os.path.isabs(path):
+        if cwd is None:
+            return None
+        path = os.path.join(cwd, path)
+    return os.path.normpath(path)
+
+
+def _covers_root(path):
+    """Джерело = корінь проєкту або його предок (~, / …) — копія міститиме agent.py."""
+    roots = {os.path.normpath(REPO), os.path.realpath(REPO)}
+    for cand in {path, os.path.realpath(path)}:
+        for r in roots:
+            if cand == r or r.startswith(cand.rstrip("/") + "/"):
+                return True
+    return False
+
+
+def _excludes_key(prog, args):
+    for i, a in enumerate(args):
+        nxt = args[i + 1] if i + 1 < len(args) else ""
+        if prog in ("rsync", "tar"):
+            if a.startswith("--exclude=") and "agent.py" in a:
+                return True
+            if a == "--exclude" and "agent.py" in nxt:
+                return True
+        if prog == "zip" and a in ("-x", "--exclude"):
+            for p in args[i + 1:]:
+                if p.startswith("-"):
+                    break
+                if "agent.py" in p:
+                    return True
+    return False
+
+
+def _sources(prog, args, cwd):
+    """Не-опційні аргументи-ДЖЕРЕЛА як пари (сирий, база для резолву)."""
+    if prog == "tar":
+        return _tar_sources(args, cwd)
+    pos, target_given, i, ends = [], False, 0, False
+    while i < len(args):
+        a = args[i]
+        if not ends and a == "--":
+            ends = True
+        elif not ends and a.startswith("-") and a != "-":
+            if a.startswith("--target-directory") or a == "-t":
+                target_given = True
+            if a in OPT_ARG.get(prog, ()):
+                i += 1
+            elif prog == "zip" and a in ("-x", "-i", "--exclude", "--include"):
+                while i + 1 < len(args) and not args[i + 1].startswith("-"):
+                    i += 1
+        else:
+            pos.append(a)
+        i += 1
+    if prog == "zip":
+        srcs = pos[1:]  # перший — ім'я архіву
+    elif target_given:
+        srcs = pos
+    else:
+        srcs = pos[:-1] if len(pos) >= 2 else []  # останній — призначення
+    names = srcs if prog == "zip" else pos  # для перевірки імені agent.py (архів zip — не джерело)
+    return [(s, cwd) for s in srcs], names
+
+
+def _tar_sources(args, cwd):
+    srcs, base, i, mode_ok, first = [], cwd, 0, True, True
+    while i < len(args):
+        a = args[i]
+        if a.startswith("--"):
+            name = a.split("=", 1)[0]
+            if name in ("--extract", "--get", "--list", "--diff", "--compare"):
+                mode_ok = False
+            if name == "--directory":
+                val = a.split("=", 1)[1] if "=" in a else (args[i + 1] if i + 1 < len(args) else "")
+                base = _resolve(val, base) if base or os.path.isabs(val) else None
+            if name in TAR_LONG_ARG and "=" not in a:
+                i += 1
+        elif (a.startswith("-") and a != "-") or (first and re.match(r"^[A-Za-z]+$", a)):
+            letters = a.lstrip("-")
+            dash = a.startswith("-")
+            for k, ch in enumerate(letters):
+                if ch in "xtd":
+                    mode_ok = False
+                if ch in TAR_ARG_LETTERS:
+                    if dash and k < len(letters) - 1:  # -fARCHIVE / -Cdir
+                        val = letters[k + 1:]
+                    else:
+                        i += 1
+                        val = args[i] if i < len(args) else ""
+                    if ch == "C":
+                        base = _resolve(val, base) if base or os.path.isabs(val) else None
+                    if dash:
+                        break
+        else:
+            srcs.append((a, base))
+        first = False
+        i += 1
+    return (srcs if mode_ok else []), [s for s, _ in srcs]  # імена — без архіву після -f
+
+
+def copy_risk(command, cwd, shvars=None):
+    """2026-10-26. Повертає опис ризику (рядок) або None.
+    Ловить сегмент, програма якого (після sudo/env/command/nohup/time, basename) — cp/rsync/
+    tar/zip/scp/mv і (а) аргумент — саме файл agent.py (basename; архів після tar -f і перший
+    аргумент zip не рахуються), або (б) джерело (і для mv)
+    резолвиться в корінь проєкту чи його предка (., ./, ./., $PWD, *, ./*, повний
+    шлях, ~/AgentReachProject, ..). cwd — з input JSON; «cd X» у тій самій команді зсуває cwd
+    для наступних сегментів (лінійно, без урахування підоболонок; cd -/без шляху до змінної —
+    cwd невідомий, відносні джерела не перевіряються). Вкладене sh/bash -c '…' розбирається.
+    Виняток: rsync/tar/zip з --exclude/-x, що містить agent.py. Текст у лапках і тіло
+    heredoc — не команда. Прості присвоєння в тій самій команді (D=$PWD; cp -r "$D" …) підставляються.
+    НЕ ловить: find -exec cp, xargs cp, змінну з export/сусідньої команди чи $(…)-підстановки,
+    складні глоби (.[!.]*, *.py), pushd і повернення з (cd …) підоболонки,
+    tar з -T списком, cpio/dd/ln/python shutil, віддалене host:path."""
+    shvars = dict(shvars or {})
+    tokens = _tokens(strip_heredocs(command))
+    for seg in _segments(tokens):
+        seg, assigns = _clean(seg)
+        for asg in assigns:
+            name, val = asg.split("=", 1)
+            shvars[name] = _subst(val, cwd, shvars)  # $PWD розкривається в момент присвоєння
+        if not seg:
+            continue
+        head = os.path.basename(seg[0])
+        args = seg[1:]
+        if head == "cd":
+            dests = [a for a in args if not a.startswith("-")]
+            if not dests:
+                cwd = None if args else os.path.expanduser("~")
+            else:
+                cwd = _resolve(dests[0], cwd, shvars)
+            continue
+        for k in range(len(seg) - 2):
+            if (os.path.basename(seg[k]) in SHELLS and seg[k + 1].startswith("-")
+                    and "c" in seg[k + 1]):
+                inner = copy_risk(seg[k + 2], cwd)
+                if inner:
+                    return inner
+        if head not in COPY_PROGS:
+            continue
+        if head in ("rsync", "tar", "zip") and _excludes_key(head, args):
+            continue
+        srcs, names = _sources(head, args, cwd)
+        if any(_is_key(a, cwd, shvars) for a in names):
+            return f"{head}: аргумент — файл agent.py"
+        for raw, base in srcs:
+            p = _resolve(raw, base, shvars)
+            if p and _covers_root(p):
+                return f"{head}: джерело «{raw}» — це корінь проєкту (або тека над ним), тобто разом з agent.py"
+    return None
+
+
 def l2s_links(args, status_lines, cwd):
     """Ярлики серед шляхів, які додасть git add (2026-10-20, рішення користувача «Так, зробити»): у cf52c36
     звіт DSH пішов у git як symlink на rootfs/.l2s. Шляхи — з git status (тип «T» і нові), що підпадають під
@@ -145,12 +401,21 @@ def main():
     raw_command = data.get("tool_input", {}).get("command", "")
     if not raw_command:
         return
+    # 2026-10-26: копія ключа (cp -r . $T/ 25.10). Рахуємо ДО гілки git add; deny git add agent.py
+    # лишається пріоритетним, звичайний git add без копіювання працює як раніше.
+    risk = None
+    if os.environ.get("KEYGUARD") != "0":
+        try:
+            risk = copy_risk(raw_command, data.get("cwd") or REPO)
+        except Exception:
+            risk = None  # fail-open
+
     command = strip_heredocs(raw_command)
     args = git_add_arg_tokens(command)
-    if args is None:
+    if args is None and not risk:
         return
 
-    if any("agent.py" in a for a in args):
+    if args is not None and any("agent.py" in a for a in args):
         print(json.dumps({
             "hookSpecificOutput": {
                 "hookEventName": "PreToolUse",
@@ -160,6 +425,21 @@ def main():
                     "(розділ Git): agent.py містить ключ і живе поза git — прецедент "
                     "TROUBLES.md #11, ключ уже раз потрапив у git. Якщо це "
                     "помилка — прибери agent.py з команди."
+                ),
+            }
+        }))
+        return
+
+    if risk:
+        print(json.dumps({
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "ask",
+                "permissionDecisionReason": (
+                    "keyguard: команда копіює ключ agent.py (" + risk + "). RULES.md (розділ Git): "
+                    "agent.py містить ключ і живе поза git; TROUBLES 2026-10-25 «Скопіював увесь проєкт "
+                    "(cp -r .)…» — копія ключа в незахищену теку. Копіюй лише потрібні файли або додай "
+                    "--exclude agent.py (zip: -x agent.py). Вимкнути перевірку: KEYGUARD=0."
                 ),
             }
         }))
