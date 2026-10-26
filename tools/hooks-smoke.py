@@ -114,8 +114,8 @@ def main():
         json.dump({"task": "тест", "goal": "тест", "status": "тест", "handoffNote": "тест",
                    "next": ["@claude-code тест"], "openQuestions": [], "files": [], "done": [],
                    "watchOut": [], "passCount": 1}, f, ensure_ascii=False)
-    with open(os.path.join(tmp, "baton-big.json"), "w", encoding="utf-8") as f:  # handoffNote > 15 000 Б
-        json.dump({"task": "тест", "goal": "тест", "status": "тест", "handoffNote": "x" * 16000,
+    with open(os.path.join(tmp, "baton-big.json"), "w", encoding="utf-8") as f:  # handoffNote > 20 000 Б
+        json.dump({"task": "тест", "goal": "тест", "status": "тест", "handoffNote": "x" * 21000,
                    "next": ["@claude-code тест"], "openQuestions": [], "files": [], "done": [],
                    "watchOut": [], "passCount": 1}, f, ensure_ascii=False)
     open(os.path.join(tmp, "empty-ledger.jsonl"), "w").close()
