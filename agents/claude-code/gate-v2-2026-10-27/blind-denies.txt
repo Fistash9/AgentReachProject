@@ -1,0 +1,71 @@
+D01 | сесія 6b187e96 | 10-26T08:00:07 | Bash | Add memory index line (без агента: один рядок) | "echo '- [check-before-calling-false](check-before-calling-fa"
+D02 | сесія 2487d837 | 10-26T14:48:05 | Bash | Prepare empty-folder Haiku verifier run for two claims | 'TS=$(date +%H%M%S); W=/data/data/com.termux/files/usr/tmp/vb'
+D03 | сесія 2487d837 | 10-27T05:58:01 | Bash | Export session journal and scan for personal data | 'E=/data/data/com.termux/files/usr/tmp/review-2487d837.md; py'
+D04 | сесія 4cab3538 | 10-25T01:26:28 | Edit | | '/data/data/com.termux/files/home/AgentReachProject/tools/err'
+D05 | сесія 4dc8a94e | 10-25T19:20:06 | Bash | Context around deny reason in docs | 'F=/data/data/com.termux/files/usr/tmp/hooks-doc.txt; grep -o'
+D06 | сесія 2487d837 | 10-26T14:29:35 | Bash | Append queue step-zero notes to four nodes | 'python3 - <<\'EOF\'\nimport re\ntag="— [claude-code, 2026-10-26;'
+D07 | сесія 4cab3538 | 10-25T01:13:53 | Bash | Read DSH's check of answer 1 and why-2 | "sed -n '/ЧОМУ 1/,$p' /data/data/com.termux/files/home/AgentR"
+D08 | сесія 4cab3538 | 10-25T00:20:58 | Bash | Count reel analyses and check for a reel tool | 'grep -c -i "^## .*рілс" TROUBLES.md; grep -i "^## .*рілс" TR'
+D09 | сесія 4cab3538 | 10-24T20:22:07 | Bash | Gather evidence for each dropped baton item | 'echo "== n ask доходять"; git log --oneline -1 073e66e; echo'
+D10 | сесія 4cab3538 | 10-25T00:37:39 | Bash | Find all consumers of turn events | 'grep -n \'\\["events"\\]\\|\\.get("events"\\|ev\\[0\\]\\|for ev in\' .'
+D11 | сесія cb82f9d3 | 10-25T08:02:36 | Bash | Check Haiku's quotes against the diff file | 'D=/data/data/com.termux/files/usr/tmp/askgate-narrow/ask-gat'
+D12 | сесія 4cab3538 | 10-24T23:44:37 | Bash | Check whether DSH keeps session journals | 'R=/data/data/com.termux/files/usr/var/lib/proot-distro/insta'
+D13 | сесія 4cab3538 | 10-24T20:27:45 | Bash | Read passport node records and output dir | 'sed -n 205,216p trees/yakist-roboty-agentiv.md; sed -n 408,4'
+D14 | сесія 2487d837 | 10-27T06:31:45 | Bash | Check network reachability of the delegate provider | 'curl -sS -o /dev/null -w "%{http_code} %{time_total}s\\n" --m'
+D15 | сесія 2487d837 | 10-26T14:38:35 | Bash | Verify subagent claims by rerunning copy — без агента: перевірка чисел деле | 'D=/data/data/com.termux/files/usr/tmp/q12-ad-2610; git statu'
+D16 | сесія 4dc8a94e | 10-25T19:38:01 | Bash | Verify baton server replacement, diff fields and field sizes | "S=$(grep -rl 'handoffNote: args.handoffNote' ~/.npm ~/node_m"
+D17 | сесія 6b187e96 | 10-26T08:04:10 | Bash | Find files whose name contains agent.py (без агента: один find) | 'find . -name "*agent.py" -not -path "./.git/*" -not -path "*'
+D18 | сесія cfca89fe | 10-23T11:04:00 | Bash | Read Q6 node body | "sed -n '390,420p' trees/yakist-roboty-agentiv.md"
+D19 | сесія cb82f9d3 | 10-25T07:32:34 | Bash | Check Obsidian claim and record skills-pattern idea in BACKLOG | "sed -n 5736,5753p TROUBLES.md | grep -n -E '26|36|32' | cut "
+D20 | сесія cb82f9d3 | 10-25T06:40:20 | Bash | Append today's pick_up size measurement to node M3 | "echo $((96536-87338)) && python3 - <<'EOF'\np='trees/pam-yat-"
+D21 | сесія 4dc8a94e | 10-25T19:48:19 | Bash | Read class table end and Р10 definition in code | 'R=agents/claude-code/q12-classes-2026-10-16/registry-v1.md; '
+D22 | сесія cfca89fe | 10-23T11:49:55 | Bash | Read the DeepSeek plan details in TROUBLES | "n=$(grep -n '^## План DeepSeek «що робити зараз»' TROUBLES.m"
+D23 | сесія 4cab3538 | 10-25T00:34:32 | Bash | Read Haiku bug note and both verify checks | 'sed -n 46,70p BACKLOG.md | grep -n -i "haiku" | cut -c1-260;'
+D24 | сесія 2487d837 | 10-27T06:44:14 | Bash | Read main goal and current directions | 'sed -n 11,29p GOALS.md | cut -c1-220'
+D25 | сесія cb82f9d3 | 10-25T07:53:27 | Bash | Analyze delegate success and error types by day | "python3 - <<'EOF'\nimport json,collections\nc=collections.defa"
+D26 | сесія 4cab3538 | 10-25T01:04:59 | Bash | Snapshot baton before addendum pass | 'cp .baton/baton.json .baton/history/pass-77.json && ls -la .'
+D27 | сесія 6b187e96 | 10-26T05:44:05 | Bash | Count corrections without a class | 'python3 tools/error-registry.py --loop 2>&1 | python3 -c "\ni'
+D28 | сесія 6b187e96 | 10-26T08:39:57 | Bash | Append TROUBLES record and commit hook with record | "cat >> TROUBLES.md <<'EOF'\n\n### Охоронець ключа: git-add-sta"
+D29 | сесія cb82f9d3 | 10-25T07:45:39 | Bash | Read DSH answer on boundaries and verify skill overrides | 'tail -22 agents/dsh/JOURNAL.md | cut -c1-300; sed -n 83,90p '
+D30 | сесія 4cab3538 | 10-25T00:39:13 | Edit | | '/data/data/com.termux/files/home/AgentReachProject/.claude/h'
+D31 | сесія cfca89fe | 10-23T11:12:47 | Bash | Write the decisions list with recommendations | 'cd /data/data/com.termux/files/home/AgentReachProject/.unlaz'
+D32 | сесія 6b187e96 | 10-26T08:49:52 | Bash | Check unpacked revision has no key (без агента: одна перевірка) | 'D=$(ls -dt /data/data/com.termux/files/usr/tmp/check-links-r'
+D33 | сесія 4cab3538 | 10-24T23:57:49 | Bash | Read how readers are found; past 'who depends' ideas | 'grep -n "def history_readers" -A12 .claude/hooks/edit-gate-h'
+D34 | сесія 4dc8a94e | 10-25T19:11:50 | Bash | Find installed Claude Code package date and version | 'head -5 ~/.local/bin/claude; for d in $(npm root -g 2>/dev/n'
+D35 | сесія cb82f9d3 | 10-25T06:48:41 | Bash | Read recipe for delivering letters into DSH window | "sed -n 3958,3990p TROUBLES.md | cut -c1-330; grep -n -E '^##"
+D36 | сесія 2487d837 | 10-27T06:52:46 | Bash | Mark tree node in progress, record DeepSeek decision, update memories | 'python3 - <<\'EOF\'\nimport re\nTAG="— [claude-code, 2026-10-27;'
+D37 | сесія cfca89fe | 10-23T11:19:22 | Bash | Find which components use the BazaarLink key | "cd /data/data/com.termux/files/home && grep -l -i 'bazaarlin"
+D38 | сесія 4cab3538 | 10-24T23:40:09 | Bash | Find whisper install location | 'sed -n 160,180p TROUBLES.md | cut -c1-200; ls ~ | grep -i wh'
+D39 | сесія 4dc8a94e | 10-25T19:10:38 | Bash | Check plugin install record, cache and CLI version | 'python3 -c "\nimport json;d=json.load(open(\'/data/data/com.te'
+D40 | сесія cfca89fe | 10-23T11:31:38 | Bash | Read BACKLOG plan block around SessionEnd item | "sed -n '88,94p' BACKLOG.md | cut -c1-160"
+D41 | сесія 4cab3538 | 10-25T00:45:14 | Bash | Mark reel node as done-awaiting-live-check with evidence | 'python3 - <<\'EOF\'\np="trees/yakist-roboty-agentiv.md"; s=open'
+D42 | сесія cfca89fe | 10-23T11:31:15 | Bash | List existing logs and records about leftover processes | "ls .claude/logs/; echo ---; grep -n -iE 'SessionEnd|страховк"
+D43 | сесія cfca89fe | 10-23T12:35:33 | Bash | Якість › Реєстр помилок › формат класів і ліків | 'f=agents/claude-code/q12-classes-2026-10-16/registry-v1.md; '
+D44 | сесія 4cab3538 | 10-24T16:56:42 | Edit | | '/data/data/com.termux/files/home/AgentReachProject/.claude/h'
+D45 | сесія 2487d837 | 10-27T06:29:34 | Bash | Map context windows to provider models | 'grep -n \'"id"\\|"name"\\|context_window\\|"model\' /data/data/co'
+D46 | сесія 2487d837 | 10-26T15:22:20 | Bash | Prepare Haiku verification of gate code and view check claims | 'TS=$(date +%H%M%S); W=/data/data/com.termux/files/usr/tmp/vb'
+D47 | сесія cb82f9d3 | 10-25T08:12:42 | Bash | Commit session records in one commit | 'cat /data/data/com.termux/files/usr/tmp/claude-10599/-data-d'
+D48 | сесія 4dc8a94e | 10-25T18:58:34 | Bash | Run order criteria check on all trees and focus-tree | 'cat > /data/data/com.termux/files/usr/tmp/tree-order-check.p'
+D49 | сесія 2487d837 | 10-27T07:24:06 | Bash | Record lost-step-in-note case in TROUBLES | "cat >> TROUBLES.md <<'EOF'\n- Записка естафети #89 замінила #"
+D50 | сесія 4dc8a94e | 10-25T19:33:50 | Bash | Add missing registry report in follow-up commit | 'cp /data/data/com.termux/files/usr/tmp/registry-fix/REPORT.m'
+D51 | сесія cfca89fe | 10-23T11:16:15 | Bash | Read unused-tools node and related TROUBLES entries | "n=$(grep -n '^- \\[.\\] Q3 ' trees/yakist-roboty-agentiv.md|cu"
+D52 | сесія cfca89fe | 10-23T10:57:08 | Bash | Show guard log line for this run | 'tail -1 .claude/logs/commit-consent.log | cut -c1-120; date '
+D53 | сесія 2487d837 | 10-27T06:02:52 | Bash | Reproduce lock decision on the exact earlier answer text | "python3 - <<'EOF'\nimport importlib.util\ns=importlib.util.spe"
+D54 | сесія 4cab3538 | 10-25T01:22:50 | Bash | Read end of root-cause memory before updating | 'M=/data/data/com.termux/files/home/.claude/projects/-data-da'
+D55 | сесія 4dc8a94e | 10-25T16:58:06 | Bash | Find references to line numbers in the two moved trees | "ls tools | grep -i link; grep -rnoE '(yakist-roboty-agentiv|"
+D56 | сесія cb82f9d3 | 10-25T06:43:44 | Bash | Count positive and negative test cases per registered hook | 'T=/data/data/com.termux/files/usr/tmp && cat > $T/smoke-case'
+D57 | сесія 2487d837 | 10-27T06:11:17 | Bash | Snapshot baton and print next items to drop | 'N=$(python3 -c "import json;print(json.load(open(\'.baton/bat'
+D58 | сесія 2487d837 | 10-26T14:49:02 | Bash | Check Haiku verdict quotes with grep | "grep -cF 'B12 | без класу | без класу | Р4 | НІ' backtest-no"
+D59 | сесія cb82f9d3 | 10-25T07:21:47 | Bash | Read the errors section of DSH report | 'sed -n 63,118p agents/dsh/check-start-2026-10-25.md | cut -c'
+D60 | сесія cb82f9d3 | 10-25T06:55:28 | Bash | Get exact node names from the tree index | 'for id in Q4 Q4.3 Q4.4 Q5 Q12 G2 M3; do python3 tools/trees-'
+D61 | сесія cfca89fe | 10-23T11:10:04 | Bash | Read grill-me skill and check if it's disabled | 'cd /data/data/com.termux/files/home/AgentReachProject/.claud'
+D62 | сесія cfca89fe | 10-23T11:53:11 | Bash | Read main() and test that today's missed gotcha appears | "sed -n '122,170p' tools/handoff-view.py; echo ---; grep -c '"
+D63 | сесія cfca89fe | 10-23T11:35:43 | Bash | Add level-structure calibration to the live-tree memory | 'cat >> /data/data/com.termux/files/home/.claude/projects/-da'
+D64 | сесія 6b187e96 | 10-26T08:44:19 | Bash | Index memory; size, history and readers of check-links (без агента: дані дл | "echo '- [fix-at-origin-before-gates](fix-at-origin-before-ga"
+D65 | сесія 4cab3538 | 10-25T00:28:37 | Bash | Recheck both known answers plus negative control | "python3 - <<'EOF'\nimport importlib.util, re\ns=importlib.util"
+D66 | сесія cb82f9d3 | 10-25T08:06:15 | Bash | Update process tree with consolidation progress | 'cat >> agents/claude-code/session-processes-2026-10-25.md <<'
+D67 | сесія 4cab3538 | 10-24T15:40:42 | Bash | Rerun with queue-line end at sentence boundary | 'cd /data/data/com.termux/files/usr/tmp/askgate-s8 && python3'
+D68 | сесія 4cab3538 | 10-24T23:36:38 | Bash | Read 12.10 decision and override values | 'sed -n 4393,4396p TROUBLES.md; sed -n 14,30p .claude/setting'
+D69 | сесія 4dc8a94e | 10-25T16:53:26 | Bash | Show format of the top BACKLOG entry | 'sed -n 6,14p BACKLOG.md'
+D70 | сесія cfca89fe | 10-23T12:04:25 | Bash | Якість › Створене, але не вжиткове › читання hooks-smoke (1) | "wc -l tools/hooks-smoke.py && sed -n '1,60p' tools/hooks-smo"
+D71 | сесія 4dc8a94e | 10-25T19:08:21 | Bash | Find the 39% figure in the paper abstract | 'curl -sL --max-time 25 https://arxiv.org/abs/2505.06120 | se'

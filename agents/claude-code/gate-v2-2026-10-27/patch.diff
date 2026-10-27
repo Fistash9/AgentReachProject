@@ -1,0 +1,209 @@
+--- edit-gate-hook.orig.py	2026-10-27 23:27:52.319522068 +0200
++++ edit-gate-hook.py	2026-10-27 23:33:45.323521933 +0200
+@@ -363,6 +363,188 @@
+     return f"agents\t{turns[-1]['ts']}\t{n // agv.AGENTS_N}", n
+ 
+ 
++# ======== Ворота «агенти» v2 (2026-10-27; КОПІЯ в agents/claude-code/gate-v2-2026-10-27/, у .claude/ не перенесено) ========
++# Від центру (GOALS.md:11–13 «агент вищого порядку розподіляє задачі»): міряти не «читання в ході», а «роблю сам» —
++# власну роботу оркестратора від останньої роздачі задачі. Прапорці (env EDIT_GATE_V2_<X>=0/1), щоб міряти поодинці й разом:
++#   A  одиниці роботи: Bash/Read/Grep/Glob/Edit/Write/MultiEdit (а не лише читання); deny на будь-якій з них
++#   S  лічильник через усю сесію від останньої роздачі (повідомлення користувача його не скидає; хід = вся сесія)
++#   B  «без агента:» обходить лише з причиною з білого списку: закриття/естафета/коміт/крок скіла; перевірка звіту
++#      під-агента (кількість — під C); Edit/Write ≤ V2_EDIT_LINES рядків. Без причини зі списку — як без обходу
++#   C  після звіту під-агента (task-notification Agent/delegate, hand-back) — V2_K вільних кроків, далі deny «доробка —
++#      віддай наступному агенту»; вікно закриває нова роздача або нове повідомлення користувача (не репліка посеред ходу)
++#   G  роздача = Agent/Task + delegate/deepseek/SendMessage (усі способи віддати задачу агенту) — за замовчуванням
++#      ВИМКНЕНО: бектест 27.10 — delegate частіше звірка (verify-before-show), ніж роздача, і скидає лічильник
++#   Z  законна робота оркестратора без обходу: після «закрий сесію…»/Skill session-close у поточному ході — тиша;
++#      git status/add/commit/log/diff/show — не одиниця роботи (коміт і огляд стану — справа оркестратора);
++#      нагляд за іншим агентом (tmux capture-pane/list-windows/send-keys, цикл очікування зі sleep) — теж ні
++# EDIT_GATE_V2=0 — повернутися до старих воріт (agents_check). Аварійно все — EDIT_GATE_AGENTS=0.
++V2_ON = os.environ.get("EDIT_GATE_V2", "1") != "0"
++V2_FLAGS = {k: os.environ.get("EDIT_GATE_V2_" + k, "0" if k == "G" else "1") != "0" for k in "ASBCGZ"}
++V2_N = int(os.environ.get("EDIT_GATE_V2_N", "12"))
++V2_K = int(os.environ.get("EDIT_GATE_V2_K", "2"))
++V2_EDIT_LINES = 10
++V2_WORK = {"Bash", "Read", "Grep", "Glob", "Edit", "Write", "MultiEdit", "NotebookEdit"}
++V2_DELEG = {"Agent", "Task"}
++V2_DELEG_G = V2_DELEG | {"mcp__delegate__delegate", "mcp__delegate__deepseek", "mcp__deepseek__deepseek",
++                         "mcp__deepseek__deepseek-reply", "SendMessage"}
++RE_WL_CLOSE = re.compile(r"закрит|закрива|session-close|baton|естафет|handoff|коміт|commit|git status|"
++                         r"крок\w*\s*\d*\s*скіл", re.I)
++RE_WL_CHECK = re.compile(r"(?:перевір|звір)\w*[^,;)]{0,30}(?:звіт|чис|під-?агент|делегат)", re.I)
++RE_WL_EDIT = re.compile(r"правк|рядк|рядок|запис", re.I)
++RE_CLOSE_H = re.compile(r"закр\w* сесі|завершуєм|закриваєм|на сьогодні все|згортаєм|checkpoint|wrap up|close the session", re.I)
++# нагляд за іншим агентом (DSH у tmux, очікування фонового) — це роздача, а не «роблю сам» (бектест 27.10: 3 хибні deny)
++RE_COORD = re.compile(r"tmux\s+(?:capture-pane|list-windows|send-keys)|^\s*(?:end=|until\s|while\s)[^\n]*\n?[^\n]*sleep", re.M)
++RE_GIT_OWN = re.compile(r"\s*(?:cd \S+ && )?git (?:status|add|commit|log|diff|show)\b")
++RE_REPORT = re.compile(r"<summary>(?:Agent \"|MCP task \S+ \((?:delegate|deepseek))|Subagent hand-back", re.I)
++V2_A_REASON = ("Ворота «агенти» v2: {n} власних кроків (команди, читання, правки) від останньої роздачі задачі. "
++               "Віддай наступну обмежену частину під-агенту (Agent) або повтори виклик з «без агента: <причина>», "
++               "де причина — закриття сесії/естафета/коміт, перевірка звіту під-агента або правка ≤{e} рядків.")
++V2_C_REASON = ("Ворота «агенти» v2: після звіту під-агента вже {n} власних кроків — це доробка (перенос, повтори, "
++               "записи). Віддай її наступному агенту одним брифом; точкова перевірка звіту — до {k} кроків.")
++
++
++def v2_line_events(d):
++    """Події одного запису журналу: ("tool", ts, name, inp) | ("human", ts, text, "user"|"queued") | ("report", ts, text)."""
++    if not isinstance(d, dict):
++        return []
++    t, ts = d.get("type"), d.get("timestamp", "")
++    if t == "assistant" and not d.get("isSidechain"):
++        return [("tool", ts, x.get("name", ""), x.get("input") or {}) for x in (d.get("message") or {}).get("content") or []
++                if isinstance(x, dict) and x.get("type") == "tool_use"]
++    if t == "attachment":
++        a = d.get("attachment") or {}
++        if a.get("type") != "queued_command":
++            return []
++        p = a.get("prompt", "")
++        p = p if isinstance(p, str) else json.dumps(p, ensure_ascii=False)
++        kind = (a.get("origin") or {}).get("kind", "human")
++        if RE_REPORT.search(p[:2000]):
++            return [("report", ts, p[:120])]
++        if kind == "human" and not p.lstrip().startswith("<"):
++            return [("human", ts, p, "queued")]  # посеред ходу: хід (у v1) не відкриває
++        return []
++    if t == "user" and not d.get("isMeta"):
++        c = (d.get("message") or {}).get("content")
++        if not isinstance(c, str):
++            return []
++        kind = (d.get("origin") or {}).get("kind") if isinstance(d.get("origin"), dict) else None
++        if RE_REPORT.search(c[:2000]):
++            return [("report", ts, c[:120])]
++        if kind == "human" or (kind is None and not c.lstrip().startswith("<")):
++            return [("human", ts, c, "user")]
++    return []
++
++
++def v2_window(path, flags=None):
++    """Події від останньої роздачі задачі (без неї) до кінця журналу, у прямому порядку; (події, якір = ts роздачі)."""
++    flags = flags or V2_FLAGS
++    deleg = V2_DELEG_G if flags.get("G") else V2_DELEG
++    with open(path, encoding="utf-8", errors="ignore") as f:
++        lines = f.read().splitlines()
++    out, anchor = [], "start"
++    for line in reversed(lines):
++        if '"tool_result"' in line[:600] and '"type":"assistant"' not in line[:200]:
++            continue  # результати інструментів подій не дають — не розбираємо (швидкість)
++        try:
++            d = json.loads(line)
++        except ValueError:
++            continue
++        evs = v2_line_events(d)
++        hit = next((e for e in reversed(evs) if e[0] == "tool" and e[2] in deleg), None)
++        if hit:
++            out += [e for e in reversed(evs[evs.index(hit) + 1:])]
++            anchor = hit[1]
++            break
++        out += list(reversed(evs))
++    return list(reversed(out)), anchor
++
++
++def v2_whitelisted(reason, name, inp):
++    if RE_WL_CLOSE.search(reason):
++        return "close"
++    if RE_WL_CHECK.search(reason):
++        return "check"
++    if name in ("Edit", "Write", "MultiEdit") and RE_WL_EDIT.search(reason):
++        body = str(inp.get("new_string", "") or inp.get("content", "")) + "".join(
++            str(e.get("new_string", "")) for e in inp.get("edits", []) or [] if isinstance(e, dict))
++        if body.count("\n") + 1 <= V2_EDIT_LINES:
++            return "edit"
++    return None
++
++
++def v2_decide(ev, name, inp, anchor, flags=None, agv=None, n_lim=None, k_lim=None):
++    """Чисте рішення v2 (спільне для хука і бектесту): (ключ, n, причина) або None.
++    ev — події від останньої роздачі БЕЗ поточного виклику."""
++    flags, n_lim, k_lim = flags or V2_FLAGS, n_lim or V2_N, k_lim or V2_K
++    agv = agv or answer_gate()
++    inp = inp or {}
++    is_unit = (lambda nm, i: nm in V2_WORK) if flags.get("A") else (lambda nm, i: agv.is_read(nm, i))
++    if not is_unit(name, inp):
++        return None
++    if not flags.get("S"):  # без S — як у v1: лише поточний хід (від останнього повідомлення людини)
++        hs = [i for i, e in enumerate(ev) if e[0] == "human" and e[3] == "user"]  # межі ходу як у v1 (iter_turns)
++        if hs:
++            ev = ev[hs[-1] + 1:]
++    last_h = max([i for i, e in enumerate(ev) if e[0] == "human"], default=-1)
++    if flags.get("Z"):
++        lu = max([i for i, e in enumerate(ev) if e[0] == "human" and e[3] == "user"], default=-1)
++        if lu >= 0 and RE_CLOSE_H.search(ev[lu][2]) or any(
++                e[0] == "tool" and e[2] == "Skill" and "session-close" in str(e[3].get("skill", "")) for e in ev[lu + 1:]):
++            return None
++        own = lambda nm, i: nm == "Bash" and bool(RE_GIT_OWN.match(str(i.get("command", ""))) or
++                                                  RE_COORD.search(str(i.get("command", ""))))
++        if own(name, inp):
++            return None
++        base_unit = is_unit
++        is_unit = lambda nm, i: base_unit(nm, i) and not own(nm, i)
++    desc = str(inp.get("description", ""))
++    wl = None
++    if "без агента:" in desc:
++        if not flags.get("B"):
++            return None
++        wl = v2_whitelisted(desc.split("без агента:", 1)[1], name, inp)
++        if wl in ("close", "edit"):
++            return None
++    if not flags.get("S"):  # ключ дедупу — у межах ходу, як у v1
++        hs = [i for i, e in enumerate(ev) if e[0] == "human" and e[3] == "user"]
++        anchor = f"{anchor}|{ev[hs[-1]][1] if hs else 'turn'}"
++    units = [i for i, e in enumerate(ev) if e[0] == "tool" and is_unit(e[2], e[3])]
++    if flags.get("C"):
++        last_u = max([i for i, e in enumerate(ev) if e[0] == "human" and e[3] == "user"], default=-1)
++        reps = [i for i, e in enumerate(ev) if e[0] == "report" and i > last_u]  # репліка посеред ходу вікно не закриває
++        if reps:
++            m = sum(1 for i in units if i > reps[-1]) + 1
++            if m > k_lim:
++                return f"agents-c\t{anchor}\t{ev[reps[-1]][1]}", m, V2_C_REASON.format(n=m, k=k_lim)
++            return None  # точкова перевірка звіту — вільна
++    if wl == "check" and not flags.get("C"):
++        return None
++    n = len(units) + 1
++    if n < n_lim:
++        return None
++    return f"agents-a\t{anchor}\t{n // n_lim}", n, V2_A_REASON.format(n=n, e=V2_EDIT_LINES)
++
++
++def v2_check(data, agv=None):
++    """Обгортка для хука: ті самі вимикачі, що й agents_check, далі v2_window + v2_decide."""
++    if os.environ.get("EDIT_GATE_AGENTS") == "0" or data.get("agent_id"):
++        return None
++    if "deepseek" in os.environ.get("ANTHROPIC_BASE_URL", ""):
++        return None
++    tp = data.get("transcript_path")
++    if not (isinstance(tp, str) and os.path.isfile(tp)):
++        return None
++    agv = agv or answer_gate()
++    if agv.is_test_session(data.get("session_id")):
++        return None
++    name, inp = data.get("tool_name", ""), data.get("tool_input") or {}
++    ev, anchor = v2_window(tp)
++    tools = [e for e in ev if e[0] == "tool"]
++    if tools and tools[-1][2] == name and tools[-1][3] == inp:  # поточний виклик уже може бути в журналі
++        ev = [e for e in ev if e is not tools[-1]]
++    return v2_decide(ev, name, inp, anchor, agv=agv)
++
++
+ def main():
+     if len(sys.argv) > 2 and sys.argv[1] == "--backtest":
+         return backtest(sys.argv[2])
+@@ -371,7 +553,7 @@
+     if name not in EDIT_TOOLS and name != "Bash" and name not in READ_TOOLS:
+         return
+     try:
+-        ag = agents_check(data)
++        ag = v2_check(data) if V2_ON else agents_check(data)  # v2 (2026-10-27) — копія; v1 лишається для відкату
+     except Exception:
+         ag = None
+     if ag and ag[0] not in seen_keys(data.get("session_id", "?")):
+@@ -380,7 +562,7 @@
+             f.write(f"{data.get('session_id', '?')}\t{ag[0]}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
+         print(json.dumps({"hookSpecificOutput": {
+             "hookEventName": "PreToolUse", "permissionDecision": "deny",
+-            "permissionDecisionReason": AGENTS_REASON.format(n=ag[1])}}, ensure_ascii=False))
++            "permissionDecisionReason": ag[2] if len(ag) > 2 else AGENTS_REASON.format(n=ag[1])}}, ensure_ascii=False))
+         return
+     if name in READ_TOOLS:
+         return

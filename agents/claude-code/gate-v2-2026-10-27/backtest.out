@@ -1,0 +1,159 @@
+
+######## НАВЧАЛЬНІ: ['6b187e96', '2487d837']
+  варіант                            N  K | упійм ДО | пропущ | deny | влуч | хиб | напів | кроків
+  v1 П1 (читання, хід)              15  2 |        1 |      3 |    7 |    3 |   2 |     2 |    288
+  (а) A: кроки, хід                 12  2 |        1 |      3 |    9 |    5 |   2 |     2 |    288
+  (а) A+S: кроки, сесія             12  2 |        1 |      3 |   12 |    6 |   4 |     2 |    288
+  (б) B: білий список               15  2 |        1 |      3 |    7 |    3 |   2 |     2 |    288
+  (в) C: після звіту                15  2 |        2 |      2 |   18 |    6 |   6 |     6 |    288
+  (г1) G: delegate теж роздача      15  2 |        1 |      3 |    6 |    3 |   2 |     1 |    288
+  (г2) Z: закриття й коміт          15  2 |        1 |      3 |    3 |    2 |   0 |     1 |    288
+  A+S+B                             12  2 |        2 |      2 |   14 |    8 |   4 |     2 |    288
+  A+S+B+C                           12  2 |        4 |      0 |   25 |    8 |   9 |     8 |    288
+  A+S+B+C+Z                         12  2 |        3 |      1 |   19 |    8 |   3 |     8 |    288
+  A+S+B+C+Z+G                       12  2 |        3 |      1 |   18 |    8 |   3 |     7 |    288
+  ОБРАНЕ ASBCZ                      12  2 |        3 |      1 |   19 |    8 |   3 |     8 |    288
+
+######## ВІДКЛАДЕНІ (поріг на них не підбирався): ['cfca89fe', '4cab3538', 'cb82f9d3', '4dc8a94e']
+  варіант                            N  K | упійм ДО | пропущ | deny | влуч | хиб | напів | кроків
+  v1 П1 (читання, хід)              15  2 |        4 |      1 |   17 |    6 |   7 |     4 |    754
+  (а) A: кроки, хід                 12  2 |        5 |      0 |   27 |   18 |   6 |     3 |    754
+  (а) A+S: кроки, сесія             12  2 |        5 |      0 |   48 |   33 |   7 |     8 |    754
+  (б) B: білий список               15  2 |        4 |      1 |   17 |    6 |   7 |     4 |    754
+  (в) C: після звіту                15  2 |        4 |      1 |   32 |   15 |   8 |     9 |    754
+  (г1) G: delegate теж роздача      15  2 |        3 |      2 |   12 |    5 |   5 |     2 |    754
+  (г2) Z: закриття й коміт          15  2 |        3 |      2 |   10 |    4 |   4 |     2 |    754
+  A+S+B                             12  2 |        5 |      0 |   48 |   33 |   7 |     8 |    754
+  A+S+B+C                           12  2 |        5 |      0 |   61 |   35 |  11 |    15 |    754
+  A+S+B+C+Z                         12  2 |        5 |      0 |   52 |   36 |   5 |    11 |    754
+  A+S+B+C+Z+G                       12  2 |        5 |      0 |   43 |   28 |   5 |    10 |    754
+  ОБРАНЕ ASBCZ                      12  2 |        5 |      0 |   52 |   36 |   5 |    11 |    754
+
+######## ДЕТАЛІ: v1 П1 (читання, хід) (N=15, K=2)
+  ===== 6b187e96: викликів роботи 86, усіх інструментів 131, deny 2, докорів Р9-агенти 2
+    10-26T05:46:12 agents-a n=15  влучний  Bash  See TROUBLES tail and BACKLOG top format | 'tail -5 TROUBLES.md | cut -c1-200; sed -n 1,12p BACKLOG.md'
+    10-26T10:23:57 agents-a n=15  хибний   Bash  Print full baton next items to carry into pass | 'python3 -c "\nimport json;b=json.load(open(\'.baton/baton.json'
+    ДОКІР 10-26T07:57:43 «агентів з різрим ефорсом не забув запускати ?» — пропущено; кроків від останньої роздачі 4 (з 07:52:55)
+    ДОКІР 10-26T08:04:36 «ти знов робиш сам» — пропущено; кроків від останньої роздачі 9 (з 07:59:12)
+  ===== 2487d837: викликів роботи 202, усіх інструментів 282, deny 5, докорів Р9-агенти 2
+    10-26T14:29:56 agents-a n=15  напів    Bash  Read the three relevant TROUBLES entries | 'sed -n 4231,4240p TROUBLES.md | cut -c1-330; echo ...; sed -'
+    10-26T14:37:52 agents-a n=15  влучний  Bash  Find newest DSH session file | 'R=/data/data/com.termux/files/usr/var/lib/proot-distro/insta'
+    10-26T14:45:10 agents-a n=30  напів    Bash  Check verifier quotes against the patch with grep | 'cd /data/data/com.termux/files/home/AgentReachProject/agents'
+    10-26T14:54:21 agents-a n=45  влучний  Bash  Check exit semantics, other modes, and backtest on project file | 'grep -n "sys.exit\\|return 1\\|exit(" tools/error-registry.py '
+    10-26T19:44:10 agents-a n=15  хибний   Bash  Run link, memory, claim and error-registry checks | 'echo "== check-links"; python3 tools/check-links.py 2>&1 | t'
+    ДОКІР 10-26T14:55:54 «агентами не клристуєшся» — ВПІЙМАНО ДО; кроків від останньої роздачі 20 (з 14:47:36)
+    ДОКІР 10-27T06:52:58 «агентами не користуєшься ?» — пропущено; кроків від останньої роздачі 5 (з 06:45:58)
+  ===== cfca89fe: викликів роботи 199, усіх інструментів 246, deny 5, докорів Р9-агенти 2
+    10-23T11:16:15 agents-a n=15  влучний  Bash  Read unused-tools node and related TROUBLES entries | "n=$(grep -n '^- \\[.\\] Q3 ' trees/yakist-roboty-agentiv.md|cu"
+    10-23T11:23:42 agents-a n=30  влучний  Bash  Fix the same error in the decisions list | "sed -i 's/pick_up 23.10 — 130 392 симв\\./pick_up 23.10 — 87 "
+    10-23T11:56:03 agents-a n=15  хибний   Bash  Snapshot baton state before live deny test | 'cp .baton/baton.json .baton/history/pass-73.json && python3 '
+    10-23T11:59:34 agents-a n=30  хибний   Bash  Update session-close instruction and search for other stale mentions | 'python3 - <<\'EOF\'\np=".claude/skills/session-close/SKILL.md";'
+    10-23T12:31:25 agents-a n=15  хибний   Bash  Якість › зовнішня перевірка › рецензія сесії платним DeepSeek | 'python3 tools/deepseek-search.py --no-search --max-tokens 96'
+    ДОКІР 10-23T11:50:30 «чому не віддаєш процеси агенту опусу ?» — ВПІЙМАНО ДО; кроків від останньої роздачі 60 (з 11:18:55)
+    ДОКІР 10-23T11:59:37 «знов агентами не користуєшся ?» — ВПІЙМАНО ДО; кроків від останньої роздачі 35 (з 11:51:10)
+  ===== 4cab3538: викликів роботи 247, усіх інструментів 298, deny 3, докорів Р9-агенти 1
+    10-24T19:59:30 agents-a n=15  хибний   Bash  Record false positive, commit three files | "cat >> TROUBLES.md <<'EOF'\n- Перше живе спрацювання (того ж "
+    10-25T00:59:31 agents-a n=15  хибний   Bash  Get session cost and exact baton next/open items | 'python3 -c "import json,os;sid=os.environ.get(\'CLAUDE_CODE_S'
+    10-25T01:16:03 agents-a n=15  влучний  Bash  Wait for DSH's fourth why-question or root | 'sleep 15; F=/data/data/com.termux/files/home/AgentReachProje'
+    ДОКІР 10-25T00:47:30 «і ти знов не запусксєш агентів для вирішення » — пропущено; кроків від останньої роздачі 36 (з 00:35:16)
+  ===== cb82f9d3: викликів роботи 158, усіх інструментів 210, deny 5, докорів Р9-агенти 1
+    10-25T06:40:55 agents-a n=15  хибний   Bash  Check baton-guard and project-audit snapshot references | "grep -n -E 'pass-[0-9*]' .claude/hooks/baton-guard-hook.py |"
+    10-25T06:45:19 agents-a n=30  напів    Bash  Read memories about agents and tree from last session | 'M=/data/data/com.termux/files/home/.claude/projects/-data-da'
+    10-25T06:50:45 agents-a n=15  напів    Bash  Read the rest of the swarm idea item in BACKLOG | 'awk \'NR>=1216 && NR<=1250 {print NR": "$0}\' BACKLOG.md | cut'
+    10-25T07:23:38 agents-a n=15  влучний  Bash  Run DSH cost report against proot sessions folder | 'T=/data/data/com.termux/files/usr/tmp && R=/data/data/com.te'
+    10-25T07:29:18 agents-a n=30  напів    Bash  Урок з рілса › розбір рілса De5-2X-JHap (Android) | "python3 tools/reel-read.py 'https://www.instagram.com/reel/D"
+    ДОКІР 10-25T06:50:41 «чому знов не даєш агентам ?» — ВПІЙМАНО ДО; кроків від останньої роздачі 15 (з 06:46:14)
+  ===== 4dc8a94e: викликів роботи 150, усіх інструментів 215, deny 4, докорів Р9-агенти 1
+    10-25T16:53:57 agents-a n=15  влучний  Bash  Get node names for codes used in reply | 'for c in G2.6 M3 Q4.3 Q6 Q12; do python3 tools/trees-index.p'
+    10-25T17:07:30 agents-a n=30  напів    Bash  Grep-verify third verifier's quotes | "S=/data/data/com.termux/files/usr/tmp/vbs-2510c; grep -cF 'd"
+    10-25T19:10:48 agents-a n=15  влучний  Bash  Read the mod's source | 'cd /data/data/com.termux/files/home/AgentReachProject/mods/a'
+    10-25T19:59:09 agents-a n=15  хибний   Bash  Print current next items in full | 'python3 -c "\nimport json;b=json.load(open(\'.baton/baton.json'
+    ДОКІР 10-25T19:00:45 «знов не клристуєшся агентами ?» — ВПІЙМАНО ДО; кроків від останньої роздачі 15 (з 17:04:11)
+
+######## ДЕТАЛІ: ОБРАНЕ ASBCZ (N=12, K=2)
+  ===== 6b187e96: викликів роботи 86, усіх інструментів 131, deny 6, докорів Р9-агенти 2
+    10-26T05:44:05 agents-a n=12  влучний  Bash  Count corrections without a class | 'python3 tools/error-registry.py --loop 2>&1 | python3 -c "\ni'
+    10-26T08:00:07 agents-c n=3   влучний  Bash  Add memory index line (без агента: один рядок) | "echo '- [check-before-calling-false](check-before-calling-fa"
+    10-26T08:04:10 agents-c n=3   влучний  Bash  Find files whose name contains agent.py (без агента: один find) | 'find . -name "*agent.py" -not -path "./.git/*" -not -path "*'
+    10-26T08:39:57 agents-c n=3   напів*   Bash  Append TROUBLES record and commit hook with record | "cat >> TROUBLES.md <<'EOF'\n\n### Охоронець ключа: git-add-sta"
+    10-26T08:44:19 agents-c n=3   напів    Bash  Index memory; size, history and readers of check-links (без агента: дані дл | "echo '- [fix-at-origin-before-gates](fix-at-origin-before-ga"
+    10-26T08:49:52 agents-c n=3   напів    Bash  Check unpacked revision has no key (без агента: одна перевірка) | 'D=$(ls -dt /data/data/com.termux/files/usr/tmp/check-links-r'
+    ДОКІР 10-26T07:57:43 «агентів з різрим ефорсом не забув запускати ?» — пропущено; кроків від останньої роздачі 4 (з 07:52:55)
+    ДОКІР 10-26T08:04:36 «ти знов робиш сам» — ВПІЙМАНО ДО; кроків від останньої роздачі 9 (з 07:59:12)
+  ===== 2487d837: викликів роботи 202, усіх інструментів 282, deny 13, докорів Р9-агенти 2
+    10-26T14:29:35 agents-a n=12  влучний  Bash  Append queue step-zero notes to four nodes | 'python3 - <<\'EOF\'\nimport re\ntag="— [claude-code, 2026-10-26;'
+    10-26T14:38:35 agents-c n=3   напів*   Bash  Verify subagent claims by rerunning copy — без агента: перевірка чисел деле | 'D=/data/data/com.termux/files/usr/tmp/q12-ad-2610; git statu'
+    10-26T14:48:05 agents-c n=3   напів*   Bash  Prepare empty-folder Haiku verifier run for two claims | 'TS=$(date +%H%M%S); W=/data/data/com.termux/files/usr/tmp/vb'
+    10-26T14:49:02 agents-c n=3   напів    Bash  Check Haiku verdict quotes with grep | "grep -cF 'B12 | без класу | без класу | Р4 | НІ' backtest-no"
+    10-26T15:22:20 agents-c n=3   влучний  Bash  Prepare Haiku verification of gate code and view check claims | 'TS=$(date +%H%M%S); W=/data/data/com.termux/files/usr/tmp/vb'
+    10-27T05:58:01 agents-c n=3   хибний   Bash  Export session journal and scan for personal data | 'E=/data/data/com.termux/files/usr/tmp/review-2487d837.md; py'
+    10-27T06:02:52 agents-c n=3   напів*   Bash  Reproduce lock decision on the exact earlier answer text | "python3 - <<'EOF'\nimport importlib.util\ns=importlib.util.spe"
+    10-27T06:11:17 agents-c n=3   хибний   Bash  Snapshot baton and print next items to drop | 'N=$(python3 -c "import json;print(json.load(open(\'.baton/bat'
+    10-27T06:29:34 agents-c n=3   влучний  Bash  Map context windows to provider models | 'grep -n \'"id"\\|"name"\\|context_window\\|"model\' /data/data/co'
+    10-27T06:31:45 agents-c n=3   влучний  Bash  Check network reachability of the delegate provider | 'curl -sS -o /dev/null -w "%{http_code} %{time_total}s\\n" --m'
+    10-27T06:44:14 agents-c n=3   напів    Bash  Read main goal and current directions | 'sed -n 11,29p GOALS.md | cut -c1-220'
+    10-27T06:52:46 agents-c n=3   влучний* Bash  Mark tree node in progress, record DeepSeek decision, update memories | 'python3 - <<\'EOF\'\nimport re\nTAG="— [claude-code, 2026-10-27;'
+    10-27T07:24:06 agents-c n=3   хибний   Bash  Record lost-step-in-note case in TROUBLES | "cat >> TROUBLES.md <<'EOF'\n- Записка естафети #89 замінила #"
+    ДОКІР 10-26T14:55:54 «агентами не клристуєшся» — ВПІЙМАНО ДО; кроків від останньої роздачі 20 (з 14:47:36)
+    ДОКІР 10-27T06:52:58 «агентами не користуєшься ?» — ВПІЙМАНО ДО; кроків від останньої роздачі 5 (з 06:45:58)
+  ===== cfca89fe: викликів роботи 199, усіх інструментів 246, deny 13, докорів Р9-агенти 2
+    10-23T10:57:08 agents-a n=12  напів    Bash  Show guard log line for this run | 'tail -1 .claude/logs/commit-consent.log | cut -c1-120; date '
+    10-23T11:04:00 agents-a n=24  влучний  Bash  Read Q6 node body | "sed -n '390,420p' trees/yakist-roboty-agentiv.md"
+    10-23T11:10:04 agents-a n=36  влучний  Bash  Read grill-me skill and check if it's disabled | 'cd /data/data/com.termux/files/home/AgentReachProject/.claud'
+    10-23T11:12:47 agents-a n=48  влучний  Bash  Write the decisions list with recommendations | 'cd /data/data/com.termux/files/home/AgentReachProject/.unlaz'
+    10-23T11:16:15 agents-c n=3   влучний  Bash  Read unused-tools node and related TROUBLES entries | "n=$(grep -n '^- \\[.\\] Q3 ' trees/yakist-roboty-agentiv.md|cu"
+    10-23T11:19:22 agents-c n=3   влучний  Bash  Find which components use the BazaarLink key | "cd /data/data/com.termux/files/home && grep -l -i 'bazaarlin"
+    10-23T11:31:15 agents-a n=83  влучний  Bash  List existing logs and records about leftover processes | "ls .claude/logs/; echo ---; grep -n -iE 'SessionEnd|страховк"
+    10-23T11:31:38 agents-a n=84  влучний  Bash  Read BACKLOG plan block around SessionEnd item | "sed -n '88,94p' BACKLOG.md | cut -c1-160"
+    10-23T11:35:43 agents-a n=96  напів    Bash  Add level-structure calibration to the live-tree memory | 'cat >> /data/data/com.termux/files/home/.claude/projects/-da'
+    10-23T11:49:55 agents-a n=108 влучний  Bash  Read the DeepSeek plan details in TROUBLES | "n=$(grep -n '^## План DeepSeek «що робити зараз»' TROUBLES.m"
+    10-23T11:53:11 agents-c n=3   влучний  Bash  Read main() and test that today's missed gotcha appears | "sed -n '122,170p' tools/handoff-view.py; echo ---; grep -c '"
+    10-23T12:04:25 agents-c n=3   влучний  Bash  Якість › Створене, але не вжиткове › читання hooks-smoke (1) | "wc -l tools/hooks-smoke.py && sed -n '1,60p' tools/hooks-smo"
+    10-23T12:35:33 agents-a n=16  напів    Bash  Якість › Реєстр помилок › формат класів і ліків | 'f=agents/claude-code/q12-classes-2026-10-16/registry-v1.md; '
+    ДОКІР 10-23T11:50:30 «чому не віддаєш процеси агенту опусу ?» — ВПІЙМАНО ДО; кроків від останньої роздачі 60 (з 11:18:55)
+    ДОКІР 10-23T11:59:37 «знов агентами не користуєшся ?» — ВПІЙМАНО ДО; кроків від останньої роздачі 35 (з 11:51:10)
+  ===== 4cab3538: викликів роботи 247, усіх інструментів 298, deny 18, докорів Р9-агенти 1
+    10-24T15:40:42 agents-a n=12  влучний  Bash  Rerun with queue-line end at sentence boundary | 'cd /data/data/com.termux/files/usr/tmp/askgate-s8 && python3'
+    10-24T16:56:42 agents-c n=3   влучний  Edit   | '/data/data/com.termux/files/home/AgentReachProject/.claude/h'
+    10-24T20:22:07 agents-a n=27  хибний   Bash  Gather evidence for each dropped baton item | 'echo "== n ask доходять"; git log --oneline -1 073e66e; echo'
+    10-24T20:27:45 agents-a n=36  влучний  Bash  Read passport node records and output dir | 'sed -n 205,216p trees/yakist-roboty-agentiv.md; sed -n 408,4'
+    10-24T23:36:38 agents-a n=48  влучний  Bash  Read 12.10 decision and override values | 'sed -n 4393,4396p TROUBLES.md; sed -n 14,30p .claude/setting'
+    10-24T23:40:09 agents-a n=60  влучний  Bash  Find whisper install location | 'sed -n 160,180p TROUBLES.md | cut -c1-200; ls ~ | grep -i wh'
+    10-24T23:44:37 agents-a n=72  влучний  Bash  Check whether DSH keeps session journals | 'R=/data/data/com.termux/files/usr/var/lib/proot-distro/insta'
+    10-24T23:57:49 agents-a n=85  влучний  Bash  Read how readers are found; past 'who depends' ideas | 'grep -n "def history_readers" -A12 .claude/hooks/edit-gate-h'
+    10-25T00:20:58 agents-a n=96  напів    Bash  Count reel analyses and check for a reel tool | 'grep -c -i "^## .*рілс" TROUBLES.md; grep -i "^## .*рілс" TR'
+    10-25T00:28:37 agents-a n=108 влучний  Bash  Recheck both known answers plus negative control | "python3 - <<'EOF'\nimport importlib.util, re\ns=importlib.util"
+    10-25T00:34:32 agents-a n=120 влучний  Bash  Read Haiku bug note and both verify checks | 'sed -n 46,70p BACKLOG.md | grep -n -i "haiku" | cut -c1-260;'
+    10-25T00:37:39 agents-a n=132 влучний  Bash  Find all consumers of turn events | 'grep -n \'\\["events"\\]\\|\\.get("events"\\|ev\\[0\\]\\|for ev in\' .'
+    10-25T00:39:13 agents-a n=144 влучний  Edit   | '/data/data/com.termux/files/home/AgentReachProject/.claude/h'
+    10-25T00:45:14 agents-a n=156 хибний   Bash  Mark reel node as done-awaiting-live-check with evidence | 'python3 - <<\'EOF\'\np="trees/yakist-roboty-agentiv.md"; s=open'
+    10-25T01:04:59 agents-a n=12  хибний   Bash  Snapshot baton before addendum pass | 'cp .baton/baton.json .baton/history/pass-77.json && ls -la .'
+    10-25T01:13:53 agents-c n=3   влучний  Bash  Read DSH's check of answer 1 and why-2 | "sed -n '/ЧОМУ 1/,$p' /data/data/com.termux/files/home/AgentR"
+    10-25T01:22:50 agents-a n=15  влучний  Bash  Read end of root-cause memory before updating | 'M=/data/data/com.termux/files/home/.claude/projects/-data-da'
+    10-25T01:26:28 agents-a n=24  влучний  Edit   | '/data/data/com.termux/files/home/AgentReachProject/tools/err'
+    ДОКІР 10-25T00:47:30 «і ти знов не запусксєш агентів для вирішення » — ВПІЙМАНО ДО; кроків від останньої роздачі 36 (з 00:35:16)
+  ===== cb82f9d3: викликів роботи 158, усіх інструментів 210, deny 11, докорів Р9-агенти 1
+    10-25T06:40:20 agents-a n=12  влучний  Bash  Append today's pick_up size measurement to node M3 | "echo $((96536-87338)) && python3 - <<'EOF'\np='trees/pam-yat-"
+    10-25T06:43:44 agents-a n=24  влучний  Bash  Count positive and negative test cases per registered hook | 'T=/data/data/com.termux/files/usr/tmp && cat > $T/smoke-case'
+    10-25T06:48:41 agents-c n=4   влучний  Bash  Read recipe for delivering letters into DSH window | "sed -n 3958,3990p TROUBLES.md | cut -c1-330; grep -n -E '^##"
+    10-25T06:55:28 agents-c n=3   влучний  Bash  Get exact node names from the tree index | 'for id in Q4 Q4.3 Q4.4 Q5 Q12 G2 M3; do python3 tools/trees-'
+    10-25T07:21:47 agents-c n=3   напів    Bash  Read the errors section of DSH report | 'sed -n 63,118p agents/dsh/check-start-2026-10-25.md | cut -c'
+    10-25T07:32:34 agents-c n=3   напів    Bash  Check Obsidian claim and record skills-pattern idea in BACKLOG | "sed -n 5736,5753p TROUBLES.md | grep -n -E '26|36|32' | cut "
+    10-25T07:45:39 agents-c n=3   напів    Bash  Read DSH answer on boundaries and verify skill overrides | 'tail -22 agents/dsh/JOURNAL.md | cut -c1-300; sed -n 83,90p '
+    10-25T07:53:27 agents-c n=3   влучний* Bash  Analyze delegate success and error types by day | "python3 - <<'EOF'\nimport json,collections\nc=collections.defa"
+    10-25T08:02:36 agents-c n=3   напів    Bash  Check Haiku's quotes against the diff file | 'D=/data/data/com.termux/files/usr/tmp/askgate-narrow/ask-gat'
+    10-25T08:06:15 agents-c n=3   влучний  Bash  Update process tree with consolidation progress | 'cat >> agents/claude-code/session-processes-2026-10-25.md <<'
+    10-25T08:12:42 agents-c n=3   хибний   Bash  Commit session records in one commit | 'cat /data/data/com.termux/files/usr/tmp/claude-10599/-data-d'
+    ДОКІР 10-25T06:50:41 «чому знов не даєш агентам ?» — ВПІЙМАНО ДО; кроків від останньої роздачі 15 (з 06:46:14)
+  ===== 4dc8a94e: викликів роботи 150, усіх інструментів 215, deny 10, докорів Р9-агенти 1
+    10-25T16:53:26 agents-a n=12  влучний  Bash  Show format of the top BACKLOG entry | 'sed -n 6,14p BACKLOG.md'
+    10-25T16:58:06 agents-a n=24  влучний  Bash  Find references to line numbers in the two moved trees | "ls tools | grep -i link; grep -rnoE '(yakist-roboty-agentiv|"
+    10-25T18:58:34 agents-c n=3   напів    Bash  Run order criteria check on all trees and focus-tree | 'cat > /data/data/com.termux/files/usr/tmp/tree-order-check.p'
+    10-25T19:08:21 agents-c n=3   влучний  Bash  Find the 39% figure in the paper abstract | 'curl -sL --max-time 25 https://arxiv.org/abs/2505.06120 | se'
+    10-25T19:10:38 agents-c n=3   напів    Bash  Check plugin install record, cache and CLI version | 'python3 -c "\nimport json;d=json.load(open(\'/data/data/com.te'
+    10-25T19:11:50 agents-a n=14  влучний  Bash  Find installed Claude Code package date and version | 'head -5 ~/.local/bin/claude; for d in $(npm root -g 2>/dev/n'
+    10-25T19:20:06 agents-c n=3   влучний  Bash  Context around deny reason in docs | 'F=/data/data/com.termux/files/usr/tmp/hooks-doc.txt; grep -o'
+    10-25T19:33:50 agents-c n=3   хибний   Bash  Add missing registry report in follow-up commit | 'cp /data/data/com.termux/files/usr/tmp/registry-fix/REPORT.m'
+    10-25T19:38:01 agents-c n=3   напів*   Bash  Verify baton server replacement, diff fields and field sizes | "S=$(grep -rl 'handoffNote: args.handoffNote' ~/.npm ~/node_m"
+    10-25T19:48:19 agents-c n=3   влучний  Bash  Read class table end and Р10 definition in code | 'R=agents/claude-code/q12-classes-2026-10-16/registry-v1.md; '
+    ДОКІР 10-25T19:00:45 «знов не клристуєшся агентами ?» — ВПІЙМАНО ДО; кроків від останньої роздачі 15 (з 17:04:11)

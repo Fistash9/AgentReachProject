@@ -1,0 +1,47 @@
+== 1. SessionStart ==
+оригінал: весь вивід 2653 симв.; «Як застосовувати» 1190; заголовок: Як застосовувати:
+   уроки: check-content-not-titles, fix-root-cause-of-every-bug, read-dsh-channel-map-before-planning
+prep: весь вивід 2609 симв.; «Як застосовувати» 1146; заголовок: Як застосовувати: (за [>]: 3)
+   уроки: work-multistep-topics-as-tree, labels-follow-tree-path, reports-as-live-tree
+v2: весь вивід 2547 симв.; «Як застосовувати» 1084; заголовок: Як застосовувати: (за [>]: 2)
+   уроки: work-multistep-topics-as-tree, labels-follow-tree-path, check-content-not-titles
+✅ v2: рівно 3 уроки, без дублів
+✅ v2: є сталий урок із HOWTO_RULES
+✅ v2: третє місце — сталий
+✅ v2: hooks-smoke «tree-focus старт» (Як застосовувати + trees-index)
+✅ v2: старт до секції «Як застосовувати» = оригінал
+
+== 2. UserPromptSubmit «тест» ==
+оригінал: 167 симв.
+prep: 167 симв.
+v2: 167 симв.
+v2+env: 167 симв.
+✅ v2: hooks-smoke «tree-focus повідомлення» (<600)
+✅ v2 без змінної: «тест» = оригінал
+✅ v2 з =1: «тест» = оригінал (уроку на «тест» нема)
+
+== 3. Повідомлення №5 (бектест REPORT prep) ==
+оригінал: 167 симв.; урок: —
+prep: 506 симв.; урок: Урок до повідомлення: reports-as-live-tree — until a tool is chosen, write multi…
+v2: 167 симв.; урок: —
+v2+env: 506 симв.; урок: Урок до повідомлення: reports-as-live-tree — until a tool is chosen, write multi…
+v2 env=0: 167 симв.; урок: —
+✅ v2 без змінної: №5 = оригінал
+✅ v2 з =0: №5 = оригінал
+✅ v2 з =1: урок reports-as-live-tree на №5
+✅ v2 з =1: №5 = prep-копія
+
+== 4. Межові випадки вибору (rank_rules підмінено) ==
+✅ 0 за роботою: ['check-content-not-titles', 'fix-root-cause-of-every-bug', 'read-dsh-channel-map-before-planning'] | Як застосовувати:
+✅ 1: ['ask-questions-one-at-a-time-plainly', 'check-content-not-titles', 'fix-root-cause-of-every-bug'] | Як застосовувати: (за [>]: 1)
+✅ 2: ['ask-questions-one-at-a-time-plainly', 'autonomy-means-no-asking-for-appends', 'check-content-not-titles'] | Як застосовувати: (за [>]: 2)
+✅ 4: ['ask-questions-one-at-a-time-plainly', 'autonomy-means-no-asking-for-appends', 'check-content-not-titles'] | Як застосовувати: (за [>]: 2)
+✅ сталий №1 серед перших 2: ['check-content-not-titles', 'ask-questions-one-at-a-time-plainly', 'fix-root-cause-of-every-bug'] | Як застосовувати: (за [>]: 2)
+✅ два сталих серед перших 2: ['check-content-not-titles', 'fix-root-cause-of-every-bug', 'read-dsh-channel-map-before-planning'] | Як застосовувати: (за [>]: 2)
+✅ сталий на 3-му місці: ['ask-questions-one-at-a-time-plainly', 'autonomy-means-no-asking-for-appends', 'check-content-not-titles'] | Як застосовувати: (за [>]: 2)
+✅ query '' → три сталі HOWTO_RULES (як prep)
+
+== 5. hooks-smoke «tree-focus: DSH насправді» на копії ==
+✅ DSH насправді: 2/2 випадків
+
+ПОЛОМОК: 0

@@ -1,0 +1,57 @@
+--- agents/claude-code/prep-2026-10-27/focus/tree-focus-hook.py	2026-10-27 23:08:11.739522518 +0200
++++ agents/claude-code/focus-v2-2026-10-27/tree-focus-hook.py	2026-10-27 23:37:53.815521838 +0200
+@@ -63,7 +63,11 @@
+ # (26 з 82 файлів пам'яті). Тепер — вибір за роботою: основи слів активних [>] (старт)
+ # і повідомлення користувача (UserPromptSubmit) проти тексту файлу пам'яті, вага idf,
+ # пороги як handoff-view PAIR_MIN_HITS/PAIR_MIN_SCORE; HOWTO_RULES — запас на вільні місця.
+-MAX_RULES = 3        # правил на старті (вибрані за [>] + запас HOWTO_RULES)
++MAX_RULES = 3        # правил на старті (вибрані за [>] + сталий + запас HOWTO_RULES)
++WORK_RULES = 2       # 2026-10-27 (focus-v2): з MAX_RULES за роботою — не більше 2; третє місце
++                     # завжди за першим із HOWTO_RULES, якого ще нема серед обраних (prep-копія
++                     # віддала всі 3 вузлу G2 і витіснила fix-root-cause-of-every-bug)
++MSG_LESSON_ENV = "TREE_FOCUS_MSG_LESSON"  # урок до повідомлення — лише при =1 (бектест: 1 з 5 влучних)
+ PROMPT_RULES = 1     # правил на повідомлення — лише сильний збіг зі словами повідомлення
+ RULE_CAP = 360       # межа тексту одного правила на старті, симв.: вибрані правила довші за
+                      # нинішні три (1600 → старт +410 симв., замір 27.10); 3×360 ≈ розмір до правки
+@@ -225,17 +229,27 @@
+ def howto_section(query=""):
+     """Секція «Як застосовувати:» — до MAX_RULES правил, <= MAX_HOWTO симв.
+ 
+-    Спершу правила, дотичні до активних [>] (rank_rules), потім запас —
+-    HOWTO_RULES у заданому порядку. Файл без рядка «How to apply» —
++    До WORK_RULES (2) правил, дотичних до активних [>] (rank_rules), потім
++    1 сталий — перший із HOWTO_RULES, якого ще нема серед обраних; вільні
++    місця — запас HOWTO_RULES у заданому порядку (focus-v2, 2026-10-27). Файл без рядка «How to apply» —
+     пропускається. Якщо немає жодного — повертає "".
+     """
+     mem = mem_howto()
+     ranked = [nm for _, nm, _ in rank_rules(query, mem)] if query else []
+-    names = (ranked + [nm for nm in HOWTO_RULES if nm in mem and nm not in ranked])[:MAX_RULES]
++    work = ranked[:WORK_RULES]  # до 2 за роботою
++    steady = [nm for nm in HOWTO_RULES if nm in mem and nm not in work]
++    names = work + steady[:1]  # 1 місце — завжди сталий урок (перший ще не обраний)
++    # вільні місця (за роботою <2) — запас HOWTO_RULES, як раніше; якщо й запасу бракує
++    # (файли сталих уроків без «How to apply») — наступні за роботою
++    for nm in steady[1:] + ranked[WORK_RULES:]:
++        if len(names) >= MAX_RULES:
++            break
++        if nm not in names:
++            names.append(nm)
+     picked = [(nm, mem[nm]) for nm in names]
+     if not picked:
+         return ""
+-    n_rel = sum(1 for nm in names if nm in ranked)
++    n_rel = sum(1 for nm in names if nm in ranked and nm not in steady[:1])
+     head = "Як застосовувати:" + (f" (за [>]: {n_rel})" if n_rel else "")
+     out, used = [head], len(head)
+     for nm, (_, apply_line, _) in picked:
+@@ -491,7 +505,8 @@
+         except Exception:
+             pass
+         try:  # 2026-10-27 (П3): урок до слів повідомлення; помилка не гасить решту
+-            lesson = prompt_lesson(data)
++            # focus-v2: вимкнено за замовчуванням — лише TREE_FOCUS_MSG_LESSON=1
++            lesson = prompt_lesson(data) if os.environ.get(MSG_LESSON_ENV) == "1" else ""
+             if lesson:
+                 out.append(lesson)
+         except Exception:

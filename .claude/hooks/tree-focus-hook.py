@@ -42,6 +42,7 @@ TROUBLES «Beads на Termux…»): замість одного вказівни
 """
 import glob
 import json
+import math
 import os
 import re
 import subprocess
@@ -57,6 +58,24 @@ MAX_HOWTO = 1600  # 1600: щоб влазили всі три правила с�
 HOWTO_RULES = ("check-content-not-titles",
                "fix-root-cause-of-every-bug",
                "read-dsh-channel-map-before-planning")
+# 2026-10-27 (П3 FIX-PLANS, сходинка «залежність»: уроки мають з'являтися в момент дії):
+# сталий HOWTO_RULES показував ті самі 3 правила, а парсер не бачив «**How to apply:**»
+# (26 з 82 файлів пам'яті). Тепер — вибір за роботою: основи слів активних [>] (старт)
+# і повідомлення користувача (UserPromptSubmit) проти тексту файлу пам'яті, вага idf,
+# пороги як handoff-view PAIR_MIN_HITS/PAIR_MIN_SCORE; HOWTO_RULES — запас на вільні місця.
+MAX_RULES = 3        # правил на старті (вибрані за [>] + сталий + запас HOWTO_RULES)
+WORK_RULES = 2       # 2026-10-27 (focus-v2): з MAX_RULES за роботою — не більше 2; третє місце
+                     # завжди за першим із HOWTO_RULES, якого ще нема серед обраних (prep-копія
+                     # віддала всі 3 вузлу G2 і витіснила fix-root-cause-of-every-bug)
+MSG_LESSON_ENV = "TREE_FOCUS_MSG_LESSON"  # урок до повідомлення — лише при =1 (бектест: 1 з 5 влучних)
+PROMPT_RULES = 1     # правил на повідомлення — лише сильний збіг зі словами повідомлення
+RULE_CAP = 360       # межа тексту одного правила на старті, симв.: вибрані правила довші за
+                     # нинішні три (1600 → старт +410 симв., замір 27.10); 3×360 ≈ розмір до правки
+PROMPT_HOWTO = 300   # межа рядка уроку на повідомленні, симв. (кожне повідомлення — дороге)
+REL_MIN_HITS = 2     # мінімум спільних основ (handoff-view PAIR_MIN_HITS)
+REL_MIN_SCORE = 6.0  # мінімум ваги, сума idf (handoff-view PAIR_MIN_SCORE)
+RE_APPLY = re.compile(r"^\s*(?:\*\*)?How to apply:(?:\*\*)?\s*")
+APPLY_MARK = "Урок до повідомлення:"
 MEM_PROJECT = "-data-data-com-termux-files-home-AgentReachProject"
 MEM_ENV = os.environ.get("CLAUDE_MEMORY_DIR")
 MEM_CANDIDATES = [MEM_ENV] if MEM_ENV else []
@@ -152,45 +171,90 @@ def more(items, n):
 
 
 def mem_howto():
-    """Правило → (опис, рядок «How to apply») з memory-файлів (M11.1).
+    """Правило → (опис, рядок «How to apply», текст файлу в нижньому регістрі) (M11.1).
 
-    Читає лише ті файли, де є рядок «How to apply:»; будь-яка помилка —
-    мовчки (fail-open), як і решта хука.
+    Рядок «How to apply:» приймається в обох форматах — «How to apply: …» і
+    «**How to apply:** …», з відступом чи без (2026-10-27, П3); зірочки знято,
+    у підказці — «How to apply: …». Будь-яка помилка — мовчки (fail-open).
     """
     out = {}
     mem_dir = next((d for d in MEM_CANDIDATES if d and os.path.isdir(d)), None)
     if mem_dir is None:
         return out
     for p in sorted(glob.glob(os.path.join(mem_dir, "*.md"))):
+        if os.path.basename(p) == "MEMORY.md":
+            continue  # покажчик, не правило
         try:
             txt = open(p, encoding="utf-8", errors="replace").read()
         except Exception:
             continue
         lines = txt.split("\n")
-        apply_line = next((l.strip() for l in lines
-                           if l.startswith("How to apply:")), None)
-        if not apply_line:
+        m_line = next((l for l in lines if RE_APPLY.match(l)), None)
+        if not m_line:
             continue  # правила без «як застосовувати» в контекст не вносимо
+        apply_line = "How to apply: " + RE_APPLY.sub("", m_line).strip()
         desc = next((l.strip()[len("description:"):].strip().strip('"')
                      for l in lines if l.startswith("description:")), "")
-        out[os.path.basename(p)[:-3]] = (desc, apply_line)
+        out[os.path.basename(p)[:-3]] = (desc, apply_line, txt.lower())
     return out
 
 
-def howto_section():
-    """Секція «Як застосовувати:» — короткий список правил, <= MAX_HOWTO симв.
+def stems(s):
+    """Основи слів ≥5 літер (як handoff-view.stems): «агентів»/«агенти» → «агент»."""
+    return {w[:max(5, len(w) - 3)] for w in re.findall(r"[^\W\d_]{5,}", str(s).lower())}
 
-    Бере лише правила з HOWTO_RULES, у заданому порядку; відсутній файл або
-    файл без рядка «How to apply:» — пропускається. Якщо немає жодного —
-    повертає "".
+
+def rank_rules(query, mem):
+    """[(вага, правило, спільні основи)] — правила, дотичні до тексту query.
+
+    Збіг — входження основи в текст файлу пам'яті (там і англійський опис, і
+    українські цитати користувача); вага — idf по всіх правилах, щоб часті
+    («користувача», «session») не важили. Поріг: ≥REL_MIN_HITS основ і
+    ≥REL_MIN_SCORE ваги.
+    """
+    st, N = stems(query), len(mem)
+    if not st or not N:
+        return []
+    df = {t: sum(1 for v in mem.values() if t in v[2]) for t in st}
+    out = []
+    for nm, v in mem.items():
+        hit = sorted(t for t in st if t in v[2])
+        sc = sum(math.log((N + 1) / (df[t] + 1)) for t in hit)
+        if len(hit) >= REL_MIN_HITS and sc >= REL_MIN_SCORE:
+            out.append((round(sc, 2), nm, hit))
+    out.sort(key=lambda t: (-t[0], t[1]))
+    return out
+
+
+def howto_section(query=""):
+    """Секція «Як застосовувати:» — до MAX_RULES правил, <= MAX_HOWTO симв.
+
+    До WORK_RULES (2) правил, дотичних до активних [>] (rank_rules), потім
+    1 сталий — перший із HOWTO_RULES, якого ще нема серед обраних; вільні
+    місця — запас HOWTO_RULES у заданому порядку (focus-v2, 2026-10-27). Файл без рядка «How to apply» —
+    пропускається. Якщо немає жодного — повертає "".
     """
     mem = mem_howto()
-    picked = [(nm, mem[nm]) for nm in HOWTO_RULES if nm in mem]
+    ranked = [nm for _, nm, _ in rank_rules(query, mem)] if query else []
+    work = ranked[:WORK_RULES]  # до 2 за роботою
+    steady = [nm for nm in HOWTO_RULES if nm in mem and nm not in work]
+    names = work + steady[:1]  # 1 місце — завжди сталий урок (перший ще не обраний)
+    # вільні місця (за роботою <2) — запас HOWTO_RULES, як раніше; якщо й запасу бракує
+    # (файли сталих уроків без «How to apply») — наступні за роботою
+    for nm in steady[1:] + ranked[WORK_RULES:]:
+        if len(names) >= MAX_RULES:
+            break
+        if nm not in names:
+            names.append(nm)
+    picked = [(nm, mem[nm]) for nm in names]
     if not picked:
         return ""
-    head = "Як застосовувати:"
+    n_rel = sum(1 for nm in names if nm in ranked and nm not in steady[:1])
+    head = "Як застосовувати:" + (f" (за [>]: {n_rel})" if n_rel else "")
     out, used = [head], len(head)
-    for nm, (_, apply_line) in picked:
+    for nm, (_, apply_line, _) in picked:
+        if len(apply_line) > RULE_CAP:  # повний текст — у файлі пам'яті nm.md
+            apply_line = apply_line[:RULE_CAP - 1].rstrip("…") + "…"
         line = "• " + nm + " — " + apply_line
         if used + len(line) + 1 <= MAX_HOWTO:
             out.append(line)
@@ -203,6 +267,40 @@ def howto_section():
                 cut = cut[:-1]
             out.append("• " + nm + " — " + cut + "…")
         break
+    return "\n".join(out)
+
+
+def shown_rules(transcript_path):
+    """Тексти журналу після останнього стиснення — щоб не повторювати урок,
+    уже показаний у цій сесії (як troubles-grep-hook.already_shown). Помилка → b""."""
+    if not transcript_path:
+        return b""
+    try:
+        with open(transcript_path, "rb") as f:
+            raw = f.read()
+        i = raw.rfind(b'"subtype":"compact_boundary"')
+        return raw[i:] if i != -1 else raw
+    except Exception:
+        return b""
+
+
+def prompt_lesson(data):
+    """Один урок, дотичний до слів повідомлення, якщо ще не показаний (П3)."""
+    prompt = data.get("prompt") or ""
+    mem = mem_howto()
+    ranked = rank_rules(prompt, mem)
+    if not ranked:
+        return ""
+    tail = shown_rules(data.get("transcript_path"))
+    out = []
+    for _, nm, _ in ranked:
+        if (APPLY_MARK + " " + nm).encode() in tail or ("• " + nm + " — ").encode() in tail:
+            continue
+        txt = mem[nm][1][len("How to apply: "):]
+        txt = txt if len(txt) <= PROMPT_HOWTO else txt[:PROMPT_HOWTO - 1] + "…"
+        out.append(f"{APPLY_MARK} {nm} — {txt}")
+        if len(out) >= PROMPT_RULES:
+            break
     return "\n".join(out)
 
 
@@ -406,6 +504,13 @@ def main():
                            + " (мова окремим кроком, перелік на суцільність; не вручну yt-dlp/whisper)")
         except Exception:
             pass
+        try:  # 2026-10-27 (П3): урок до слів повідомлення; помилка не гасить решту
+            # focus-v2: вимкнено за замовчуванням — лише TREE_FOCUS_MSG_LESSON=1
+            lesson = prompt_lesson(data) if os.environ.get(MSG_LESSON_ENV) == "1" else ""
+            if lesson:
+                out.append(lesson)
+        except Exception:
+            pass
     if start:
         try:
             goals = goals_lines(cwd, cards, mine)
@@ -425,7 +530,9 @@ def main():
         out.append("Назва вузла — з джерела, не з цього списку: "
                    "python3 tools/trees-index.py <ID> (рекурсивно, файл:ID).")
         if True:  # 2026-10-06: правила — завжди на старті, не лише з [>] (DSH, cc-nodeids-1)
-            howto = howto_section()
+            # 2026-10-27 (П3): правила — за словами активних [>] (назви вузлів шляху)
+            query = " ".join(n["name"] for p in hits.values() for n in p)
+            howto = howto_section(query)
             if howto:
                 out.append(howto)
     print(json.dumps({"hookSpecificOutput": {"hookEventName": event,

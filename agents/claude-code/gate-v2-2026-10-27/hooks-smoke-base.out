@@ -1,0 +1,65 @@
+✅ unset grep/find (старт) — очікую: рядок у CLAUDE_ENV_FILE — код 0, 0.0 с
+✅ tree-focus старт — очікую: фокус + «Як застосовувати» + рядок trees-index — код 0, 0.1 с
+✅ tree-focus повідомлення — очікую: короткий рядок фокусу (<600 симв.) — код 0, 0.1 с
+✅ node-label-shadow (бектест) — очікую: 1 розбіжність на «T5 — скіл пошуку» — ['усього розбіжностей: 1']
+✅ node-label-shadow наживо (тимч. лог) — очікую: рядок з runs і T5 у тимчасовому лозі (робочий не чіпається) — код 0, 0.1 с
+✅ unlazy Stop — очікую: код 0 при stop_hook_active — код 0, 0.3 с
+✅ pkgtruth: звичайна команда — очікую: пропускає — код 0, 0.3 с
+✅ troubles-grep — очікую: підказка з TROUBLES — код 0, 0.1 с
+✅ baton-reminder: не push — очікую: тиша — код 0, 0.1 с
+✅ baton-guard: next без @власника — очікую: блок — код 0, 0.1 с
+✅ baton-guard: next з @власником — очікую: тиша — код 0, 0.1 с
+✅ baton-guard: втрата відкритого питання (#56→#57) — очікую: deny зі списком (23.10: ask → deny) — код 0, 0.1 с
+✅ baton-guard: подвійний pick_up (журнал 18.10) — очікую: ⚠ про #52 — код 0, 0.3 с
+✅ baton-guard: 10 викинуто → 10 названо (same() 23.10) — очікую: deny, «прибирає 10 пункт» — код 0, 0.1 с
+✅ baton-guard: пункт переписано в handoffNote — тиша — очікую: тиша — код 0, 0.1 с
+✅ baton-guard: після pick_up — підказка стислого стану — очікую: підказка (справжній .baton/HANDOFF-view.md відновлюється після прогону) — код 0, 0.2 с
+✅ baton-guard: після pick_up — вигляд не вмістився → «НЕПОВНИЙ» — очікую: підказка «НЕПОВНИЙ», не тиша (рецензія cfca89fe 23.10) — код 0, 0.2 с
+✅ cost-nudge: поріг $10 (тимч. журнал) — очікую: systemMessage з ціною — код 0, 0.1 с
+✅ trash-md-guard: rm у проєкті — очікую: блок (TRASH.md не свіжий) — код 0, 0.1 с
+✅ trash-md-guard: rm у sh -c (proot) — очікую: блок (TRASH.md не свіжий) — код 0, 0.1 с
+✅ trash-md-guard: rm у tmp — очікую: пропускає tmp — код 0, 0.1 с
+✅ git-add-status: звичайний add — очікую: не блокує (статус — якщо дерево брудне) — код 0, 0.1 с
+✅ git-add-status: agent.py — очікую: блок — код 0, 0.1 с
+✅ git-add-status: agent.py у sh -c (proot) — очікую: блок — код 0, 0.1 с
+✅ rules-why-guard: Bash у RULES.md — очікую: блок, якщо RULES-WHY.md не свіжий — код 0, 0.1 с
+✅ rules-why-guard: Edit іншого файлу — очікую: пропускає — код 0, 0.1 с
+✅ verify-nudge: незахищений файл — очікую: тиша (журнал проби не чіпається) — код 0, 0.1 с
+✅ request-brief-reminder: Write — очікую: не блокує — код 0, 0.1 с
+✅ request-brief-reminder: Bash — очікую: не блокує — код 0, 0.1 с
+✅ глобальний Read — очікую: код 0 — код 0, 0.2 с
+✅ глобальний Skill — очікую: код 0 — код 0, 0.2 с
+✅ classify-task — очікую: код 0 — код 0, 0.2 с
+⏭ Stop  number-claim-shadow-hook.py — очікую: не ганяється: немає тест-випадку — ok
+⏭ Stop  answer-gate-shadow-hook.py — очікую: не ганяється: немає тест-випадку — ok
+⏭ PreToolUse Bash commit-consent-hook.py — очікую: не ганяється: немає тест-випадку — ok
+⏭ PreToolUse mcp__deepseek__deepseek delegate-prompt-improver-hook.py — очікую: не ганяється: може викликати платну модель — ok
+⏭ PreToolUse Bash|Write install-check-hook.py — очікую: не ганяється: немає тест-випадку — ok
+⏭ PreToolUse Edit|Write|MultiEdit|Bash edit-gate-hook.py — очікую: не ганяється: немає тест-випадку — ok
+⏭ PreToolUse AskUserQuestion plain-ask-hook.py — очікую: не ганяється: немає тест-випадку — ok
+⏭ PreToolUse AskUserQuestion ask-gate-hook.py — очікую: не ганяється: немає тест-випадку — ok
+⏭ PreToolUse mcp__delegate__.*|mcp__deepseek__.* personal-guard-hook.py — очікую: не ганяється: немає тест-випадку — ok
+⏭ PreToolUse Bash proc-guard-hook.py — очікую: не ганяється: немає тест-випадку — ok
+⏭ PreToolUse mcp__deepseek__deepseek|mcp__deepseek__deepseek-reply commit-consent-hook.py — очікую: не ганяється: немає тест-випадку — ok
+⏭ PostToolUse mcp__delegate__delegate|mcp__deepseek__deepseek delegate-outcome-logger-hook.py — очікую: не ганяється: пише статистику delegate — ok
+⏭ PostToolUse AskUserQuestion free-answer-hook.py — очікую: не ганяється: немає тест-випадку — ok
+⏭ PostToolUseFailure mcp__delegate__delegate|mcp__deepseek__deepseek delegate-outcome-logger-hook.py — очікую: не ганяється: пише статистику delegate — ok
+⏭ PostToolUse ^mcp__(deepseek|delegate)__(deepseek|delegate)$ node -e 'let s="";process.stdin.on("data — очікую: не ганяється: немає тест-випадку — ok
+⏭ UserPromptSubmit  session-timer.sh — очікую: не ганяється: збиває лічильник часу користувача — ok
+✅ тест check-bash-negative.mjs — очікую: код 0 — код 0
+✅ тест check-bash-positive.mjs — очікую: код 0 — код 0
+✅ тест check-settings-wiring.mjs — очікую: код 0 — код 0
+✅ звірка перед сповіщенням фонової задачі — очікую: видно обом хукам — verify-nudge бачить звірку: True; ask-gate без вимоги звірки: True
+✅ git commit-msg: код вузла в коміті механізму — очікую: хук є; без вузла → 1, з Q12 → 0 — git-хук є: True; коди без вузла/з Q12: [1, 0]
+✅ commit-consent: обхід git-хуків — очікую: --no-verify/-n/hooksPath → так; текст → ні — 6/6 випадків
+✅ commit-consent: М2 дозвіл на коміт — очікую: варіант агента ≠ дозвіл — 5/5 випадків
+✅ commit-consent: замок згоди (коміт/push/платне) — очікую: без слова → ні; питання про дію + слово у відповіді → так; лазівка закрита — 23/23 випадків
+✅ plain-codes: хеші й «М» без назви — очікую: шифр → ловиться; з описом → ні — 8/8 випадків
+✅ tree-focus: «DSH насправді» — очікую: екран 18.10 → обидва ⚠; без списку — тиша — 2/2 випадків
+✅ answer-gate: голос на підказки edit-gate — очікую: без дії → голос; Read/причина → ні — 3/3 випадків
+✅ answer-gate: голос «питання без кнопок» — очікую: «?» без віконця → ask; інакше → ні — 5/5 випадків
+✅ edit-gate: mv знімків естафети → ask — очікую: знімок → ask; інше → ні; читачі — 3/3 випадків
+✅ handoff-view: пункт з \r\n — очікую: view ok — view ok 536 Б · next 1/1 дослівно · openQuestions 0/0 · watchOut 0/0 · done 0/0
+✅ session-export: маска ключів — очікую: task-notification цілий; sk-/nvapi- → [ключ] — <task-notification_abcdefghijklmnopqrst> [ключ] [ключ]
+
+хуків у налаштуваннях: 39; поломок: 0

@@ -1,0 +1,2 @@
+agents/claude-code/focus-v2-2026-10-27/diff-vs-original.diff: +114 -16 hunks 6
+agents/claude-code/focus-v2-2026-10-27/diff-vs-prep.diff: +21 -6 hunks 3
