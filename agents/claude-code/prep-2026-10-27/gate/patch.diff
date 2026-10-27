@@ -1,0 +1,89 @@
+--- a/.claude/hooks/edit-gate-hook.py	2026-10-25 21:47:07.120196678 +0200
++++ b/.claude/hooks/edit-gate-hook.py	2026-10-27 23:07:28.179522535 +0200
+@@ -40,8 +40,15 @@
+ PROJECT = "/data/data/com.termux/files/home/AgentReachProject"
+ LOG = os.environ.get("EDIT_GATE_LOG") or os.path.join(PROJECT, ".claude", "logs", "edit-gate.log")
+ READ_TOOLS = {"Read", "Grep", "Glob"}
+-AGENTS_REASON = ("Ворота «агенти»: у ході {n} читань і жодного Agent. Віддай обмежену частину під-агенту або повтори "
++AGENTS_REASON = ("Ворота «агенти»: {n} читань без Agent (у ході або від останнього Agent). Віддай обмежену частину під-агенту або повтори "
+                  "виклик, додавши в description «без агента: <причина>».")
++# П3 (2026-10-27, окремо від П1; вимкнути — EDIT_GATE_P3=0 або P3_ON = False): докір посеред ходу
++# (queued_command) «агентами не користуєшся» / «робиш сам» → наступне читання — deny, доки не буде Agent.
++P3_ON = os.environ.get("EDIT_GATE_P3", "1") != "0"
++RE_REPROACH = re.compile(r"агент\w*[^.?!\n]{0,40}не\s*(?:к\w{0,3}рист|забу)|не\s*к\w{0,3}рист\w*[^.?!\n]{0,30}агент|"
++                         r"робиш\s+(?:все\s+|усе\s+)?сам", re.I)
++P3_REASON = ("Ворота «агенти»: користувач щойно дорікнув «{q}». Запусти Agent на обмежену частину або повтори "
++             "виклик, додавши в description «без агента: <причина>».")
+ EDIT_TOOLS = {"Edit", "Write", "MultiEdit"}
+ CODE_DIRS = ("tools/", ".claude/hooks/", ".claude/skills/")
+ SAFE_PREFIXES = ("/data/data/com.termux/files/usr/tmp/", "/tmp/")
+@@ -356,11 +363,22 @@
+     tools = [e for e in ev if e and e[0] == "tool"]
+     if tools and tools[-1][1] == name and tools[-1][2] == inp:  # поточний виклик уже може бути в журналі
+         ev = [e for e in ev if e is not tools[-1]]
+-    reads, agent = agv.count_reads(ev)
+-    n = reads + (1 if agv.is_read(name, inp) else 0)
+-    if agent or n < agv.AGENTS_N or not agv.is_read(name, inp):
++    if not agv.is_read(name, inp):
+         return None
+-    return f"agents\t{turns[-1]['ts']}\t{n // agv.AGENTS_N}", n
++    if P3_ON:
++        last_q = None
++        for e in ev:
++            if e and e[0] == "queued" and RE_REPROACH.search(e[1]):
++                last_q = e
++            elif e and e[0] == "tool" and e[1] in ("Agent", "Task"):
++                last_q = None
++        if last_q:
++            return f"agents-p3\t{turns[-1]['ts']}\t{last_q[2]}", 0, P3_REASON.format(q=last_q[1][:60])
++    reads, seg = agv.count_reads_since_agent(ev)  # П1: читання від останнього Agent, ключ — відрізок
++    n = reads + 1
++    if n < agv.AGENTS_N:
++        return None
++    return f"agents\t{turns[-1]['ts']}\t{seg}\t{n // agv.AGENTS_N}", n, AGENTS_REASON.format(n=n)
+ 
+ 
+ def main():
+@@ -380,7 +398,7 @@
+             f.write(f"{data.get('session_id', '?')}\t{ag[0]}\t{time.strftime('%Y-%m-%dT%H:%M:%S')}\n")
+         print(json.dumps({"hookSpecificOutput": {
+             "hookEventName": "PreToolUse", "permissionDecision": "deny",
+-            "permissionDecisionReason": AGENTS_REASON.format(n=ag[1])}}, ensure_ascii=False))
++            "permissionDecisionReason": ag[2]}}, ensure_ascii=False))
+         return
+     if name in READ_TOOLS:
+         return
+--- a/.claude/hooks/answer-gate-shadow-hook.py	2026-10-25 21:47:07.116196678 +0200
++++ b/.claude/hooks/answer-gate-shadow-hook.py	2026-10-27 23:07:28.179522535 +0200
+@@ -217,6 +217,20 @@
+     return reads, agent
+ 
+ 
++def count_reads_since_agent(events):
++    """(читань після ОСТАННЬОГО Agent/Task, номер відрізка = скільки Agent/Task було) — П1 воріт «агенти», 2026-10-27:
++    один Agent більше не вимикає ворота до кінця ходу (хід триває всю сесію; докори 26–27.10)."""
++    reads, seg = 0, 0
++    for e in events or []:
++        if e and e[0] == "tool":
++            if e[1] in ("Agent", "Task"):
++                seg += 1
++                reads = 0
++            elif is_read(e[1], e[2]):
++                reads += 1
++    return reads, seg
++
++
+ def is_test_session(sid):
+     """Тестові/службові session_id (check, pipe, hooks-smoke-…) — справжні сесії мають UUID."""
+     return not (isinstance(sid, str) and RE_UUID.match(sid))
+@@ -284,6 +298,10 @@
+                    "tools": [], "hints": [], "human": False, "events": []}
+         if d.get("type") == "attachment":
+             a = d.get("attachment") or {}
++            # 2026-10-27 (П3 воріт «агенти»): людське повідомлення посеред ходу — подія ("queued", текст, час);
++            # сповіщення фонових задач («<task…») — ні. Решта споживачів events дивиться лише на свої типи.
++            if a.get("type") == "queued_command" and not str(a.get("prompt", "")).lstrip().startswith("<"):
++                cur["events"].append(("queued", str(a.get("prompt", "")), d.get("timestamp", "")))
+             if a.get("type") == "hook_additional_context":
+                 c = a.get("content")
+                 cur["hints"].append(" ".join(c) if isinstance(c, list) else str(c or ""))

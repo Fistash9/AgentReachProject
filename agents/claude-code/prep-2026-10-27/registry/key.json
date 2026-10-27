@@ -1,0 +1,282 @@
+{
+ "1": {
+  "sid": "2487d837",
+  "t": "2026-10-26T14:55",
+  "orig": false,
+  "copy": true,
+  "copy_class": "Р9"
+ },
+ "2": {
+  "sid": "2487d837",
+  "t": "2026-10-27T06:40",
+  "orig": false,
+  "copy": true,
+  "copy_class": null
+ },
+ "3": {
+  "sid": "1468b719",
+  "t": "2026-09-21T09:08",
+  "orig": false,
+  "copy": false,
+  "copy_class": "Р1"
+ },
+ "4": {
+  "sid": "56e67207",
+  "t": "2026-09-22T18:43",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "5": {
+  "sid": "26be9561",
+  "t": "2026-09-27T20:25",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "6": {
+  "sid": "e7f48fd8",
+  "t": "2026-09-25T06:13",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "7": {
+  "sid": "dcbaa407",
+  "t": "2026-09-21T08:22",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "8": {
+  "sid": "caf8eee2",
+  "t": "2026-10-20T09:54",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "9": {
+  "sid": "31190f2e",
+  "t": "2026-09-28T05:56",
+  "orig": true,
+  "copy": true,
+  "copy_class": "Р1"
+ },
+ "10": {
+  "sid": "cb1e2bd9",
+  "t": "2026-09-19T09:33",
+  "orig": false,
+  "copy": false,
+  "copy_class": "Р4"
+ },
+ "11": {
+  "sid": "ae902bd7",
+  "t": "2026-09-26T14:37",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "12": {
+  "sid": "2604c36f",
+  "t": "2026-09-26T17:21",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "13": {
+  "sid": "9cbff1e3",
+  "t": "2026-10-03T18:18",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "14": {
+  "sid": "1a0cc370",
+  "t": "2026-10-01T09:44",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "15": {
+  "sid": "2487d837",
+  "t": "2026-10-27T06:30",
+  "orig": false,
+  "copy": true,
+  "copy_class": null
+ },
+ "16": {
+  "sid": "940a8b9a",
+  "t": "2026-10-22T10:46",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "17": {
+  "sid": "3523d8a2",
+  "t": "2026-10-20T12:19",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "18": {
+  "sid": "e8409204",
+  "t": "2026-10-06T13:59",
+  "orig": true,
+  "copy": true,
+  "copy_class": "Р5"
+ },
+ "19": {
+  "sid": "26be9561",
+  "t": "2026-09-27T21:11",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "20": {
+  "sid": "cb1e2bd9",
+  "t": "2026-09-18T12:46",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "21": {
+  "sid": "e629c562",
+  "t": "2026-10-14T10:22",
+  "orig": false,
+  "copy": false,
+  "copy_class": "Р1"
+ },
+ "22": {
+  "sid": "1a0cc370",
+  "t": "2026-09-30T18:38",
+  "orig": false,
+  "copy": false,
+  "copy_class": "Р1"
+ },
+ "23": {
+  "sid": "4f67a514",
+  "t": "2026-09-23T17:43",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "24": {
+  "sid": "4dc8a94e",
+  "t": "2026-10-25T20:02",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "25": {
+  "sid": "9cbff1e3",
+  "t": "2026-10-03T17:58",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "26": {
+  "sid": "fb0d958b",
+  "t": "2026-09-29T22:12",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "27": {
+  "sid": "2487d837",
+  "t": "2026-10-27T06:52",
+  "orig": false,
+  "copy": true,
+  "copy_class": "Р9"
+ },
+ "28": {
+  "sid": "3451e000",
+  "t": "2026-10-03T08:37",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "29": {
+  "sid": "3efa3a9d",
+  "t": "2026-10-03T14:08",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "30": {
+  "sid": "0d07dbd7",
+  "t": "2026-10-15T15:42",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "31": {
+  "sid": "2604c36f",
+  "t": "2026-09-26T18:22",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "32": {
+  "sid": "ae902bd7",
+  "t": "2026-09-26T11:10",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "33": {
+  "sid": "43600b3c",
+  "t": "2026-09-26T01:03",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "34": {
+  "sid": "d3bf2efd",
+  "t": "2026-09-17T21:57",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "35": {
+  "sid": "cb1e2bd9",
+  "t": "2026-09-18T11:00",
+  "orig": false,
+  "copy": false,
+  "copy_class": "Р1"
+ },
+ "36": {
+  "sid": "0d07dbd7",
+  "t": "2026-10-16T08:56",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "37": {
+  "sid": "b5e9eb9e",
+  "t": "2026-09-25T20:19",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "38": {
+  "sid": "d10f5cd0",
+  "t": "2026-10-07T13:30",
+  "orig": false,
+  "copy": false,
+  "copy_class": null
+ },
+ "39": {
+  "sid": "e8409204",
+  "t": "2026-10-06T14:17",
+  "orig": false,
+  "copy": false,
+  "copy_class": "Р1"
+ },
+ "40": {
+  "sid": "56e67207",
+  "t": "2026-09-23T13:27",
+  "orig": false,
+  "copy": false,
+  "copy_class": "Р10"
+ }
+}

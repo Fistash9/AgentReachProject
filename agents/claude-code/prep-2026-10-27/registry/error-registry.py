@@ -1,0 +1,390 @@
+"""Лічильник реєстру класів помилок (Q12, 2026-10-16; запит користувача «зроби як буде краще для реєстру
+помилок» → «Спершу 1 і 2, потім покажи»). Класи й ознаки — agents/claude-code/q12-classes-2026-10-16/
+registry-v1.md. Лише читає журнали сесій; без моделі (ознаки — слова в поправці).
+
+  python3 tools/error-registry.py                  # поточна (найсвіжіша cli) сесія: поправки і «клас — N-й раз»
+  python3 tools/error-registry.py --session <id>   # конкретна сесія (префікс id)
+  python3 tools/error-registry.py --all            # підсумок за всіма сесіями
+  python3 tools/error-registry.py --loop           # клас → ліки (registry-v1.md «## Ліки») → ⚠ повтор після ліків; частка поправок
+  python3 tools/error-registry.py --eval <labels> <corrections.jsonl>  # точність ознак (id|клас)
+"""
+import glob, json, os, re, sys
+from collections import Counter
+
+LOGS = os.path.expanduser("~/.claude/projects/-data-data-com-termux-files-home-AgentReachProject")
+
+# поправка-докір: рядки 1–3 — набір бектесту 16.10 (48 справжніх із 72); рядок 4 — 2026-10-16 (проба Q12:
+# лічильник пропустив «чому не зробилось», «воно не працює»; рішення користувача «Так, вносити»). Рядок 4 на
+# 2065 повідомленнях: +27 збігів, справжніх 19 (+4 межа) за claude-code, 23 за сліпою звіркою DeepSeek
+# дієслово 2-ї особи «користуватись/запускати/віддавати…» (з одруківками на кшталт «клристуєшся», «користуєшься»)
+_VERB2 = r"(?:к\w{1,2}рист|використов|запуска|відда|клич|виклика)\w*(?:єш|еш|иш|їш)\w{0,3}\b"
+TRIG = re.compile(
+    r"знов|знову|вже казав|вже говорил|ми ж (?:вже|домовл)|скільки раз|ти перевіря|ти не перевір|"
+    r"не перевірив|як ти міг|чому ти не|чому не спитав|ти що (?:придум|вигад)|ти придумав|"
+    r"я ж казав|(?<!що )(?<!як )(?<!про )я казав|пропустив|на око|не розумію шифр|навіщо ти|"
+    r"чому ти\b|не зробив|"
+    r"перевір(?:ив|яв|ено)\s*\?|і що\s*\?\s*$|не скористал|"
+    # 2026-10-25 (сесія 4dc8a94e пропустила 8 докорів): «забув» — без «я/вчора забув» (забув сам користувач), без
+    # «що забуваємо» і «буде забуватись», без майбутнього «ти забудеш» (запитання, не докір) — 3 з 6 хибних
+    r"(?<!я )(?<!вчора )забув\b|забувай|не\s+забува|ми\s+забува|\bти\b[^.?!]{0,30}(?:забула?\b|забут)|"
+    r"(?:шукай|роби|зроби|читай|перевір\w*|подивись|дивись|пиши|напиши)\s+нормально|"
+    r"нормально\s+(?:шукай|роби|зроби|читай|перевір|подивись|дивись)|"
+    r"(?:вже|уже)\s+(?:\w+\s+){0,3}проходили|проходили\s+(?:вже|уже)|все це проходили|"
+    r"(?:теж|вже|уже)\s+(?:\w+\s+)?(?:говорили|обговорювали|обговорили|розбирали)|"
+    r"(?:робиш|думаєш|пишеш)\s+не те\b|не те\s+(?:робиш|думаєш)|щось\s+не\s+те\b|"
+    r"\bти\b[^.?!]{0,30}\bне\s?сист|(?:це|ж)\s+(?:ж\s+)?не\s?логічн|не\s?засво|уроки?\s+не\b|"
+    r"(?<!щоб )(?<!щоби )\bти\b[^.?!,]{0,30}\bне\s+\w{2,}(?:ив|ав|ів|яв|ув)\b|(?:що|чому)\s+(?:ще\s+)?не\s+виправ|"
+    # 2026-10-27 (сесія 2487d837: «агентами не клристуєшся», «агентами не користуєшься ?», «не знаю просто як ще тобі це
+    # пояснити», «це вже було» — 0 з 4 у тригері): (а) докір про агентів без «знов» — агент + «не» + дієслово 2-ї особи
+    # (користуєш/клристуєш/використовуєш/запускаєш/віддаєш/кличеш/викликаєш) в обидва боки; «робиш сам»; (б) «як ще (тобі)
+    # (це) пояснити», «вже пояснював», «це/таке вже було» в кінці фрази (не «це вже було зроблено?»), «я ж (зазвичай) кажу/просив»,
+    # «вкотре», «в котрий раз», «скільки можна»
+    r"агент\w*\s+(?:\w+\s+){0,2}не\s+" + _VERB2 + r"|не\s+" + _VERB2 + r"\s+(?:\w+\s+){0,3}агент|"
+    r"\bробиш\s+(?:все\s+)?сам\b|\bсам\s+(?:все\s+)?робиш|"
+    r"як\s+ще\s+(?:\w+\s+){0,2}поясн|(?:вже|уже)\s+(?:\w+\s+)?пояснюва|пояснюю\s+(?:вже|уже|вкотре)|"
+    r"\b(?:це|таке)\s+(?:ж\s+)?(?:вже|уже)\s+було(?:\s+(?:раніше|не\s+раз|колись))?\s*(?:[.!,…)]|$)|(?:вже|уже)\s+було\s+(?:таке|це)\b|"
+    r"я\s+ж\s+(?:зазвичай\s+|завжди\s+|постійно\s+|вже\s+)?(?:кажу|говорю|просив|просила)\b|вкотре|в\s?котрий\s+раз|скільки\s+можна", re.I)
+# слабкі ознаки: «чому не», «не спрацювало», «як так вийшло» — не докір, коли підмет — третя сторона одразу перед
+# ознакою (25.10: «у дш чому не завершився процес», «аналіз збою діпсік, як так вийшло … для діпсік не спрацювало»)
+WEAK = re.compile(r"чому не\b|як так вийшло|не зробилось|не спрацювал|воно не працює", re.I)
+THIRD = re.compile(r"(?:діпсік\w*|deepseek|\bдш\b|\bdsh\b|антропік\w*|anthropic)\W+(?:\w+\W+)?"
+                   r"(?=чому не\b|як так вийшло|не зробилось|не спрацювал|воно не працює)\S+(?:\s+\S+)?", re.I)
+
+
+def is_correction(text):
+    """Докір користувача: сильна ознака, або слабка, де підмет перед нею — не третя сторона (лише слова користувача)."""
+    a = answer_part(text)
+    return bool(TRIG.search(a) or WEAK.search(THIRD.sub(" ", a)))
+
+
+REPEAT = re.compile(r"знов|знову|я казав|я ж казав|вже казав|вже казали|вже говорил|ми ж|скільки раз|проходили|теж говорили", re.I)
+SYS = re.compile(r"^\s*<(?:system-reminder|command-|local-command|task-notification|bash-|pasted_content|agent-message)")
+LONG = 120  # довші за це — вставки/постановки, не поправка (бектест: шум 24 з 72)
+
+# порядок = пріоритет = порядок таблиці (registry-v1.md «Правило розкладки»: Р1 першим)
+CLASSES = [
+    ("Р1", "Дія чи висновок до перевірки",
+     r"перевір|історі\w* створ|зламат|неможлив|не можливо|придум|не побачив|по частинам|"
+     r"не повним|не дивився|не шукав|не впевнений|баланс|"
+     r"наслідк|на чому ти опира|чому ти вирішив|[ву]сю картину|не знайшов\b|"  # 25.10 ремонт: 6 поправок без класу
+     r"шука\w*\s+нормально|нормально\s+шука|не\s+дошука|не\s?логічн"),  # 25.10 тригер: «шукай нормально», «це ж не логічно»
+    ("Р2", "Дія без прямого «так»", r"не спитав|сам вирішив|не чекаш|не чекаєш|ліміти ставиш|без мене|не уточню|не запитав|прямого\s+\W?так"),
+    ("Р3", "Переказ губить деталі", r"переказ|перекрут|не так написав|я казав про"),
+    ("Р4", "Зроблено частково / латка замість системи",
+     r"хвост|висять|глобал|симптом|не лікує|закривати|обіця|"
+     r"ти ска\w{1,3}в що|не вирішил|цвях|корін|корен|не (?:був )?прибран|працювати як мал|засміч|зассіч|не\s+виправ"),  # 25.10 ремонт: «виправлено = працює саме» (RULES fixed-means-works)
+    ("Р5", "Розфокус: черга й пріоритет на око", r"розфокус|поярусн|на око|критері|рівнев|не\s?сист"),
+    ("Р6", "Незрозуміла мова для користувача", r"шифр|не розумію"),
+    ("Р7", "Позначка чи назва замість змісту", r"позначк|за назвою|значок"),
+    ("Р8", "Дія без цілі", r"\bціль|основн\w* ціл|робиш не те|не те робиш|щось\s+не\s+те\b"),
+    ("Р9", "Не той шлях чи інструмент; свої записи не підняв",
+     r"(?:знов|не через|не на пряму|навіщо ти)[^.?!]{0,40}(?:діпсік|deepseek|делегатор|веб ?серч)|"
+     r"чому ти не (?:запропонував|користувався|згадав)|не користувався|не згадав|вже розглядали|проходили|"
+     r"в арсенал|пам.?ять не та|скіл|не скористал|скориста|використа|не викликав|велосипед|"
+     r"готов\w* рішен|не в тому\b|домовлял|\bне\s+\w+\s+агент|"
+     r"не віддаєш[^.?!]{0,30}агент|агент\w*[^.?!]{0,12}не користу|"
+     r"агент(?:ам|ами|ів|и|а)\b|робиш\s+сам|сам\s+робиш"),  # 23.10: «чому не віддаєш процеси агенту опусу?», «знов агентами не користуєшся?»; 26.10: «агентів… не забув запускати?», «ти знов робиш сам»
+    # 25.10 ремонт (запропоновано, не затверджено): урок не засвоєно — не вчиться сам, не запам'ятовує
+    ("Р10", "Урок не засвоєно: не вчиться й не запам'ятовує",
+     r"навчи|навчан|навчит|вчитись|запам.?ят[аоу]|памята|досвід|кожен раз згадув|"
+     r"засво|урок\w*\s+не\b|не\s+вивчен|забу"),  # 25.10 тригер: «уроки не засвоєні», «ти міг забути», «все забудеться»
+]
+CLASSES = [(c, n, re.compile(p, re.I)) for c, n, p in CLASSES]
+# 2026-10-26 (сліпа розмітка q12-ad-2026-10-26: 16 → 19 з 21): виняток із «Правила розкладки» (Р1 першим) — «віддати … діпсіку/делегатору/агенту»
+# — це Р9 «роблю сам замість агентів», навіть коли поруч загальне «перевір» (сліпа розмітка B06, 26.10)
+PRIORITY = [("Р9", re.compile(r"віддат\w*[^.?!]{0,30}(?:діпсік|deepseek|делегатор|агент)", re.I))]
+NAMES = {c: n for c, n, _ in CLASSES}
+# 25.10 ремонт: загальні слова «не працює / не зробилось / знахідки» — лише запасний Р4, коли жоден клас не впізнав
+# (у таблиці вони крали поправки в Р5/Р9: «рівнева система… знов не працює?», «знахідку 3… в арсеналі є скіли»)
+FALLBACK = [("Р4", re.compile(r"не прац\w*|не зробилось|знахідк", re.I))]
+
+
+def answer_part(text):
+    """Відповідь у віконці приходить як «"питання"="відповідь"» — класифікуємо лише слова користувача."""
+    parts = re.findall(r'"=\s*"(.*?)"(?=\s*(?:,\s*"|\.|$))', text, re.S)
+    return " ".join(parts) if parts else text
+
+
+def classify(text):
+    text = answer_part(text)
+    for c, rx in PRIORITY:
+        if rx.search(text):
+            return c
+    for c, _, rx in CLASSES:
+        if rx.search(text):
+            return c
+    for c, rx in FALLBACK:
+        if rx.search(text):
+            return c
+    return None
+
+
+def user_texts(d):
+    c = d.get("message", {}).get("content")
+    if isinstance(c, str):
+        return [c]
+    out = []
+    for b in c or []:
+        if b.get("type") == "text":
+            out.append(b["text"])
+        elif b.get("type") == "tool_result":
+            t = b.get("content")
+            t = t if isinstance(t, str) else " ".join(x.get("text", "") for x in t or [] if isinstance(x, dict))
+            m = re.match(r"\s*(?:User has answered your questions|The user answered|"
+                         r"Your questions have been answered):(.*)", t, re.S)
+            if m:
+                body = re.split(r"You can now continue|Read the answers carefully", m.group(1))[0]
+                ans = re.findall(r'"="(.*?)"(?=\s*,\s*"|\s*\.?\s*$)', body, re.S)  # лише відповіді після "=", не питання
+                out.append(" ".join(ans) if ans else body)
+    return out
+
+
+def corrections(path, counts=None):
+    """Поправки користувача в одній cli-сесії: [(час, текст, клас, повтор)]. counts (dict) — сюди
+    «msgs»: скільки всього повідомлень користувача пройшло ті самі фільтри (знаменник частки поправок)."""
+    rows = []
+    for line in open(path, encoding="utf-8"):
+        try:
+            d = json.loads(line)
+        except ValueError:
+            continue
+        if d.get("type") == "user" and d.get("entrypoint") not in (None, "cli"):
+            if counts is not None:
+                counts["msgs"] = 0
+            return []  # під-сесія помічника
+        if d.get("type") == "attachment" and d.get("attachment", {}).get("type") == "queued_command":
+            if d["attachment"].get("origin", {}).get("kind", "human") != "human":
+                continue  # звіти під-агентів («peer») і task-notification — не слова людини (25.10)
+            q = d["attachment"].get("prompt", "")  # повідомлення посеред ходу (бектест: 5 справжніх поправок)
+            texts = [q if isinstance(q, str) else " ".join(
+                x.get("text", "") if isinstance(x, dict) else str(x) for x in q)]
+        elif d.get("type") == "user" and not d.get("isMeta"):
+            texts = user_texts(d)
+        else:
+            continue
+        for s in texts:
+            if not isinstance(s, str) or not s.strip() or SYS.match(s) or len(s.split()) > LONG:
+                continue
+            if counts is not None:
+                counts["msgs"] = counts.get("msgs", 0) + 1
+            if is_correction(s):  # лише слова користувача, не питання асистента у віконці (16.10: 4 хибні)
+                rows.append((d.get("timestamp", "")[:16], s.strip(), classify(s), bool(REPEAT.search(s))))
+    return rows
+
+
+def all_sessions():
+    out = {}
+    for f in sorted(glob.glob(LOGS + "/*.jsonl"), key=os.path.getmtime):
+        r = corrections(f)
+        if r:
+            out[os.path.basename(f)[:8]] = r
+    return out
+
+
+def current_session():
+    cli = []
+    for f in sorted(glob.glob(LOGS + "/*.jsonl"), key=os.path.getmtime, reverse=True):
+        with open(f, encoding="utf-8") as fh:
+            for line in fh:
+                d = json.loads(line) if line.strip().startswith("{") else {}
+                if d.get("type") == "user":
+                    if d.get("entrypoint") == "cli":
+                        return os.path.basename(f)[:8]
+                    break
+    return None
+
+
+def report_session(sid):
+    sess = all_sessions()
+    if sid not in sess:
+        print(f"сесія {sid}: поправок за тригерами немає")
+        return
+    before = Counter()
+    for s, rows in sess.items():
+        if s == sid:
+            break
+        before.update(r[2] for r in rows)
+    now = Counter()
+    print(f"Реєстр помилок — сесія {sid}: поправок {len(sess[sid])}")
+    for t, text, c, rep in sess[sid]:
+        now[c] += 1
+        n = before[c] + now[c]
+        name = NAMES.get(c, "без класу (перевір вручну)")
+        print(f"  {t[5:]}  {c or '—'} {name} — {n}-й раз{' · повтор (каже користувач)' if rep else ''}")
+        print(f"         «{re.sub(chr(10), ' ', text)[:110]}»")
+
+
+def report_all():
+    sess = all_sessions()
+    tot, rep, first, last = Counter(), Counter(), {}, {}
+    for s, rows in sess.items():
+        for t, _, c, r in rows:
+            tot[c] += 1
+            rep[c] += r
+            first.setdefault(c, t[:10])
+            last[c] = t[:10]
+    print(f"Реєстр помилок — усі сесії: {len(sess)} з поправками, поправок {sum(tot.values())}")
+    for c, n in tot.most_common():
+        print(f"  {c or '—'} {NAMES.get(c, 'без класу'):<48} {n:>3}  (повтор за словами: {rep[c]}; "
+              f"{first[c]} … {last[c]})")
+
+
+REGISTRY = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                        "agents", "claude-code", "q12-classes-2026-10-16", "registry-v1.md")
+
+
+def target_rx(t):
+    """Мішень ліків (2026-10-26, agents/claude-code/q12-ad-2026-10-26/): «*» — увесь клас; інакше основи через кому — поправка має цю мішень,
+    якщо її слова містять хоч одну основу (підрядок, без регістру)."""
+    t = (t or "*").strip()
+    if t in ("*", "", "—", "-"):
+        return None
+    return re.compile("|".join(re.escape(x.strip()) for x in t.split(",") if x.strip()), re.I)
+
+
+def remedies(path=REGISTRY):
+    """{клас: [(час коміту, коміт, ліки, мішень)]} з розділу «## Ліки» реєстру; час — з git (UTC)."""
+    import subprocess
+    from datetime import datetime, timezone
+    out, on = {}, False
+    for l in open(path, encoding="utf-8"):
+        on = on or l.startswith("## Ліки")
+        m = on and re.match(r"\|\s*(Р\d+)\s*\|\s*(\d{4}-\d\d-\d\d)\s*\|\s*([0-9a-f]{7,})\s*\|\s*(.+?)\s*\|(?:\s*(.*?)\s*\|)?", l)
+        if m:
+            r = subprocess.run(["git", "-C", os.path.dirname(path), "log", "-1", "--format=%ct", m.group(3)],
+                               capture_output=True, text=True)
+            ts = (datetime.fromtimestamp(int(r.stdout.strip()), timezone.utc).strftime("%Y-%m-%dT%H:%M")
+                  if r.stdout.strip().isdigit() else m.group(2) + "T23:59")  # без git — кінець дня (суворіше)
+            out.setdefault(m.group(1), []).append((ts, m.group(3), m.group(4), m.group(5) or "*"))
+    return out
+
+
+# 2026-10-25 («5 чому», agents/dsh/five-whys-2026-10-25.md; користувач: «що найголовніше… знайшли і не виправили зразу» →
+# виправляй): вирок «ліки діють» видавав детектор, який не бачив 36% поправок («без класу» в коло не входило) і при чужому
+# HOME мовчки давав «0». Тепер: «без класу» понад поріг — детектор зламаний, вироки «ок» недійсні; немає журналів — помилка.
+# Нові слова в детектор навмисно не додано: латка під останню фразу — і є корінь (ліки під симптом).
+UNCLASSIFIED_MAX = 0.10
+
+
+def detector_broken(rows):
+    """(зламаний?, частка без класу, кількість без класу) для рядків corrections()."""
+    n = sum(1 for r in rows if r[2] is None)
+    share = n / len(rows) if rows else 0.0
+    return share > UNCLASSIFIED_MAX, share, n
+
+
+def require_logs():
+    """Немає журналів — не «0 поправок», а помилка (exit 2): 25.10 з proot HOME=/root реєстр мовчки давав 0 замість 120."""
+    if not glob.glob(LOGS + "/*.jsonl"):
+        sys.stderr.write(f"error-registry: не бачу журналів сесій у {LOGS} (HOME={os.environ.get('HOME')}) — "
+                         f"числа були б хибним «0». Запусти з HOME=/data/data/com.termux/files/home.\n")
+        sys.exit(2)
+
+
+def report_loop():
+    """Коло «клас → ліки → повторилось після ліків?» + частка поправок від повідомлень по тижнях (2026-10-19;
+    ідея — cc-retrospective-learner «昇格», мірило — shenxingy/Clade «correction rate»)."""
+    from datetime import date
+    rem = remedies()
+    sess, week = {}, {}
+    for f in sorted(glob.glob(LOGS + "/*.jsonl"), key=os.path.getmtime):
+        cnt = {}
+        rows = corrections(f, cnt)
+        if rows:
+            sess[os.path.basename(f)[:8]] = rows
+        if cnt.get("msgs"):
+            with open(f, encoding="utf-8") as fh:  # тиждень — за першим повідомленням сесії
+                first = next((t for t in (json.loads(l).get("timestamp", "") for l in fh
+                                          if '"timestamp"' in l and l.strip().startswith("{")) if t), "")
+            if first:
+                wk = "%d-W%02d" % date.fromisoformat(first[:10]).isocalendar()[:2]
+                w = week.setdefault(wk, [0, 0])
+                w[0] += len(rows)
+                w[1] += cnt["msgs"]
+    allrows = [r for rows in sess.values() for r in rows]
+    print(f"Коло реєстру: поправок {len(allrows)} у {len(sess)} сесіях; ліки — {REGISTRY.split('/')[-1]} «## Ліки»")
+    broken, share, nunc = detector_broken(allrows)
+    if broken:
+        print(f"⚠ ДЕТЕКТОР ЗЛАМАНИЙ: без класу {nunc} з {len(allrows)} ({share:.0%}) > {UNCLASSIFIED_MAX:.0%} — "
+              f"вироки «ок» нижче недійсні (поправки без класу в коло не входять). Останні без класу:")
+        for t, text, _, rep in [r for r in allrows if r[2] is None][-3:]:
+            print(f"      {t[:16]}{' · повтор' if rep else ''}  «{re.sub(chr(10), ' ', text)[:90]}»")
+    warn = 0
+    for c, name, _ in CLASSES:
+        rs = [r for r in allrows if r[2] == c]
+        lk = sorted(rem.get(c, []))
+        if not rs and not lk:
+            continue
+        if not lk:
+            print(f"  {c} {name}: поправок {len(rs)}; ліків-механізмів немає")
+            continue
+        groups = {}
+        for x in lk:
+            groups.setdefault(x[3], []).append(x)
+        covered, lines = set(), []
+        for tg, g in groups.items():
+            rx = target_rx(tg)
+            rt = [r for r in rs if rx is None or rx.search(answer_part(r[1]))]
+            covered.update(id(r) for r in rt)
+            after = [r for r in rt if r[0] > g[-1][0]]
+            lines.append((tg, rt, g[-1], after))
+        outside = [r for r in rs if id(r) not in covered]
+        out_after = [r for r in outside if r[0] > lk[-1][0]]  # без мішені — як досі: від останніх ліків класу
+        cw = sum(bool(x[3]) for x in lines) + bool(out_after)
+        mark = ("⚠ ліки не діють" if cw else
+                "ок? недійсне — детектор зламаний" if broken else "ок: після ліків повторів нема")
+        warn += bool(cw)
+        print(f"  {c} {name}: поправок {len(rs)}; ліків {len(lk)}, мішеней {len(groups)}, "
+              f"поза мішенями {len(outside)} — {mark}")
+        if outside:
+            print(f"    без мішені: поправок {len(outside)} (після останніх ліків класу {len(out_after)}){' — ⚠' if out_after else ''}")
+            for t, text, _, rep in out_after[:3]:
+                print(f"      {t[:16]}{' · повтор' if rep else ''}  «{re.sub(chr(10), ' ', text)[:90]}»")
+        for tg, rt, last, after in lines:
+            print(f"    мішень «{tg[:40]}»: поправок {len(rt)} (після {len(after)}); "
+                  f"останні {last[0][:10]} {last[1]}{' — ⚠' if after else ''}")
+            for t, text, _, rep in after[:3]:
+                print(f"      {t[:16]}{' · повтор' if rep else ''}  «{re.sub(chr(10), ' ', text)[:90]}»")
+    print(f"⚠ класів з повтором після ліків: {warn}")
+    print("Частка поправок (поправки / повідомлення користувача) по тижнях:")
+    for wk in sorted(week):
+        n, m = week[wk]
+        print(f"  {wk}: {n}/{m} = {n / m:.1%}")
+    return 1 if (warn or broken) else 0
+
+
+def evaluate(labels_path, jsonl_path):
+    """Точність ознак проти ручної розкладки: labels — рядки «id|клас», jsonl — вихід бектесту 16.10
+    (agents/claude-code/q12-classes-2026-10-16/backtest.py; id = номер рядка)."""
+    lab = {}
+    for l in open(labels_path, encoding="utf-8"):
+        m = re.match(r"\s*(\d+)\s*\|\s*(Р\d+)", l)
+        if m:
+            lab[int(m.group(1))] = m.group(2)
+    rows = [json.loads(l)["user"] for l in open(jsonl_path, encoding="utf-8")]
+    ok, bad = 0, []
+    for i, lb in sorted(lab.items()):
+        got = classify(rows[i - 1])
+        ok += got == lb
+        if got != lb:
+            bad.append((i, lb, got, re.sub(r"\s+", " ", rows[i - 1])[:90]))
+    print(f"збіг ознак з ручною розкладкою: {ok} з {len(lab)}")
+    for b in bad:
+        print("  ", *b)
+
+
+if __name__ == "__main__":
+    a = sys.argv[1:]
+    if a[:1] != ["--eval"]:
+        require_logs()
+    if a[:1] == ["--all"]:
+        report_all()
+    elif a[:1] == ["--loop"]:
+        sys.exit(report_loop())
+    elif a[:1] == ["--eval"] and len(a) > 2:
+        evaluate(a[1], a[2])
+    elif a[:1] == ["--session"] and len(a) > 1:
+        report_session(a[1][:8])
+    else:
+        sid = current_session()
+        report_session(sid) if sid else print("cli-сесію не знайдено")

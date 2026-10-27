@@ -1,0 +1,39 @@
+===== 6b187e96  докорів (queued, шаблон П3): 2
+  ДОКІР 10-26T07:57:43 «агентів з різрим ефорсом не забув запускати ?»
+  ДОКІР 10-26T08:04:36 «ти знов робиш сам»
+  deny[orig] = 1
+  deny[P1] = 2
+  deny[P1+P3] = 2
+  10-26T05:46:12 orig   agents    n=15  See TROUBLES tail and BACKLOG top format | tail -5 TROUBLES.md | cut -c1-200; sed -n 1,12p BACKLOG.md
+  10-26T05:46:12 P1     agents    n=15  See TROUBLES tail and BACKLOG top format | tail -5 TROUBLES.md | cut -c1-200; sed -n 1,12p BACKLOG.md
+  10-26T05:46:12 P1+P3  agents    n=15  See TROUBLES tail and BACKLOG top format | tail -5 TROUBLES.md | cut -c1-200; sed -n 1,12p BACKLOG.md
+  10-26T10:23:57 P1     agents    n=15  Print full baton next items to carry into pass | python3 -c " import json;b=json.load(open('.baton/baton.json')) print(
+  10-26T10:23:57 P1+P3  agents    n=15  Print full baton next items to carry into pass | python3 -c " import json;b=json.load(open('.baton/baton.json')) print(
+  до докору 10-26T07:57:43: deny копії того дня раніше — 05:46:12(P1), 05:46:12(P1+P3)
+  до докору 10-26T08:04:36: deny копії того дня раніше — 05:46:12(P1), 05:46:12(P1+P3)
+===== 2487d837  докорів (queued, шаблон П3): 2
+  ДОКІР 10-26T14:55:54 «агентами не клристуєшся»
+  ДОКІР 10-27T06:52:58 «агентами не користуєшься ?»
+  deny[orig] = 1
+  deny[P1] = 5
+  deny[P1+P3] = 5
+  10-26T14:29:56 orig   agents    n=15  Read the three relevant TROUBLES entries | sed -n 4231,4240p TROUBLES.md | cut -c1-330; echo ...; sed -n 5725,573
+  10-26T14:29:56 P1     agents    n=15  Read the three relevant TROUBLES entries | sed -n 4231,4240p TROUBLES.md | cut -c1-330; echo ...; sed -n 5725,573
+  10-26T14:29:56 P1+P3  agents    n=15  Read the three relevant TROUBLES entries | sed -n 4231,4240p TROUBLES.md | cut -c1-330; echo ...; sed -n 5725,573
+  10-26T14:37:52 P1     agents    n=15  Find newest DSH session file | R=/data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootf
+  10-26T14:37:52 P1+P3  agents    n=15  Find newest DSH session file | R=/data/data/com.termux/files/usr/var/lib/proot-distro/installed-rootf
+  10-26T14:45:10 P1     agents    n=30  Check verifier quotes against the patch with grep | cd /data/data/com.termux/files/home/AgentReachProject/agents/claude-co
+  10-26T14:45:10 P1+P3  agents    n=30  Check verifier quotes against the patch with grep | cd /data/data/com.termux/files/home/AgentReachProject/agents/claude-co
+  10-26T14:54:21 P1     agents    n=45  Check exit semantics, other modes, and backtest on project file | grep -n "sys.exit\|return 1\|exit(" tools/error-registry.py | cut -c1-
+  10-26T14:54:21 P1+P3  agents    n=45  Check exit semantics, other modes, and backtest on project file | grep -n "sys.exit\|return 1\|exit(" tools/error-registry.py | cut -c1-
+  10-26T19:44:10 P1     agents    n=15  Run link, memory, claim and error-registry checks | echo "== check-links"; python3 tools/check-links.py 2>&1 | tail -3 | c
+  10-26T19:44:10 P1+P3  agents    n=15  Run link, memory, claim and error-registry checks | echo "== check-links"; python3 tools/check-links.py 2>&1 | tail -3 | c
+  до докору 10-26T14:55:54: deny копії того дня раніше — 14:29:56(P1), 14:29:56(P1+P3), 14:37:52(P1), 14:37:52(P1+P3), 14:45:10(P1), 14:45:10(P1+P3), 14:54:21(P1), 14:54:21(P1+P3)
+  до докору 10-27T06:52:58: deny копії того дня раніше — немає
+===== стан лічильника в момент докору (від справжнього повідомлення людини; читання після останнього Agent)
+  6b187e96 докір 10-26T07:57:43 хід з 10-26T05:41:34: Agent у ході 0, читань від останнього Agent 23 (з них «без агента:» 8), Bash-читань? усього в ході 23
+  6b187e96 докір 10-26T08:04:36 хід з 10-26T07:59:37: Agent у ході 0, читань від останнього Agent 5 (з них «без агента:» 5), Bash-читань? усього в ході 5
+  6b187e96: читань з «без агента:» за сесію — 26
+  2487d837 докір 10-26T14:55:54 хід з 10-26T14:28:05: Agent у ході 1, читань від останнього Agent 49 (з них «без агента:» 8), Bash-читань? усього в ході 69
+  2487d837 докір 10-27T06:52:58 хід з 10-27T06:47:30: Agent у ході 0, читань від останнього Agent 5 (з них «без агента:» 0), Bash-читань? усього в ході 5
+  2487d837: читань з «без агента:» за сесію — 13
