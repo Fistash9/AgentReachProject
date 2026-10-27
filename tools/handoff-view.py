@@ -34,6 +34,7 @@ PAIR_MAX = 2         # пунктів watchOut на один пункт next
 PAIR_LEN = 200       # межа довжини піднятого рядка, символів
 PAIR_MIN_HITS = 2    # мінімум спільних основ слів
 PAIR_MIN_SCORE = 6.0 # мінімум ваги (сума idf спільних основ); підібрано бектестом 26.10
+CARRIER_RE = re.compile(r"^\s*(у backlog|зроблено|відкинуто)\b", re.I)  # 28.10: носії статусу для baton-guard — не «Обережно»
 DONE_RESERVE = 2500  # байтів для найсвіжішого done — інакше watchOut з'їдає весь бюджет (23.10: done 0/344)
 
 
@@ -67,6 +68,8 @@ def pair_candidates(d):
                 df[t] = sum(1 for w in wo if t in w)
         sc = []
         for wi, w in enumerate(wo):
+            if CARRIER_RE.match(w):
+                continue
             hit = [t for t in st if t in w]
             score = sum(math.log((N + 1) / (df[t] + 1)) for t in hit)
             if len(hit) >= PAIR_MIN_HITS and score >= PAIR_MIN_SCORE:
@@ -156,7 +159,7 @@ def build(d, budget=None):
     for k in ("next", "openQuestions"):
         for s in d.get(k) or []:
             ctx |= sig_words(s)
-    scored = [(len(sig_words(s) & ctx), i) for i, s in enumerate(wo)]
+    scored = [(len(sig_words(s) & ctx), i) for i, s in enumerate(wo) if not CARRIER_RE.match(s)]
     rel_order = [i for n, i in sorted(scored, key=lambda t: (-t[0], -t[1])) if n >= REL_MIN]
     taken = set()
     rel, new = [], []
@@ -177,7 +180,7 @@ def build(d, budget=None):
         done_used += c
         done_idx.append(i)
     for i in range(len(wo) - 1, -1, -1):
-        if i in taken or i in pair_wo:
+        if i in taken or i in pair_wo or CARRIER_RE.match(wo[i]):
             continue
         c = b(item_line(i + 1, wo[i]))
         if used + c <= BUDGET:
