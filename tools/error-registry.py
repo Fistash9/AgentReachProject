@@ -121,7 +121,9 @@ def user_texts(d):
             m = re.match(r"\s*(?:User has answered your questions|The user answered|"
                          r"Your questions have been answered):(.*)", t, re.S)
             if m:
-                out.append(re.split(r"You can now continue|Read the answers carefully", m.group(1))[0])
+                body = re.split(r"You can now continue|Read the answers carefully", m.group(1))[0]
+                ans = re.findall(r'"="(.*?)"(?=\s*,\s*"|\s*\.?\s*$)', body, re.S)  # лише відповіді після "=", не питання
+                out.append(" ".join(ans) if ans else body)
     return out
 
 
