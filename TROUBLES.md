@@ -5391,6 +5391,12 @@ TAGS: картка-установки, termux-install, pkg, grun, glibc, python-
 5. **Rust-збирання** (jiter, cryptography) — довге, не вбивати (#07, рядок 64) або обійти без пакета (#03, рядок 35).
 6. **Лише glibc і нема збірки** — proot-distro Ubuntu (DSH — #02, 3454); але виміряне в proot ≠ Termux (4172).
 7. Перед установкою стороннього — правило RULES «Перед ВСТАНОВЛЕННЯМ» і pkgtruth; пісочниця поза проєктом.
+8. **Програма не стартує: `/usr/bin/env: bad interpreter` або `sh: 1: <назва>: not found`** (shebang `#!/usr/bin/env node`):
+   у Termux env — $PREFIX/bin/env, а LD_PRELOAD (termux-exec) лаунчер Claude Code прибирає (~/.local/bin/claude:40) →
+   запуск через node: `node <шлях>/cli.js` або обгортка в $PREFIX/bin (mcp-probe 17.09 — рядок 349; pkgtruth 19.09 —
+   «pkgtruth MCP — встановлено, той самий баг shebang»; find-skills 28.10 — «find-skills встановлено як у автора…»).
+   Обгортку писати в tmp і `mv -f` на місце: `>` у симлінк npm пише крізь нього в сам пакет. — [claude-code, 2026-10-28; вписано
+   після третього разу: картка рецепта не мала, користувач «а ми ніби щось таке вже обходили»]
 
 ## Проба Graphify у Termux (рілс Der4LWmxHF1): що ставиться, що економить (2026-10-20)
 TAGS: graphify, graphifyy, tree-sitter, python-glibc, obsidian, resume, sessionend, старт, a/b, рілс
@@ -6677,3 +6683,20 @@ TAGS: find-skills, skills, npx, termux, shebang, LD_PRELOAD, телеметрі�
 - Телеметрія CLI за замовчуванням увімкнена (www.skills.sh/tele/t); вимикає DISABLE_TELEMETRY=1 або DO_NOT_TRACK=1 (cli.mjs:2808–2810). Запускали лише з вимкненою.
 - `-y` без виявлених агентів тек не наплодив: одна спільна ~/.agents/skills (22 «universal» агенти) + симлінк для Claude Code; PromptScript — нешкідлива помилка.
 - Відкат: симлінк, ~/.agents/, кеш npx — спершу запис у TRASH.md. Звіти: agents/claude-code/pdf-top10-skills-2026-10-28/ (find-skills-check.md, install-log.md).
+
+## agent-browser на Termux: статична програма + Lightpanda через grun; панель спостереження; меню вкладок (2026-10-28)
+TAGS: agent-browser, lightpanda, grun, ca-cert, dashboard, tmux, remain-on-exit, display-menu, proot-distro, $0
+— [claude-code, 2026-10-28; запит «знайди обхідний шлях, як дати доступ до браузера на андроід» → «Lightpanda» → «під'єднуй» → «вкладку з браузером»]
+- npm-лаунчер agent-browser не знає android → брати реліз agent-browser-linux-musl-arm64 (статичний, readelf: INTERP/DYNAMIC 0) — запускається напряму (0.40.0, exit 0). Браузер: Lightpanda 1.0.2 lightpanda-aarch64-linux (glibc) через `grun`; без `--ca-cert $PREFIX/etc/tls/cert.pem` — «No certificates loaded» → PeerFailedVerification (не вимикати перевірку TLS). Chromium із x11-repo (160/678 МБ, багато процесів) не брали — межа процесів Android.
+- Під'єднано: обгортка $PREFIX/bin/agent-browser (ENGINE=lightpanda, EXECUTABLE_PATH=~/sandbox-browser/lightpanda); процесів +2 під час роботи, 0 після `close`. Скріншоти з Lightpanda не перевірені; кадрів у панелі нема (screencasting false), стрічка дій є.
+- Панель: `agent-browser dashboard start` — демон, 127.0.0.1:4848 (curl 200); пункти меню tmux «Спостереження» / «Зупинити спостереження» (termux-open-url відкриває Chrome).
+- Вкладки: `set -g remain-on-exit on` + `bind R respawn-pane -k` + `bind N display-menu` (~/.tmux.conf, бекапи .bak-20261028 і -b). `-c '~/…'` у new-window tmux не розгорнув (вкладка в ~, не в проєкті) — у меню повні шляхи.
+- proot-distro тут: rootfs у $PREFIX/var/lib/proot-distro/containers/ubuntu/rootfs (НЕ installed-rootfs) — звідси й cost-report --dsh-dir.
+- Граблі листа DSH: `printf '%s' "… $0,05 …"` у подвійних лапках — shell підставив $0 (шлях скрипта); листи з «$» — в одинарних лапках або з файлу без розкриття.
+
+## Ворота «агенти» v2 і ворота питань: хибні зупинки живої сесії (2026-10-28)
+TAGS: edit-gate, ask-gate, ворота, правило C, delegate, фон
+— [claude-code, 2026-10-28; сесія ed862f3d]
+- Правило C («після звіту під-агента — 2 кроки») хибно зупиняло: Edit 8 рядків (причину в Edit не вписати), крок verify-before-show, якого вимагає ask-gate, запис статусу 6 рядків із причиною «≤10 рядків», перевірку tmux-скрипта. Обхід — Bash із причиною або під-агент на дрібницю (дорожче).
+- ask-gate: фонова звірка delegate (>120 с) не зараховується, якщо користувач написав нове повідомлення до її кінця — відрізок новий, вердикт уже є, а питання не пускає; закривав повторним Skill verify-before-show (крок 5). Двічі вимагав звірки на питанні з рекомендацією «не змінювати».
+- Під-агенти двічі зайшли за межу процесів брифу (22 при межі 21) і раз повторили команду після зупинки proc-guard — бриф «не повторюй наосліп» не тримає.

@@ -1,0 +1,42 @@
+# === Agent Reach — tmux config ===
+
+# Статус-бар
+set -g status on
+set -g status-position bottom
+set -g status-bg colour235
+set -g status-fg colour250
+set -g status-left-length 6
+set -g status-left ' #[fg=colour45,bold]AR#[default] '
+set -g status-right-length 22
+set -g status-right ' #[fg=colour220]C-b ?#[default]=help  %H:%M '
+
+# Активне вікно — синім
+setw -g window-status-current-style 'bg=colour33,fg=colour231,bold'
+setw -g window-status-current-format ' #I:#W '
+setw -g window-status-format ' #I:#W '
+
+# Зручні бінди
+bind r source-file ~/.tmux.conf \; display-message "Config reloaded"
+bind Q detach-client
+
+# Шпаргалка через Ctrl+B, ? — з підказкою і без тільд
+bind ? display-popup -E -w 95% -h 85% "less -R -~ -P 'q=закрити  ↑/↓  PgUp/PgDn=гортати  g/G=початок/кінець' ~/AgentReachProject/HELP.txt"
+
+# Оновлення годинника
+set -g status-interval 30
+
+# === Вкладки не закриваються на exit (2026-10-28) ===
+# remain-on-exit: після exit панель лишається «мертвою» (без процесу), у ній напис Pane is dead.
+set -g remain-on-exit on
+set -g remain-on-exit-format 'Вихід (код #{pane_dead_status}). Ctrl+B, R = оживити, Ctrl+B, & = закрити'
+# Оживити мертву вкладку (мертва: знову запускає її команду; вікна з tmux-work.sh — новий shell)
+bind R respawn-pane -k
+
+# Меню «Відкрити» — Ctrl+B, N (вільна клавіша). exec: програма замінює sh -c, зайвого процесу нема
+bind N display-menu -T "Відкрити" \
+  "Claude Code" c "new-window -n claude -c ~/AgentReachProject 'exec claude'" \
+  "DSH"         d "new-window -n dsh -c ~/AgentReachProject 'exec ~/AgentReachProject/run-dsh.sh'" \
+  "Agent"       a "new-window -n agent -c ~/AgentReachProject 'exec ~/AgentReachProject/start.sh'" \
+  "Shell"       s "new-window -c ~/AgentReachProject" \
+  "" \
+  "Оживити вкладку" r "respawn-pane -k"

@@ -13,11 +13,11 @@ A5. Мертві запускачі й бекапи: mcp_run.sh (+run-telegram-b
 
 ## Б. Дублі (дві речі роблять те саме) — 6
 Б1. is_real_user / iter_turns / читання хвоста журналу скопійовано в answer-gate і number-claim (+node-label) — P:3 — так (я: grep -n → ag:204,223; nc:228,238) — виправлення в одній копії не дійде до іншої.
-Б2. Парсер вузла дерева ×3 (tree-focus, trees-index, mods parse.ts; tree-focus не бачить trees/g2) і розбір екрана DSH «◐» ×2–3 — P, S — не звірялось — ті самі дані читаються по-різному.
+Б2. Парсер вузла дерева ×3 (tree-focus, trees-index, mods parse.ts; tree-focus не бачить trees/g2) і розбір екрана DSH «◐» ×2 — P, S — так (я: tree-focus:115 def parse; trees-index:30 def nodes + власний ARROW:23; parse.ts:6 parseTree; «◐» лише parse.ts:20,22 і tree-focus:376,378; tree-focus:426 glob(trees/*.md) без рекурсії) [dsh, звірка cc-2810-1, 2026-10-28; вніс claude-code 2026-10-28T13:13+0200] — ті самі дані читаються по-різному.
 Б3. Стан baton у 4 поданнях (baton.json, HANDOFF.md, HANDOFF-view.md, pass-N ≈131–132 КБ) + «останній pass» з ledger парсять двічі, цілим файлом — K, D, P, S — так частково (я: grep LEDGER → baton-guard:43, baton-reminder:18), розміри не звірялось — неясно, яке подання головне.
 Б4. «Поточна сесія» визначається 4 способами (session-export може взяти сесію haiku) + порівняння знімків baton ×3 з різним порогом (0.5 / 0.80) — S — не звірялось — інструменти можуть дати різні відповіді на одне питання.
 Б5. Правила для DSH двічі: RULES.md і /root/.dsh/AGENTS.md, діє лише другий — D:26 — не звірялось — правка RULES.md до DSH не доходить.
-Б6. Пари логів одного моменту: ask-gate+plain-ask, commit-consent+free-answer, verify-nudge+edit-gate — K:4) — не звірялось — подвійний запис без подвійної користі.
+Б6. Пари логів одного моменту: ask-gate+plain-ask (так: одна секунда й та сама сесія, ask-gate.jsonl:403 ↔ plain-ask.jsonl:453), verify-nudge+edit-gate (так: verify-nudge.log:100 ↔ edit-gate.log:154, 21:20:37), commit-consent+free-answer (НІ: ті самі сесії, але розбіг у хвилини; commit-consent.log:137 заніс вільний текст як deny → розсинхрон воріт, не дубль) — K:4) — так частково (я: grep по .claude/logs/, докази вище) [dsh, звірка cc-2810-1, 2026-10-28; вніс claude-code 2026-10-28T13:13+0200] — дубль є в 2 парах із 3.
 
 ## В. Розриви (ланцюжок обривається) — 13
 В1. Ворота unlazy на Stop мертві (4 теки, жодна не прив'язана) і тест hooks-smoke «unlazy Stop» не може впасти — P, K — так CS2, CS8 — захист мовчить, а тест каже «працює».

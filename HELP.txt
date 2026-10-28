@@ -7,13 +7,16 @@
               потім потрібну клавішу. Відпускати Ctrl
               між натисканнями НЕ треба.
 
-🪟 ВІКНА (у нас 3: claude / agent / shell)
+🪟 ВІКНА (у нас 4: claude / agent / shell / dsh)
    Ctrl+B, 0      → перейти у вікно 0 (claude)
    Ctrl+B, 1      → перейти у вікно 1 (agent)
    Ctrl+B, 2      → перейти у вікно 2 (shell)
+   Ctrl+B, 3      → перейти у вікно 3 (dsh)
    Ctrl+B, n      → наступне вікно
    Ctrl+B, p      → попереднє вікно
    Ctrl+B, w      → список вікон (вибір стрілками)
+   Ctrl+B, N      → меню «Відкрити»: Claude Code / DSH / Agent / Shell / Спостереження
+   Ctrl+B, R      → оживити вкладку після exit (Ctrl+B, & — закрити її)
 
 🤖 MCP-ІНСТРУМЕНТИ (Claude Code)
    delegate       → делегування важких задач на DeepSeek
