@@ -52,3 +52,5 @@ tools/verifier-backtest/sources-v3/claude-*.md
 !tools/verifier-backtest/sources-v3/ls-hooks-tests-2026-10-07.txt
 !tools/verifier-backtest/sources-v3/*.numbered.txt
 .obsidian/
+# obhid (2026-10-28): вивід бектесту «пошуку обходу» — у рядку 184 особисте; рішення користувача 28.10 «Лишити, вписати в .gitignore»
+agents/claude-code/obhid-2026-10-28/backtest-out.txt
