@@ -6668,3 +6668,12 @@ TAGS: зовнішня перевірка, deepseek-search, session-close, тв�
   «Найсвіжіші». Перевірка: у вигляді 0 таких рядків, 19 805 Б (бюджет 20 000), hooks-smoke 39 / 0. Ще дві дрібниці того ж
   кроку виправлено: «вигляд оновиться сам» (не перевірив — перегенерував), BACKLOG «DSH простояв» (хибно — статус змінився).
   — [claude-code, 2026-10-28T00:18+0200]
+
+## find-skills встановлено як у автора: у Bash Claude Code команда автора падає — нема /usr/bin/env (2026-10-28)
+TAGS: find-skills, skills, npx, termux, shebang, LD_PRELOAD, телеметрія, встановлення
+— [claude-code, 2026-10-28; запит «прочитай що корисного» про PDF «10 AI Skills» → перевірка → рішення користувача «можна 2» (як у автора)]
+- Стоїть: ~/.agents/skills/find-skills/SKILL.md (cmp = оригінал), ~/.agents/.skill-lock.json, симлінк ~/.claude/skills/find-skills → ../../.agents/skills/find-skills (у списку скілів сесії — одразу); кеш ~/.npm/_npx/0757c8f0298e564a 5,8 МБ.
+- Граблі: `npx --yes skills@1.7.4 add vercel-labs/skills@find-skills -g -y` → «sh: 1: skills: not found», exit 127: cli.mjs — `#!/usr/bin/env node`, /usr/bin/env немає, LD_PRELOAD у Bash Claude Code порожній (termux-exec не діє). Обхід: `node ~/.npm/_npx/…/skills/bin/cli.mjs …`. Отже `npx skills find` зі скіла тут не спрацює без правки [у звичайному вікні Termux — не перевірено].
+- Телеметрія CLI за замовчуванням увімкнена (www.skills.sh/tele/t); вимикає DISABLE_TELEMETRY=1 або DO_NOT_TRACK=1 (cli.mjs:2808–2810). Запускали лише з вимкненою.
+- `-y` без виявлених агентів тек не наплодив: одна спільна ~/.agents/skills (22 «universal» агенти) + симлінк для Claude Code; PromptScript — нешкідлива помилка.
+- Відкат: симлінк, ~/.agents/, кеш npx — спершу запис у TRASH.md. Звіти: agents/claude-code/pdf-top10-skills-2026-10-28/ (find-skills-check.md, install-log.md).
