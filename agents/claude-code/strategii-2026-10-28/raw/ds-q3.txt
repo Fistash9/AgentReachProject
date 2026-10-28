@@ -1,0 +1,278 @@
+deepseek-search: перший шматок 4.1 с, усе 81.3 с
+УВАГА: пошуків 7 при --uses 5 — сервер ліміт не тримає.
+# Коротка відповідь
+
+Із семи компаній **первинні слова засновників/керівників про власну організацію роботи я знайшов для п'яти**: Linear, Cursor/Anysphere, Perplexity, Ramp, Shopify. **По Deel і Databricks — нуль** дослівних цитат про те, хто вирішує, хто виконує, який ритм; не вигадую.
+
+Головний висновок: у найшвидших AI-компаній **немає описаної «системи» в сенсі TPS/LPS/TOC**. Є три-чотири усні правила, які тримаються на дуже вузькому колі людей і на відмові від формальних цілей. Linear прямо каже, що не використовує OKR — тобто **прямо протилежно GitLab**, який будує всю систему на каскаді OKR. Це не дрібниця, а два різні відповіді на те саме питання.
+
+---
+
+# 1. Linear — Karri Saarinen (співзасновник, CEO, дизайнер)
+
+**1.1. Хто вирішує, що робити: ніхто формально — стратегія замість OKR**
+· [першоджерело — інтерв'ю CEO, Lenny's Newsletter, 2023] · https://www.lennysnewsletter.com/p/how-linear-builds-product
+> «We haven't used OKRs. For goals, we like to keep it simple and sometimes have more strategic goals, like "Be the default tool for startups" or "Get xxx number of companies," which we then use as the theme for figuring out the roadmap. I find these types of goals useful to align our team to what we are after without being too specific about how we get there.»
+
+**1.2. Один продуктовий потік — планування централізоване**
+· [першоджерело] · там само
+> «We only have a single product team, which means that we can keep the planning process quite centralized, and there is only one roadmap for the whole product. This makes it very clear to everyone what we are working on.»
+
+**1.3. Хто виконує: лід проєкту — інженер або дизайнер, без формальної посади**
+· [першоджерело — розшифровка подкасту, 8 жовтня 2023] · https://lenny.productbuilder.net/episodes/karri-saarinen
+> «Yes, for every project there's a project lead. That lead can be engineer or designer. It's not a formal role or it's not based on your whatever level... It's more like an assignment that now you are responsible getting the project started and working together with the team, figuring it out, and then communicating changes or communicating how that progress happens.»
+
+**1.4. Ритм — цикли; WIP обмежений самим циклом**
+· [першоджерело] · там само
+> «the cycles is just a way to say that for the next week or the next two weeks or whatever timeframe, we are going to work on these things and these other things we think are the priority or the focus for this timeframe.»
+> «So the cycles, it's very similar to sprints, but we like to call it cycles because we are not really sprinting anywhere.»
+
+**1.5. Як приймають результат: спонсор проєкту + особиста перевірка, без A/B-тестів**
+> «I still run the design team, so I do see some of the designs on a weekly basis and then, or one of the other co-founders or head of product, we are basically the sponsors for the projects. So then we are responsible reviewing the work.»
+> «we don't do AP testing or we don't do specific, go follow certain metrics or something... based on the understanding of the problem we have... is this a good enough solution to be released to the customers?»
+· [першоджерело] · там само
+
+**1.6. Розмір команд як керована змінна**
+> «we just believe that you can actually build better with less people than you can with more people... We never more than doubled in a year.»
+· [першоджерело] · там само
+
+Про ШІ-агентів у власній роботі — **власних слів Саарінена не знайшов** (є лише теми епізодів на кшталт «Linear's AI agent strategy», але без цитати).
+
+---
+
+# 2. Anysphere / Cursor — Michael Truell (співзасновник, CEO)
+
+**2.1. Процес замінюється якістю найму — це свідома позиція**
+· [третя сторона — англомовний передрук розшифровки інтерв'ю Lenny's Podcast] · 2025 · https://www.techflowpost.com/en-US/article/25707
+> «Organizations need processes, hierarchies, and systems. But for any organizational tool introduced, much of its intended effect can be achieved simply by hiring people with the right traits.»
+> «For example, we function well in engineering with few processes. I think we need to add some. But because we're small, hiring truly exceptional people reduces the need for excessive processes.»
+
+**2.2. Розмір: ~60 людей на момент інтерв'ю**
+> «Michael Truell: About 60 people.» / «Part of the reason our team is small is the exceptionally high ratio of engineers, researchers, and designers internally.»
+· [третя сторона — передрук] · там само
+
+**2.3. Як приймають результат: дводенний оплачуваний work trial як тест «чи хочу я з цією людиною працювати»**
+> «The core is inviting candidates to spend two days at the company, completing a two-day evaluation project. This has proven highly effective—and we keep refining it.»
+> «The two-day project is also a "would I want to work with this person" test. After all, you spend two days together—including meals.»
+· [третя сторона — передрук] · там само
+
+**2.4. Ритм і структура: кілька малих «подів», решта — один великий потік**
+· [першоджерело — інтерв'ю Бена Томпсона, Stratechery, 2025] · https://stratechery.com/2025/an-interview-with-cursor-co-founder-and-ceo-michael-truell-about-coding-with-ai/
+> «So we have a couple of small pods off to the side. Most of the team is working on there are just all of these ways that Cursor could get better that we know we really, really, really want to do.»
+
+**2.5. Темп зростання ламає «залізні правила» — прямо визнає**
+· [першоджерело — розшифровка YC Startup Library] · https://www.ycombinator.com/library/MU-cursor-ceo-going-beyond-code-superintelligent-ai-agents-and-why-taste-still-matters
+> «the rate at which we need to build the company I think is really fast and I think rules of thumb around don't grow headcount more than 50% or year-over-year iron laws have to... have to be broken.»
+
+**2.6. ШІ-агенти у власній роботі — як колеги, яким віддають цілі проєкти**
+· [третя сторона — репортаж Fortune з його кейноуту на Compile, 23 червня 2026] · https://www.fortune.com/2026/06/23/cursor-ceo-michael-truell-discord-hiring-spacex-acquisition/
+> «We need to get to a world where working with agents is really like working with a colleague, and you can treat it just like you have your own team of engineers. You need to be able to hand off whole projects and have agents work on them for days, and then come back to you with a thing just done, completed, and test it.»
+
+**Важливо:** у Truell **немає власного блогу/есею** про операційну модель — усе це інтерв'ю та кейноути. Це сама по собі знахідка.
+
+---
+
+# 3. Perplexity — Aravind Srinivas (співзасновник, CEO)
+
+**3.1. Культура: «bias for action» замість процесів; пласка структура**
+· [першоджерело — розшифровка виступу в Stanford GSB, View From The Top] · https://www.gsb.stanford.edu/insights/perplexitys-aravind-srinivas-infinite-value-knowledge
+> «there's an extreme bias for action that I try to bring in and try to encourage everybody else in the company to adopt. And I think that's what's helping us continue to be fast, even when you've gotten to about 100 people. A founder that I really admire told me, "Once you get to 100 people, you're guaranteed to move slow." And I was very determined to prove him wrong.»
+
+**3.2. Хто вирішує: CEO сам ставить баги безпосередньо інженерам, без ланцюга**
+> «If at some point you stop using your own product... it's very easy to lose touch with reality... Complain about your own product to your engineers, your product managers, say, "This should be fast." You don't have to just be doing whiteboarding and strategy all the time.»
+> «just because I'm the CEO doesn't mean I have to be the one who solves every problem. If someone's better than me at doing something, you should trust their instincts there.»
+· [першоджерело] · там само
+
+**3.3. Найм: люди «з чипом на плечі», а не готові експерти; AI-навичка як фільтр**
+> «I've actually tried to hire people with some chips on their shoulders who are very talented, but they have not had their first major hit yet. Chips on shoulders put chips in your pockets.»
+> «most people are unable to push themselves for the second success in general.»
+· [першоджерело] · там само
+
+**3.4. Як використовують ШІ у власній координації — свідоме зменшення потреби в координації**
+· [третя сторона — переклад есею Johnny Ho, співзасновника й Head of Product] · https://paooo.com/ai-study/8716/
+> «我的目标是尽量减少团队协调上的阻碍…更理想的方式是保持团队对总体目标的一致认识，并通过共享可重用的指导手册和流程，使不同项目能并行推进。特别是在 AI 技术的帮助下，我们可以通过利用 AI 进行"橡皮鸭调试"…从而减少对完美一致性和全面共识的依赖，有效降低协调成本。»
+(ціль — мінімізувати тертя координації; замість консенсусу — спільні цілі + повторно використовувані плейбуки; за допомогою AI роблять «гумову качечку», щоб не домагатися повної згоди)
+> «在目前的组织规模下，我们故意保持扁平化管理…我们的两位全职产品经理——一位负责网页，一位负责移动端——直接向我汇报»
+(навмисно пласка структура; лише два повночасні PM, обидва підпорядковані йому напряму)
+
+Цитата 3.4 — **переклад**, не оригінал; оригінального англійського есею Ho я не бачив → [не перевірено].
+
+---
+
+# 4. Ramp — Eric Glyman (CEO) і Geoff Charles (VP Product)
+
+**4.1. Планування підпорядковане швидкості, а не точності**
+· [першоджерело — офіційний блог Ramp, інтерв'ю з VP Product] · https://ramp.com/blog/how-we-build-product-at-ramp
+> «Our entire planning process is optimized toward product velocity. We believe that doing is better than planning. The moment you are aligned in a direction, you don't need a high level of accuracy.»
+
+**4.2. Хто вирішує: команди, а не гейткіпери; «збирають не схвалення, а незгоду»**
+> «At Ramp, we build in the open and empower teams as much as possible to make the decisions in order to move quickly. What this means in practice is that every spec, design, decision, progress and status is published in project-specific Slack channels, and anyone is invited to read and opine. Teams farm for dissent, not approval. Eliminating gatekeepers ensures that things keep moving forward.»
+· [першоджерело] · там само
+
+**4.3. Розподіл по командах: люди перекидаються між подами, структура звітності не руйнується**
+> «We have a very flexible model where folks can jump to different teams based on the business needs, and work with engineers who might report to different people. By keeping reporting structures the same and re-organizing pods, we can respond quickly to new opportunities without needing to constantly destroy relationships between managers and their teams.»
+· [першоджерело] · там само
+
+**4.4. Ритм: 30-денний цикл і підрахунок днів від заснування**
+· [першоджерело — відео-курс Redpoint за участю CEO] · https://www.redpoint.com/content-hub/video/build-high-velocity-eric-glyman/
+> «we try to do something very small and simple with Ramp, which is, we count the days. At the end of a seven day period, at the end of a month period, we look back and we ask, "What did we get done over the past 30 days?"»
+
+**4.5. Як приймають результат: констрейнт за часом + асиметричні результати**
+· [першоджерело — блог Ramp, розмова з CEO, 22 червня 2022] · https://next.ramp.com/blog/eric-glyman-on-building-high-velocity-teams
+> «The goal is with each incremental period of time, figure out one similar asymmetric outcome point earlier... It's really about setting a clear goal constraining the period of time, and then trying to with each progressive period, you go faster.»
+
+Про ШІ в їхній власній роботі — знайшов лише анонси епізодів («AI at Ramp: Making Every Team Radically More Productive»), без дослівної цитати → [не перевірено].
+
+---
+
+# 5. Shopify (контроль) — Tobi Lütke, меморандум 7 квітня 2025
+
+**5.1. ШІ — базова вимога, а не рекомендація**
+· [першоджерело — меморандум, опублікований самим CEO в X; відтворений у новинах Shopify] · https://www.shopify.com/news/unserious-exploration
+> «In April 2025, Tobi sent us a memo: "reflexive AI usage is now a baseline expectation at Shopify."»
+
+**5.2. Головний контрольний механізм — не задача, а бюджет голів**
+· [першоджерело — меморандум, цитований у пресі] · https://www.inc.com/ben-sherry/shopify-ceo-to-employees-use-ai-now/91173063
+> «Before asking for more headcount and resources, teams must demonstrate why they cannot get what they want done using AI.»
+> «Using AI effectively is now a fundamental expectation of everyone at Shopify.»
+
+**5.3. Норма росту як щорічна вимога до кожного, включно з CEO**
+· [третя сторона, цитує меморандум] · https://in.mashable.com/tech/92378/prove-ai-cant-do-the-job-before-expanding-team-shopify-ceos-memo-on-hiring-divides-the-internet
+> «In a company growing 20-40% year over year, you must improve by at least that every year just to re-qualify. This goes for me as well as everyone else.»
+
+**5.4. Санкція за відмову сформульована прямо**
+> «I cannot see this working out today, and definitely not tomorrow. Stagnation is almost certain, and stagnation is slow-motion failure. If you're not climbing, you're sliding.»
+· [першоджерело — меморандум, цитований у пресі] · https://www.inc.com/ben-sherry/shopify-ceo-to-employees-use-ai-now/91173063
+
+---
+
+# Що спільного з TPS / LPS / TOC / GitLab
+
+**Це висновок, не цитата джерела.**
+
+| Механізм | TPS / LPS / TOC / GitLab | AI-компанії |
+|---|---|---|
+| **Ритм** | takt / тижневий WWP / drum / квартал OKR | 2-тижневі цикли (Linear), 30 днів (Ramp), «постійна ітерація» (Cursor) — **той самий принцип, коротший період** |
+| **Обмеження WIP** | kanban, make-ready, rope, 3–5 KR | цикл як жорстка відсічка нескінченного списку (Linear), констрейнт часу (Ramp) |
+| **Рішення на місці роботи** | andon в оператора, Last Planner, DRI | project lead-інженер (Linear), «teams farm for dissent» (Ramp), CEO пише баг інженеру напряму (Perplexity) |
+| **Видимість роботи** | andon-борд, WWP-стіна, buffer board, handbook | кожен spec/рішення у Slack-каналі (Ramp), issue як одиниця комунікації (Linear) |
+| **Приймання результату** | jidoka / PPC / throughput | рев'ю спонсора + «роуст» (Linear), перші користувачі (Cursor) |
+
+# Що принципово відрізняється
+
+1. **Цілі. TPS/LPS/TOC — системи цілей. AI-компанії — системи антицілей.** Linear прямо відмовляється від OKR; Cursor компенсує процеси наймом; Perplexity замінює консенсус «bias for action». GitLab — єдиний з усіх, хто формалізує цілі каскадом. Тобто **дві швидкозростаючі компанії дають протилежні відповіді на те саме питання** — і обидві працюють.
+
+2. **Одиниця потужності інша.** TPS/LPS/TOC моделюють потужність *станції/ресурсу*. AI-компанії моделюють *левередж на людину*: 60 людей у Cursor, ~2 PM у Perplexity і Linear. Обмеженням стає не «вузьке місце», а **смак і судження 3–5 людей**. TOC шукав би constraint у системі; тут constraint — у головах засновників.
+
+3. **Буфер інвертовано.** TOC ставить буфер перед обмеженням; LPS — backlog «звільнених» задач; GitLab — беклог. Linear навпаки **випускає в прод у перший тиждень, внутрішньо, з явно недоробленим продуктом**: «we're okay with it because we are saying, "It's not finished."». Це **анти-jidoka**: дефект не зупиняє потік, а стає способом дізнатися вимоги.
+
+4. **Скепсис до метрик — те, чого немає в lean/TOC.** PPC, throughput, buffer holes — усе це вимірювання. У Linear: «the data didn't make that choice for us». Це пряма суперечність традиції, а не її продовження.
+
+5. **Розмір команди як керована змінна.** У TPS/LPS/TOC чисельність — дане, оптимізують потік. У Linear — «never more than doubled in a year»; у Cursor — «iron laws have to be broken», тобто це правило, яке свідомо ламають. Нова змінна, якої в класичних системах немає.
+
+6. **ШІ як замінник координації.** Johnny Ho прямо каже, що AI зменшує потребу в консенсусі й людській координації. В TPS/LPS/TOC/GitLab координацію знижують **стандартною роботою і візуальним управлінням**, а не делегуванням мислення моделі. Це найбільша зміна парадигми з усіх перелічених.
+
+7. **Найцікавіший збіг:** меморандум Shopify («доведіть, що це не можна зробити через AI, перш ніж просити людей») — це **фактично крок 2 TOC («exploit the constraint»), застосований до бюджету голів**: спершу вичавити наявну потужність, аж потім її нарощувати. Єдиний випадок, де AI-компанія відтворює логіку Goldratt дослівно, — і, ймовірно, не усвідомлюючи цього.
+
+---
+
+# Суперечності
+
+1. **Linear (без OKR, без метрик) vs GitLab (каскад OKR, місячне скорингування)** — обидві швидкозростаючі, обидві технологічно передові, протилежні системи. Це не помилка джерел, це реальна відсутність єдиного рецепту.
+2. **Cursor: «процеси не потрібні, якщо наймати правильно» vs власне визнання «I think we need to add some»** — в одній розмові суперечить сам собі. Ознака перехідного стану, не принципу.
+3. **Perplexity: пласкість vs «extreme bias for action» від CEO** — де-факто це не пласка структура, а структура з одним дуже активним центром. Джерело (zerogtalent) прямо пише: «technical leads and founders making decisions directly».
+4. **Shopify: «AI — базова вимога» vs відсутність будь-якої публічної метрики, що це дало.** Меморандум — це вимога, не доказ.
+
+---
+
+# Висновок (висновок)
+
+Найшвидші AI-компанії **не мають писаної операційної системи, і це, схоже, навмисно**. Їхня система — це три усні правила: (1) короткий жорсткий цикл, який відсікає нескінченний список; (2) рішення ухвалює той, хто робить, без гейткіперів; (3) замість процесів — дуже високий бар найму і дуже мала команда. Усе інше — похідні.
+
+Те, що вони **перейняли** з lean/TOC: ритм, обмеження WIP, локалізація рішень, видимість роботи. Те, що **відкинули**: формальні цілі, метрики як основу рішень, буфери, зупинку на першому дефекті. І додали те, чого в класичних системах не було: **розмір команди як керований параметр** і **ШІ як замінник координаційних витрат**.
+
+Найважливіше для практики: різниця між Linear і GitLab показує, що питання «OKR чи ні» — **не про ефективність, а про тип продукту**. Linear продає смак (issue tracker, який має бути приємним); GitLab продає надійність і масштаб (DevOps-платформа для тисяч інженерів). Першому потрібна централізація судження, другому — розподілене узгодження. Копіювати Linear-метод у компанію, що продає надійність, — типова помилка.
+
+# Рекомендація (якщо будете переносити)
+
+Беріть з цієї групи **тільки три речі**: жорсткий цикл з відсічкою (2 тижні або 30 днів), публікацію кожного spec/рішення в одному каналі («farm for dissent, not approval») і правило «лід проєкту — виконавець, не менеджер». **Не переносьте** відмову від OKR: вона працює лише при ≤100 людях і при продукті, де якість вимірюється смаком. І **не переносьте** «випускаємо недороблене» без внутрішнього кола тестувальників — у Linear це працює тому, що перший тиждень бачать лише свої.
+
+# Чого не знайшов
+
+- **Deel** — жодної дослівної цитати Alex Bouaziz про те, хто вирішує, який ритм, який розмір команд. Нуль.
+- **Databricks** — те саме. Жодних слів Ali Ghodsi про внутрішню організацію або використання агентів у власній роботі.
+- **Власний блог чи есей** будь-кого з Cursor/Anysphere про операційну модель — не існує (або не знайдено). Усе — інтерв'ю та кейноути.
+- **Дослівні слова про ШІ-агентів у власній роботі** для Linear і Ramp — тільки анонси епізодів, без цитат.
+- **Оригінальний англійський текст Johnny Ho** про «слизову ціль» організації — лише китайський переклад.
+
+# Червоні прапорці
+
+- **Цитати Cursor з techflowpost.com і sohu.com** — це переклади-передруки інтерв'ю Lenny's Podcast; формулювання можуть бути змінені при перекладі. Для точного цитування треба оригінальний епізод.
+- **Perplexity: цитата Johnny Ho — переклад з китайської**, оригінал не перевірено; ймовірне спотворення («слизова ціль», «гумова качечка» — метафори перекладача).
+- **Fortune (червень 2026) описує продаж Cursor компанії SpaceX за $60 млрд** — це дуже свіжа подія; цитати Truell там узяті з кейноуту, а не з письмового тексту.
+- **Shopify-цитати 5.2 і 5.4** походять із преси, що цитує меморандум; сам меморандум — у X-пості, який я не відкривав напряму.
+- **Жодна з цих компаній не публікує метрик ефективності власної моделі роботи** — усі твердження про швидкість є самоописом, а не вимірюванням.
+
+# [не перевірено]
+
+- Уся інформація по **Deel** і **Databricks** — її немає, і я її не заповнюю здогадками.
+- Твердження, що Perplexity має «flat org» — джерело — італійський SEO-огляд і кадрове агентство, не слова CEO.
+- Будь-які числа про розмір команд Cursor/Perplexity/Linear станом на 2026 рік — у мене є лише зрізи на момент інтерв'ю (60 / ~100 / ~50).
+- Порівняння «AI-компанії vs TPS/TOC» — це моя аналітична рамка, а не усталений результат досліджень.
+
+> Це питання теж схоже на повторюване — варто один раз завести таблицю «компанія / хто вирішує / ритм / розмір / джерело-цитата» і далі лише додавати нові інтерв'ю.
+
+== Джерела (50):
+- Linear hit a $1.25B valuation with just 2 PMs. | Aakash Gupta - 跳到主要内容 — https://www.linkedin.com/posts/aagupta_linear-hit-a-125b-valuation-with-just-2-activity-7398612042506735616-eBRr#1
+- 领英上的Zhenia Vasiliev: How Linear builds product — https://www.linkedin.com/posts/zhenia-vasiliev_how-linear-builds-product-activity-7112733718502330368-UpRs
+- Inside Linear: Building with taste — https://github.com/chatprd/lennys-podcast-transcripts/blob/be8ab89a890a833cbba2c892178f823fff178c65/episodes/karri-saarinen/transcript.md
+- The best engineering teams can turn on a dime - Flowstate — http://www.flowstate.inc/en-us/insights/will-hackett/engineering-teams-turn-on-a-dime/
+- How Linear Ships Faster Than 95% of SaaS (2026) — https://www.ideaplan.io/case-studies/linear-product-velocity
+- How Linear builds product - How Linear builds product — https://www.lennysnewsletter.com/p/how-linear-builds-product?r=2hc20b&utm_campaign=post&triedRedirect=true#1
+- Linear’s secret to building beloved B2B products | Nan Yu (Head of Product) Lenny's Podcast: Product | Career | Growth podcast - Introduction to Jessica Fain | Why influence is the highest-leverage skill in product | Why great ideas fail without executive b... — https://www.youtube.com/results?search_query=Linear%E2%80%99s+secret+to+building+beloved+B2B+products+%7C+Nan+Yu+%28Head+of+Product%29+Lenny%27s+Podcast%3A+Product+%7C+Career+%7C+Growth+podcast#1
+- Liner 是如何构建产品的 — https://www.xiaohongshu.com/discovery/item/65d2c5db0000000007025920
+- Karri Saarinen - Lenny's Podcast | PM Philosophy — https://lenny.productbuilder.net/episodes/karri-saarinen
+- karri saarinen linear - Karri’s background | Overview of Linear | Linear’s design process and its focus on quality | Building a craft-oriented company |... — https://www.youtube.com/results?search_query=karri+saarinen+linear#1
+- Developer keynote (2025) | Stripe Sessions - And all of that is from writing very, very, very little code — https://stripe.com/zh-hk/sessions/2025/developer-keynote?__hsfp=3969827736&__hssc=259582869.1.1576195200145&__hstc=259582869.99a265337744294b740e0787aea508c4.1576195200142.1576195200143.1576195200144.1&__scoop_post=d5e9c580-4b28-11e4-dd25-842b2b775358&__scoop_topic=1071015#3
+- An Interview with Cursor Co-Founder and CEO Michael Truell About Coding With AI - I think that actually some of the stuff that we did there ended up counter-intuitively helping us when we worked on Cursor becau... — https://stratechery.com/2025/an-interview-with-cursor-co-founder-and-ceo-michael-truell-about-coding-with-ai/?access_token=eyJhbGciOiJSUzI1NiIsImtpZCI6InN0cmF0ZWNoZXJ5LnBhc3Nwb3J0Lm9ubGluZSIsInR5cCI6IkpXVCJ9.eyJhdWQiOiJzdHJhdGVjaGVyeS5wYXNzcG9ydC5vbmxpbmUiLCJhenAiOiJIS0xjUzREd1Nod1AyWURLYmZQV00xIiwiZW50Ijp7InVyaSI6WyJodHRwczovL3N0cmF0ZWNoZXJ5LmNvbS8yMDI1L2FuLWludGVydmlldy13aXRoLWN1cnNvci1jby1mb3VuZGVyLWFuZC1jZW8tbWljaGFlbC10cnVlbGwtYWJvdXQtY29kaW5nLXdpdGgtYWkvIl19LCJleHAiOjE3OTIzODEyNjYsImlhdCI6MTc4OTc4OTI2NiwiaXNzIjoiaHR0cHM6Ly9hcHAucGFzc3BvcnQub25saW5lL29hdXRoIiwic2NvcGUiOiJmZWVkOnJlYWQgYXJ0aWNsZTpyZWFkIGFzc2V0OnJlYWQgY2F0ZWdvcnk6cmVhZCBlbnRpdGxlbWVudHMgcG9kY2FzdCByc3MiLCJzdWIiOiIwMTk2ZDBkYS00NzllLTcyMmUtYjg1Mi1mMGExNjMyM2IxMDkiLCJ1c2UiOiJhY2Nlc3MifQ.Ka0j7QYFcBiYLdSqRT6mIDoW6zIuWztbZ_uMbZtquI_stD8k8h73AHM05N-hx24arNCh_XR93Y1zCnxFnV2vDy96Fx-QqDiL70JyxGrWtBemhg5rY5_oL55bjjRc1o0fznk2wOEqx5KVOjHbeVQhxXwChR843IFol1_UuyxDAuZ2Lr4IJi-oP0Xgmz1E8_LLxy0ALmBeEJHJxQ8jJPvjEmBaMc7c2-AzuWRSxKkZBg6UVl3ZMatnnPUi-PYWYl2gC1mp1ihf3JZ1yoEHsgGu7dwjLjM1BbOv6OTkYd-EHbsGMPDda9QSpXvnBTrJfl2u9dJiPrtkXdVnkuf8ZhQPng#2
+- Cursor’s 25-year-old CEO turned a Discord server into a talent pipeline to build his $60 billion SpaceX-backed AI company | Fortune — https://www.fortune.com/2026/06/23/cursor-ceo-michael-truell-discord-hiring-spacex-acquisition/#1
+- Cursor CEO: Going Beyond Code, Superintelligent AI Agents And Why Taste Still Matters : YC Startup Library | Y Combinator — https://www.ycombinator.com/library/MU-cursor-ceo-going-beyond-code-superintelligent-ai-agents-and-why-taste-still-matters?ref=antoinebuteau.com
+- Cursor’s 25-year-old CEO turned a Discord server into a talent pipeline to build his $60 billion SpaceX-backed AI company — https://au.finance.yahoo.com/news/cursor-25-old-ceo-turned-162940394.html#1
+- Cursor 创始人：后代码时代，「品味」将越来越有价值｜Z Talk - Michael Truell：说实话，一开始的增长感觉相当缓慢，也许是因为我们自己有些不够耐心 — https://www.163.com/dy/article/JVTLO8DL0511B6FU.html#2
+- AI 是比 PC 更深远的范式转移！Cursor 创始人复盘：AI 编程工具本质是提升人类指令表达能力，持续构建优秀产品才是壁垒 — http://api.aitntnews.com/newDetail.html?newId=14902
+- Cursor founder: In the post-code era, "taste" will become increasingly valuable - Product launched in three months, hit $100M ARR in one year — https://www.techflowpost.com/en-US/article/25707#2
+- Cursor 创始人：后代码时代，「品味」将越来越有价值｜Z Talk - 最初我们并没有料到这个考核会延续下来，但它现在是我们招聘流程中很有价值的环节 — https://www.sohu.com/a/896451388_355029#3
+- Cursor 创始人：后代码时代，「品味」将越来越有价值 - 我们的终极目标是真正创造一种全新的编程范式，能够将我们今天所熟知的大量编码工作自动化 — https://www.bitget.fit/zh-CN/news/detail/12560604763237#2
+- Serious results, unserious methods: Shopify’s AI playground - Serious results, unserious methods: Shopify’s AI playground — https://www.shopify.com/news/unserious-exploration?country=us&lang=en#1
+- 'Prove You're Better Than AI': Shopify CEO Draws A Line In The Sand On Hiring - 'Prove You're Better Than AI': Shopify CEO Draws A Line In The Sand On Hiring — https://news.abplive.com/technology/shopify-ceo-tobi-ltke-ai-hiring-jobs-1763744/amp#1
+- Prove AI Can’t Do The Job Before Expanding Team: Shopify CEO’s Memo On Hiring Divides The Internet - Prove AI Can’t Do The Job Before Expanding Team: Shopify CEO’s Memo On Hiring Divides The Internet — https://in.mashable.com/tech/92378/prove-ai-cant-do-the-job-before-expanding-team-shopify-ceos-memo-on-hiring-divides-the-internet#1
+- AI is replacing jobs: Shopify CEO says prove AI can’t do the job before hiring someone - HomeTechnologyNewsAI is replacing jobs: Shopify CEO says no new hires unless AI can't do it better — https://www.indiatoday.in/amp/technology/news/story/ai-is-replacing-jobs-shopify-ceo-says-prove-ai-cant-do-the-job-before-hiring-someone-2705649-2025-04-08#1
+- Shopify staff must use AI, Lütke says - The Logic — https://thelogic.co/briefing/shopify-staff-must-use-ai-lutke-says/
+- Internal memo: Shopify CEO declares AI ‘non-optional’ — https://www.digitalcommerce360.com/2025/04/08/internal-memo-shopify-ceo-declares-ai-non-optional/?trk=article-ssr-frontend-pulse_x-social-details_comments-action_comment-text
+- If you're not doing it already, you're extremely late! — https://www.focal.vc/founder-resources/if-youre-not-doing-it-already-youre-extremely-late
+- Shopify CEO requires teams to justify jobs that can't be automated by AI | Matt Wills 发布的此话题相关的动态 | 领英 - 跳到主要内容 — https://www.linkedin.com/posts/matt-wills--_shopify-aiinecommerce-futureofwork-activity-7318830846713417728-q_et?trk=public_profile_relatedPosts#1
+- Shopify's bold AI strategy by Tobias Lütke | Jason P. Yoong posted on the topic | LinkedIn - Skip to main content — https://www.linkedin.com/posts/jasonyoong_tobias-l%C3%BCtkes-internal-shopify-ai-memo-is-activity-7315842974972592128-TYlE#1
+- Shopify CEO to Employees: Use AI Now — https://www.inc.com/ben-sherry/shopify-ceo-to-employees-use-ai-now/91173063?ref=biztoc.com
+- Aravind Srinivas (Perplexity AI) su team e prodotto: agilità e cultura flat per l’AI. — https://www.searchmarketingitalia.com/perplexity/aravind-srinivas-perplexity-ai-organizzazione-successo-ai-16-02-2026/
+- Working at Perplexity: Culture, Pace and Who Thrives — https://zerogtalent.com/blog/company-culture-at-perplexity
+- Perplexity CEO Aravind Srinivas（阿拉温德·斯里尼瓦桑）：我们为何能挑战谷歌 - Perplexity CEO Aravind Srinivas（阿拉温德·斯里尼瓦桑）：我们为何能挑战谷歌 — https://www.aicoin.com/zh-Hant/article/553948#1
+- Perplexity 产品开发的新模式 [译] — https://paooo.com/ai-study/8716/?rbsnp=1#respond
+- Aravind Srinivas unveils the secrets behind Perplexity AI’s meteoric rise — https://americanbazaaronline.com/2024/12/12/perplexity-ai-ceo-discusses-leadership-at-stanford-457680/#newsletter
+- Perplexity CEO Aravind Srinivas: Indians can build global companies, not just manage them - Perplexity CEO Aravind Srinivas: Indians can build global companies, not just manage them — https://m.economictimes.com/tech/technology/indians-can-build-global-companies-not-just-manage-them-perplexity-ceo-aravind-srinivas/amp_articleshow/124247896.cms#1
+- Perplexity CEO Aravind Srinivas says Google ‘a giant bureaucratic organization’: ‘At some point, they need to…’ - The Times of India - - News — https://timesofindia.indiatimes.com/technology/tech-news/perplexity-ceo-aravind-srinivas-says-google-a-giant-bureaucratic-organization-at-some-point-they-need-to/articleshow/122645371.cms#1
+- 成長企業から学ぶ組織論：Perplexity流「50人でGoogleに挑む」組織力｜横井陽大｜AI×HR 事業開発 - 成長企業から学ぶ組織論：Perplexity流「50人でGoogleに挑む」組織力 — https://note.com/yokoi_takahiro/n/naadaee81b99a#1
+- Perplexity’s Aravind Srinivas on the Infinite Value of Knowledge - Now there’s so much more we could talk about when it comes to Perplexity, but I wanted to save a few minutes to talk about you a... — https://www.gsb.stanford.edu/index%2Ephp/insights/perplexitys-aravind-srinivas-infinite-value-knowledge#3
+- Are Corporates lagging behind the Generative AI Product Development Leap? - Sitemap — https://medium.com/product-leap/are-corporates-losing-the-generative-ai-product-development-leap-531569f4b651#1
+- Eric Glyman — Founder of Ramp at Z-Fellows | Fundraising Fox — https://fundraisingfox.com/people/eric-glyman-z-fellows
+- How we build with velocity at Ramp - In this article — https://ramp.com/blog/how-we-build-product-at-ramp?trk=article-ssr-frontend-pulse_little-text-block&utm_medium=social&utm_source=twitter#1
+- How we build with velocity at Ramp — https://next.ramp.com/blog/how-we-build-product-at-ramp
+- Ep 166: Eric Glyman on Ramp's Meteoric Growth, Selling Outcomes vs Products, and the Future of White-Collar Work - Ep 166: Eric Glyman on Ramp's Meteoric Growth, Selling Outcomes vs Products, and the Future of White-Collar Work — https://podcasts.apple.com/gb/podcast/ep-166-eric-glyman-on-ramps-meteoric-growth-selling/id1573141757?i=1000796522051#1
+- Eric Glyman on building high-velocity teams to withstand challenging times — https://next.ramp.com/blog/eric-glyman-on-building-high-velocity-teams#Think-experimentally-to-drive-bigger-outcomes
+- Joe Lonsdale: American Optimist | Escuchar podcast — https://co.radio.net/podcast/joe-lonsdale-american-optimist
+- “하루도 허투로 쓸 수 없다” 유니콘 CEO가 매일 숫자 세는 이유 — https://www.fortunekorea.co.kr/news/articleView.html?idxno=49920
+- Eric Glyman teaches Building with High Velocity Execution — https://www.redpoint.com/content-hub/video/build-high-velocity-eric-glyman/?trk=article-ssr-frontend-pulse_little-text-block
+- Ramp's Early Discipline: Building Muscle Memory for Multi-Product Scale | ICONIQ 发布的此话题相关的动态 | 领英 - Ramp took an uncommon path early on — https://www.linkedin.com/posts/iconiq-capital-llc_eric-glyman-co-founder-and-ceo-of-ramp-activity-7406374969804472320-oBUe#1
+- Cultivating a Culture of Innovation and Product Velocity | 5min snip from The MAD Podcast with Matt Turck - 5min chapter — https://share.snipd.com/chapter/bd1a666c-3ecb-498f-b98f-49bc9686304c#1
+
+== Розмова: 20261028-144241 | вх 96390 (з кешу 154752) | вих 11756 | пошуків 7
+== Ціна ≈$0.0220 (не пік; без вартості пошуків)

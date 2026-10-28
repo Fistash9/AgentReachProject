@@ -1,0 +1,60 @@
+A1	linear-scope	1	completed in 1–3 weeks with a team of 1–3 people
+A2	linear-issues	1	It needs to be clear enough so that the assignee can perform it
+A3	linear-intro	1	In cycles, you can decide priorities and assign responsibilities.
+A4	shapeup-ch03-appetite	1	Appetites start with a number and end with a design.
+A5	shapeup-ch08-betting-table	1	by default the project doesn
+A6	shapeup-ch08-betting-table	1	teams are given full responsibility for executing projects
+A7	shapeup-ch09-hand-over	1	Shipping means merging into the main codebase
+A8	atlassian-daci	1	The one person (yes: one!) who makes the decision.
+A9	atlassian-daci	1	they have a voice, but not a vote
+A10	gitlab-teamops	1	Teams must be informed by an objective, shared reality.
+A11	ramp-build	1	Teams farm for dissent, not approval.
+A12	ramp-build	1	Our entire planning process is optimized toward product velocity.
+A13	ramp-build	1	Eliminating gatekeepers ensures that things keep moving forward.
+A14	lenny-linear	1	For goals, we like to keep it simple
+A15	lenny-linear	1	We only have a single product team
+A16	gsb-perplexity	1	extreme bias for action
+A17	gsb-perplexity	1	the one who solves every problem
+A18	shopify-unserious	1	reflexive AI usage is now a baseline expectation
+A19	shapeup-ch08-betting-table	1	no “step two” to validate the plan or get approval
+B1	toyota-tps	1	stopping immediately when abnormalities are detected
+B2	toyota-tps	1	the operator can stop the line by pulling the stop cord
+B3	toyota-tps	1	making only what is needed, when it is needed, and in the amount needed
+B4	toyota-tour	1	until the problem is resolved
+B5	toyota-tour	1	the following process goes to the preceding process to pull the parts
+B6	toyota-tps	1	Make them at the pace at which they
+B7	toyota-tps	1	first be able to do the work smoothly and correctly by hand
+B8	lci-standard-work	1	personal commitment from a team member
+B9	lci-standard-work	1	5 to 8-minute stand-up
+B10	lci-standard-work	1	for a new promise
+B11	lci-standard-work	1	commitment based planning
+B12	lci-standard-work	1	collaboratively developed by the team
+C1	anthropic-bea	1	consider adding complexity only when it demonstrably improves outcomes
+C2	anthropic-bea	1	Start with simple prompts, optimize them with comprehensive evaluation
+C3	anthropic-bea	1	difficult or impossible to predict the required number of steps
+C4	anthropic-bea	1	potential for compounding errors
+C5	anthropic-bea	1	Poka-yoke your tools. Change the arguments so that it is harder to make mistakes.
+C6	anthropic-bea	1	absolute filepaths
+C7	anthropic-bea	1	spent more time optimizing our tools than the overall prompt
+C8	anthropic-mars	1	heavy parallelization, information that exceeds single context windows
+C9	anthropic-mars	1	spins up 3-5 subagents in parallel
+C10	anthropic-mars	1	Each subagent needs an objective, an output format
+C11	anthropic-mars	1	spawning 50 subagents for simple queries
+C12	anthropic-mars	1	15× more tokens than chats
+C13	anthropic-mars	1	by 90.2%
+C14	anthropic-mars	1	80% of the variance
+C15	anthropic-mars	1	human testers noticed
+C16	anthropic-mars	1	value of the task is high enough
+C17	anthropic-mars	1	not a good fit for multi-agent systems
+C18	anthropic-mars	1	Scale effort to query complexity
+C19	anthropic-mars	1	Simple fact-finding requires just 1 agent
+C20	anthropic-mars	1	Teach the orchestrator how to delegate
+C21	cognition-multi	1	how does a dumber model know
+C22	cognition-multi	1	completely clean context
+C23	cognition-multi	1	Context Rot is a well-documented phenomenon
+C24	mast-arxiv	1	their performance gains on popular benchmarks are often minimal
+C25	mast-arxiv	1	comprehensive dataset of 1600+ annotated traces
+B13	lci-standard-work	1	is to take actions needed to remove constraints from assignments
+B14	lci-standard-work	1	Measure promises kept
+C26	anthropic-mars	1	most coding tasks involve fewer truly parallelizable tasks than research
+C27	anthropic-mars	1	token usage by itself explains 80% of the variance

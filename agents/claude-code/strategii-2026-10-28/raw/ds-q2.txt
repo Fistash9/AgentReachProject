@@ -1,0 +1,253 @@
+deepseek-search: перший шматок 3.9 с, усе 68.8 с
+УВАГА: пошуків 6 при --uses 5 — сервер ліміт не тримає.
+# Коротка відповідь
+
+Усі три системи я можу підтвердити **першоджерелами по принципах** (офіційний сайт Toyota, стандарт LCI, тексти про Goldratt), але **доказова база в них дуже нерівна**:
+
+- **TPS** — принципи документовані найкраще (global.toyota.com, офіційний глосарій Toyota UK), але **числових досліджень ефективності в цій сесії я не знайшов узагалі**. Це найпарадоксальніший результат: найвідоміша система має найслабше *публічне* кількісне підтвердження з перших рук.
+- **Last Planner System** — найкраще документований *операційно*: є офіційний Standard Work LCI з дослівним описом weekly work plan, make-ready, PPC і щоденної наради. Докази є, але переважно **самозвітні опитування підрядників** і бенчмарки, а не контрольовані дослідження.
+- **TOC** — єдиний випадок, де є **рецензований мета-аналіз >80 впроваджень** (Mabin & Balderstone, IJOPM 2003), але він має вбудований дефект: вибірка лише *успішних* кейсів.
+
+Спільне з GitLab: усі три — це **системи керування чергою і зобов'язаннями, а не системи розподілу задач**. Детальніше в кінці.
+
+---
+
+# 1. Toyota Production System
+
+## Принципи (дослівно)
+
+**1.1. Два стовпи — jidoka і Just-in-Time**
+· [першоджерело] · https://global.toyota/en/company/vision-and-philosophy/production-system/
+> «The basic philosophy of the Toyota Production System is based on two pillars. The first pillar is jidoka―which can be loosely translated as "automation with a human touch"―based on the concepts of stopping immediately when abnormalities are detected to prevent defective products from being produced and improving productivity to eliminate the need for people to be simply watching over machines. The second pillar is Just-in-Time, based on the concept of synchronizing production processes―linking all plants and their production processes in a continuous flow―by making only what is needed, when it is needed, and in the amount needed.»
+
+**1.2. Jidoka = зупинка на першому дефекті, право зупинити лінію в оператора**
+· [першоджерело] · там само
+> «the machine or equipment can detect the abnormality and stop automatically, or the operator can stop the line by pulling the stop cord themselves. This eliminates the outflow of defective products while also making it possible to build quality into processes by clearly detecting abnormalities and preventing them from recurring.»
+
+**1.3. Andon — сигнал і блокування роботи до усунення**
+· [першоджерело] · https://global.toyota/en/company/plant-tours/production-system/
+> «When a problem is identified, the worker presses a button called a call button that turns on an electric board called an Andon board to inform the leader. Work won't resume until the problem is resolved.»
+
+**1.4. Pull-система: наступний процес забирає, попередній не штовхає**
+· [першоджерело] · там само
+> «This is a production system where parts made in the preceding process are not delivered to the following process, but rather the following process goes to the preceding process to pull the parts that have already been used. It is facilitated by Kanban card.»
+
+**1.5. Обмеження незавершеного (WIP) — через kanban, не через ліміт у тексті Toyota**
+· [першоджерело] · https://www.toyotauk.com/toyota-in-the-uk/how-we-manufacture/glossary
+> «Kanban is a tool used in the Toyota Production System to operate the production system as a pull system. It is a system that provides for conveying information between processes and automatically orders parts as they are used. Every item or box of items that flows through our production process carries its own kanban. Kanbans are removed from items as they are used or transported and go back to the preceding processes as orders for additional items.»
+
+Формулювання про «ліміт WIP» — це вже інтерпретація спільноти, а не текст Toyota. Сам Toyota формулює те саме як вимогу до потоку:
+> «2) Don't allow goods and information to be held up during production; 3) Make them at the pace at which they're sold.» · [першоджерело] · global.toyota
+
+**1.6. Heijunka — вирівнювання за обсягом і номенклатурою**
+· [першоджерело, дочірня компанія] · https://www.toyotauk.com/toyota-in-the-uk/how-we-manufacture/glossary
+> «Heijunka means production levelling (finding and keeping average production volumes) and is used to smooth out production in all departments, as well as that of the supplier over a period of time.»
+> «Mura means unevenness (irregularity or variability). Eliminating unevenness or irregularities in the production process is one of the main principles of the Just-in-time system, the main pillar of the Toyota Production System.»
+
+## Чи є докази ефективності
+- **Підтверджених числових досліджень у цій сесії — нуль.** Ні на global.toyota, ні в глосарії Toyota немає жодної цифри ефекту; це опис системи, а не її оцінка. [факт про джерело]
+- Відомі академічні роботи (NUMMI, Lieberman & Helper; мета-аналізи lean) існують, але **я їх цього разу не відкривав і цитат не маю** → [не перевірено].
+- **Обмеження самої системи, визнане Toyota:** jidoka вимагає спершу ручної роботи і kaizen, інакше вона не переноситься:
+> «it is necessary to first be able to do the work smoothly and correctly by hand, determine abnormalities in the work, and replace those operations with machines.» · [першоджерело] · global.toyota
+
+---
+
+# 2. Last Planner System (Lean Construction Institute)
+
+## Принципи (дослівно)
+
+**2.1. Weekly Work Plan = персональне зобов'язання, а не призначена задача**
+· [першоджерело — LCI Standard Work, PDF на leanconstruction.org] · файл 2023 · https://leanconstruction.org/wp-content/uploads/2023/10/2023_LCI_LeanConstructionPlannerStandard-Work.pdf
+> «The WWP is collaboratively developed by the team's Last Planner®s (LP™) via pull planning. Activities included in the WWP are those that will occur in the upcoming week. When posted, each activity represents a personal commitment from a team member based upon the promised completion (hand off) and acceptance of another activity in the WWP.»
+
+**2.2. Make-ready: у план потрапляє лише те, що «звільнене від обмежень»**
+· [першоджерело — LCI] · https://www.leanconstruction.org/pdf/ASCLCI2.pdf (© LCI, 2001)
+> «Activities are made ready to be assigned by removing constraints.»
+> «Screening is the process of analyzing the activities for constraints and evaluating if they can be removed in time for the planned start.»
+> «Maintain a backlog of ready work»
+
+**2.3. П'ять зв'язаних розмов: SHOULD → CAN → WILL → DID (+ LEARN)**
+· [першоджерело — LCI] · там само
+> «Make Work Ready Planning | Make ready & Launch Replanning when needed»
+> «Weekly Work Planning | Promise»
+> «Learning | Measure PPC & act on reasons for failure to keep promises»
+
+**2.4. PPC — відсоток виконаних обіцянок, з причинами невиконання**
+· [першоджерело — LCI] · там само
+> «Chart PPC & Reasons»
+> «PPC and Capacity Utilization … Target PPC=50% … PPC=90%»
+> «Point speed and productivity of a single operation doesn't matter – throughput does.»
+> «Reduce variability then go for speed.»
+
+**2.5. Щоденна нарада 5–8 хвилин, статус обіцянок, нова обіцянка замість докору**
+· [першоджерело — LCI] · LCI Standard Work PDF
+> «assembles the LP™ for a 5 to 8-minute stand-up meeting in the general area of their work.»
+> «For work that wasn't finished, ask the LP™ for a new promise. Offer help to get back on plan.»
+> «LPS® is founded upon commitment based planning. Having the LP™ commit to each other creates trust and a collaborative effort.»
+
+## Чи є докази ефективності
+- **Самозвітні дані підрядників** (Dodge Data and Analytics, цитовані LCI-блогом):
+> «Among contractors using lean construction practices, 84% reported higher quality construction, 80% reported greater customer satisfaction, 77% reported greater productivity, and 77% reported improved safety.» · [третя сторона] · https://leanconstructionblog.com/The-History-of-Lean-Construction-Part-2.html
+- **Базовий рівень надійності планування в галузі — ~54%** (теза, що посилається на дослідження 1990-х):
+> «With construction having a much lower efficiency than other non-agricultural industries, and only 54% of tasks being completed, LPS has the potential to greatly improve the industry.» · [третя сторона] · https://www.engr.psu.edu/ae/thesis/portfolios/2015/amj5275/assests/project/bs/pd/CM_Compiled.pdf
+- **Бенчмарк зрілості 75–85% PPC** — але це матеріал **вендора LPS-софту**, не дослідження:
+> «mature LPS teams sustain PPC in the 75–85% range week over week. Sustained under 60% means make-ready is broken. Above 90% typically means the team is under-committing to flatter the metric.» · [третя сторона, вендор] · https://visilean.com/lean-construction/last-planner-system
+- **Критика/пастка метрики (від того ж вендора, і це важливо):**
+> «Last planners who are rewarded for high PPC under-commit. Last planners who are punished for low PPC refuse to log misses honestly. In both cases the number stops reflecting reality. PPC is a diagnostic, not a KPI to pay against.» · [третя сторона] · https://visilean.com/lean-construction/ppc-percent-plan-complete
+- **Критика впровадження (незалежний практик):**
+> «it is often not fully implemented because even a partial application can yield satisfactory results in coordinating workflow between trades.» · [третя сторона] · https://leanconstructionblog.com/The-Last-Planner-System-Chaos-and-Making-Complacency-Work-for-You.html
+
+---
+
+# 3. Theory of Constraints (Goldratt) і drum-buffer-rope
+
+**Важливо:** **tocico.org у цій сесії відкрити не вдалося** — пошук не дав жодної сторінки з домену tocico.org. Тому формулювання п'яти кроків нижче я даю **не з першоджерела** і позначаю відповідно. Це головна прогалина звіту.
+
+## Принципи
+
+**3.1. Вихід системи = вихід її обмеження; більше за обмеження виробляти безглуздо**
+· [третя сторона — Wikipedia, але з посиланням на первинні роботи] · https://en.wikipedia.org/wiki/Theory_of_constraints
+> «the output of a system can only be the same as the output at the constraint of the system. Any attempt to produce more than what the constraint can process just leads to excess inventory piling up.»
+
+**3.2. Drum — саме обмеження задає темп усій системі**
+· [третя сторона, дисертація з цитуванням Goldratt 1993] · https://www.library.dit.ie
+> «The Drum of a manufacturing system is the constraint which has the least capacity and is the most heavily loaded resource. The drumbeat determines the schedule of the system or the pace at which the constraint works.»
+
+**3.3. Rope — запуск матеріалу в темпі барабана, не раніше (це і є обмеження WIP)**
+· [третя сторона] · там само
+> «The rope is a communication device between critical control points which provides schedule for the release of material into the manufacturing process. It prevents production steps in front of the capacity-constrained resource from becoming overload with works that cannot be processed.»
+· і конкретніше, з числом як прикладом:
+> «if the buffer is 5 days, the order is released 5 days before it is due at the constraint. Putting work into the system earlier than this buffer time is likely to generate too-high work-in-process and slow down the entire system.» · [третя сторона] · Wikipedia
+
+**3.4. Buffer — захист обмеження від варіабельності, з пріоритезацією за «дірками»**
+· [третя сторона] · там само
+> «The buffer protects the drum, so that it always has work flowing to it. … Based on this buffer status, work orders can be color coded into Red, Yellow and Green.»
+> «Buffer Management is based on the analysis of the "Buffer Holes". A buffer hole is considered to be generated if the work does not arrive on time and penetrates zone 1 of the constraint buffer; this generates an alert.» · [третя сторона] · https://www.sciencedirect.com/science/article/pii/S2199853124000222
+
+**3.5. П'ять кроків фокусування (5FS)** — перелік загальновідомий, але **дослівної цитати з tocico.org чи книги я не маю**:
+1) знайти обмеження; 2) максимально його використати; 3) підпорядкувати все інше; 4) підняти обмеження; 5) якщо обмеження зрушило — повернутися до кроку 1. → **[не перевірено]**
+
+**3.6. Класичне правило Goldratt, яке найчастіше цитують** (тут — у перекладі посередника, тому обережно):
+> «Una hora perdida en un recurso restrictivo es una hora perdida en todo el sistema de la empresa.» («Година, втрачена на обмеженні, — це година, втрачена в усій системі») · [третя сторона, цитує Aguilera 2000] · https://repositorio.ucv.edu.pe/bitstream/handle/20.500.12692/49297/Quispe_HGK-Rubianez_RAF-SD.pdf
+
+## Чи є докази ефективності — **так, найсильніші з трьох**
+· [першоджерело — рецензований журнал, IJOPM 23(6):568–595, червень 2003] · https://www.emerald.com/ijopm/article-abstract/23/6/568/139893/The-performance-of-the-theory-of-constraints
+> «it presents here the results of a meta‐analysis of over 80 successful TOC applications, based on available quantitative data, which showed that significant improvements in both operational and financial performance were achieved as a result of applying TOC. Despite extensive searches, the research found no reports of failures.»
+
+Конкретні цифри цього мета-аналізу в переказі:
+> «Mabin and Balderstone（2003）は80以上のTOC導入事例を調査し、在庫削減で平均49%、リードタイムと財務パフォーマンスの両方で60%以上の改善を見出し、導入失敗の公表報告はなかった。» (відкриті джерела: скорочення запасів у середньому 49%, покращення lead time і фінансових показників >60%, публічних звітів про провал не знайдено) · [третя сторона] · https://zenodo.org/records/19087420
+
+**Критичне зауваження до цих доказів (моє, не з джерела):** вибірка — «over 80 **successful** TOC applications», тобто це аналіз **опублікованих успіхів**, а «no reports of failures» може означати не відсутність провалів, а відсутність їх публікації (publication bias). Самі автори це фактично визнають, зазначаючи, що дані «mainly from manufacturing organisations».
+
+---
+
+# Що спільного між TPS, LPS, TOC і GitLab
+
+**Це висновок, не факт із джерел.** Шість механізмів збігаються в усіх чотирьох:
+
+| Механізм | TPS | LPS | TOC | GitLab (handbook) |
+|---|---|---|---|---|
+| **1. Ритм задає система, а не людина** | takt time, heijunka | тижневий цикл WWP + щоденна нарада | drum = темп обмеження | квартал OKR, місячне скорингування |
+| **2. Обмеження WIP як головний важіль** | kanban (забирають лише використане) | у план входить лише «звільнене» від обмежень | rope: не запускати раніше buffer time | не більше 3–5 KR на ціль, 9 на квартал |
+| **3. Pull, а не push** | наступний процес забирає | LP сам дає обіцянку, йому не «спускають» | ship/drum schedule, а не локальна оптимізація | команда сама бере з беклогу, DRI |
+| **4. Дефект зупиняє потік, а не обходиться** | jidoka, andon, «work won't resume» | причина невиконання обов'язково фіксується | buffer hole → alert до зупинки | revert/incident, «stop the line» у handbook |
+| **5. Метрика міряє систему, а не людей** | процес, а не робітник | PPC — «diagnostic, not a KPI to pay against» | throughput системи, не завантаження ресурсу | OKR scoring як навчання, а не оцінка людини |
+| **6. Зобов'язання замість задачі** | стандартизована робота + kaizen на місці | «personal commitment … based upon the promised completion» | підпорядкування темпу барабана | «DRI» + каскад OKR знизу вгору |
+
+Найглибша спільна риса: **всі чотири системи переносять право ухвалення рішення на найнижчий рівень, де є інформація, і замінюють контроль зверху на вимірювану надійність зобов'язань.** У Toyota — оператор може зупинити лінію. У LPS — «Last Planner» це «person closest to work, with authority to make decisions and create assignments». У TOC — розклад будується навколо фактичного обмеження, а не навколо планових нормативів. У GitLab — каскад OKR іде знизу вгору («typically derived from the Sub Department»), а не згори.
+
+Друга спільна риса: **всі вони вимірюють запізнення/варіабельність, а не завантаження.** PPC міряє невиконані обіцянки, andon — час до зупинки, buffer management — «дірки», OKR scoring — провали. Метрика «скільки зроблено» в жодній із систем не є головною.
+
+І третя, менш приємна: **у всіх чотирьох метрика має вбудований стимул до маніпуляції**, і всі чотири це визнають явно. LPS-вендори прямо пишуть, що PPC>90% означає недозобов'язання; Toyota будує poka-yoke, бо людям не можна довіряти «не помилитися»; GitLab публікує handbook, бо приховати розбіжність між OKR і реальністю інакше неможливо.
+
+---
+
+# Суперечності
+
+1. **«PPC=90%» у слайді LCI 2001 подано як ціль, а сучасні практики називають >90% ознакою маніпуляції.** Це пряма суперечність між першоджерелом і пізнішою практикою — не помилка, а еволюція, але для управління вона критична.
+2. **Deloitte-подібна проблема і тут: цифри LPS переважно з опитувань самих користувачів** (Dodge: 84% «reported higher quality») — це не вимірювання, а самозвіт.
+3. **«No reports of failures» у Mabin & Balderstone** — не те саме, що «немає провалів». Формулювання джерела коректне, але його часто цитують як доказ безперечної ефективності — це спотворення.
+4. **TPS: офіційний сайт не містить жодної цифри ефективності.** Уся кількісна слава TPS — зовнішня (академія, консалтинг), не від Toyota. Це варто пам'ятати, коли хтось цитує «Toyota довела, що…».
+
+# Висновок (висновок)
+
+За **якістю доказів** порядок такий: **TOC (рецензований мета-аналіз, але з publication bias) > LPS (стандарт + слабкі кількісні дані + чесна критика метрики) > TPS (найкращий опис принципів, нуль верифікованих чисел з перших рук)**. Це інверсія популярності: чим відоміша система, тим гірше вона задокументована кількісно у відкритому доступі.
+
+За **переносимістю в інтелектуальну працю** порядок зворотний: **LPS і GitLab майже ізоморфні** (тижневе зобов'язання, щоденна 5–8-хвилинна нарада, метрика надійності, причини зриву) — бо обидва працюють із залежностями між командами і нестабільним потоком. TPS переноситься гірше: він вимагає фізичної стандартизованої роботи, і Toyota сама каже, що jidoka починається з ручної праці й kaizen на місці.
+
+# Рекомендація (якщо будуватимете свою систему)
+
+Якщо мета — не «впровадити lean», а отримати робочу систему для команд знань, беріть **LPS як каркас** (він єдиний описаний на рівні «хто що робить у понеділок і в п'ятницю»), **TOC як спосіб вибору, що саме оптимізувати** (одне обмеження, а не все одразу), і **TPS лише як набір патернів візуалізації збоїв** (andon → інцидент-бот; poka-yoke → CI-перевірки). Метрику надійності (PPC-аналог) вводьте з першого тижня, але **публічно зафіксуйте, що вона не впливає на бонуси** — інакше отримаєте рівно те недозобов'язання, про яке попереджають LPS-практики.
+
+# Чого не знайшов
+
+- **tocico.org — жодної сторінки.** Дослівних цитат Goldratt із «The Goal», «What is this thing called Theory of Constraints» або офіційного глосарію TOCICO у мене немає. Формулювання 5FS — [не перевірено].
+- **Числових досліджень ефективності TPS** — жодного з першоджерела чи рецензованого журналу в цій сесії.
+- **Первинних даних LPS** (Ballard PhD, LCI benchmark 2020) — лише перекази.
+- **Критики TPS і TOC з академічних джерел** — пошуковий ліміт вичерпався до того, як я їх дістав.
+
+# Червоні прапорці
+
+- **Заміна tocico.org на вторинні джерела** — найбільший ризик цього звіту; формулювання 5FS і DBR у мене з дисертацій і Wikipedia.
+- **«PPC>90% — це погано» походить від вендора софту LPS** (visilean.com), тобто зацікавленої сторони. Логіка переконлива, але джерело треба замінити на LCI/академію.
+- **Оцінка «54% задач виконується»** — зі студентської роботи, що посилається на дослідження 1990-х. Не використовуйте як сучасний бенчмарк.
+- **Дані Dodge — 2010-х із самозвітів підрядників**, схильні до завищення.
+
+# [не перевірено]
+
+- П'ять кроків фокусування TOC дослівно (текст Goldratt / tocico.org).
+- Будь-які цифри ефективності TPS.
+- Первинні дані Ballard/LCI про приріст PPC у конкретних проєктах.
+- Критика TPS і TOC з незалежних академічних оглядів.
+- Теза про «DRI» і «stop the line» у GitLab як прямі аналоги andon — я спирався на загальну будову handbook, а не на цитату з конкретної сторінки цієї сесії.
+
+== Джерела (46):
+- TOYOTA PRODUCTION SYSTEM — https://toyotafl.kz/files/files/Toyota_Production_System.pdf#1#1#1
+- トヨタ企業サイト｜トヨタ自動車75年史｜生産・生産技術・物流・調達｜トヨタ生産方式 — https://www.toyota.co.jp/jpn/company/history/75years/data/automotive_business/production/system/index.html
+- See "Capital Expenditures and Divestitures" for a description of Toyota's recent investments in completed plant constructions an... — https://www.toyota.co.jp/pages/contents/jpn/investors/library/sec/pdf/20-F_200903_final.pdf#8#23#8
+- Toyota Production System | Vision & Philosophy | Company | Toyota Motor Corporation Official Global Website — https://global.toyota/en/company/vision-and-philosophy/production-system/?ref/odometer-asset-management&source=post_page-----d2c8ccfe6adf---------------------------------------
+- Toyota Virtual Plant Tour: Toyota Production System | Toyota Virtual Plant Tour | Company | Toyota Motor Corporation Official Global Website — https://global.toyota/en/company/plant-tours/production-system/
+- Glossary | TOYOTA Motor Manufacturing UK — https://www.toyotauk.com/toyota-in-the-uk/how-we-manufacture/glossary
+- 仕入先が一体となって品質をつくり込み、 — https://www.toyota.co.jp/pages/contents/jpn/company/about_toyota/outline/pdf/companyprofile.pdf#2#3#2
+- POLÍTICA DE CALIDAD — https://media.toyota.com.ar/8dda20fb-0918-4b90-b6e8-7871a917fc63.pdf#1#1#1
+- TOYOTA MOTOR CORPORATION GLOBAL WEBSITE | 75 Years of TOYOTA | Automotive Business — https://www.toyota-global.com/company/history%5Fof%5Ftoyota/75years/data/automotive_business/production/#header
+- Toyota | Toyota Production System — https://www.toyota.fr/decouvrez-toyota/groupe/a-propos-de-nous/vision-et-philosophie/systeme-production-toyota?hideFooter=true&hideNav=true
+- 9_Weekly Work Planning — https://leanconstruction.org/wp-content/uploads/2023/10/2023_LCI_LeanConstructionPlannerStandard-Work.pdf#3#3#3
+- The Last Planner System®, Chaos, and Making Complacency Work for You — https://leanconstructionblog.com/The-Last-Planner-System-Chaos-and-Making-Complacency-Work-for-You.html
+- Last Planner® System: Five Conversations + PPC Guide — https://visilean.com/lean-construction/last-planner-system
+- The Last Planner System with a new perspective on productivity — https://leanconstructionblog.com/Last-Planner-System-with-a-new-perspective-on-productivity.html
+- The History of Lean Construction - Part 2 — https://leanconstructionblog.com/The-History-of-Lean-Construction-Part-2.html
+- Current status & forecasts — http://www.leanconstruction.org/pdf/ASCLCI2.pdf#2#2#2
+- En el marco de la implementación del **Last Planner System (LPS)** dentro del modelo de **Lean Construction**, uno de los indica... — https://riunet.upv.es/bitstreams/9894406b-5bc9-4bff-9bd9-c3c284f828a3/download#6#10#6
+- MAKE READY PLANNINGMaking work ready is an important part of LPS that ensures that the upcoming work can be completed per the in... — https://www.engr.psu.edu/ae/thesis/portfolios/2015/amj5275/assests/project/bs/pd/CM_Compiled.pdf#4#6#4
+- Provider Name: Lean Construction InstituteProvider Number – H561 — https://leanconstruction.org.uk/wp-content/uploads/2018/10/T03_1_0_Final_LCI_Congress_LPS_2013.pdf#1#3#1
+- PPC: Percent Plan Complete in Construction — https://visilean.com/lean-construction/ppc-percent-plan-complete
+- Goldratt (1990, 2004) claims that each system, even the most effective one, has a constraint, which limits its performance — https://aaltodoc.aalto.fi/server/api/core/bitstreams/801d025d-b0f6-4c85-b49d-bd1d76772f61/content#4#10#4
+- - definition of the system and its purpose;- definition of measurements aligning the system to that purpose — https://is.muni.cz/th/bxp6t/Diplomova_prace_Linhart_Jakub_401436_Archive.pdf#2#8#2
+- But again, this is the theoretical capacity, not the demonstrated throughput of the line — https://www.sedsi.org/_files/ugd/1cacb5_9cf4bc14c78042b288eabd872ed8badb.pdf#49#141#49
+- A word of caution about this model relative to the various ‘stage’ members from the end manufacturer back through the raw materi... — https://revistas.upr.edu/index.php/forumempresarial/article/download/2910/2486/2987#2#2#2
+- whether some of the practical methodologies developed for the application of — https://core.ac.uk/download/188219475.pdf#7#20#7
+- Innovation by integration of Drum-Buffer-Rope (DBR) method with Scrum-Kanban and use of Monte Carlo simulation for maximizing throughput in agile project management - The only way to improve is to identify and manage constraints systematically — https://www.sciencedirect.com/science/article/pii/S2199853124000222?fr=RR-1&ref=cra_js_challenge#2
+- TOC focuses on on- going improvement by dealing with constraints — https://www.library.dit.ie/search?/deDissertations+--+TU874+--+DT205+--+BSc+in+Mathem/dedissertations+tu874+dt205+bsc+in+mathematical+sciences/-53%2C-1%2C0%2CZ/l962brief~5255626&FF=dedissertations+tu258+dt233+msc+in+pharmaceutical+quality+assurance+and+biotechnology&3%2C%2C45%2C0%2C0#2#7#2
+- improvement process — https://repository.nwu.ac.za/bitstream/handle/10394/33145/Van%20Wyk%20W.pdf?isAllowed=y&sequence=1#4#15#4
+- Según Muñoz (2008) señaló: “El DBR es la aplicación de la Teoría de Restricciones — https://repositorio.ucv.edu.pe/bitstream/handle/20.500.12692/49297/Quispe_HGK-Rubianez_RAF-SD.pdf?sequence=1&isAllowed=y#5#40#5
+- [0020] The underlying premise of theory of constraints is that organizations can be measured and controlled by variations on thr... — https://patentimages.storage.googleapis.com/a6/9a/70/eeecb745b26c66/US20160293461A1.pdf#2#5#2
+- the development of operational rules — https://core.ac.uk/download/617870522.pdf#2#11#2
+- Rahman (1998) stated that TOC has two major components — https://aast.edu/pheed/staffadminview/pdf_retreive.php?stafftype=staffpdf&url=8955_7_6_Relation%20between%20Resistance%20to%20Change%20and%20TOC.pdf#2#3#2
+- The Thinking Process and other TOC applications are built around the TOC's Five Focusing Steps (FFS) — https://mro.massey.ac.nz/bitstreams/442d2e16-521f-4f71-b486-d978cff007c6/download#6#24#6
+- exceed that of the soldier in front, gains are limited by the pace of the soldier in front — https://scholar.afit.edu/cgi/viewcontent.cgi?article=7281&context=etd#2#9#2
+- **Theory of Constraints (TOC)** is an overall management philosophy introduced by Dr — https://www.cga.ct.gov/gae/tfs/20090129_Commission%20on%20Enhancing%20Agency%20Outcomes/20090430/Testimony%20Danbury%20Public%20Hearing%20-%20Tom%20Nelson.pdf#2#3#2
+- Theory of constraints — https://en.wikipedia.org/api/rest_v1/page/pdf/Theory_of_constraints#1#2#1
+- コードに隠された設計機能——AIコーディング生産性パラドックスの制約理論による分析 - 実証的記録はこの分析を支持する — https://zenodo.org/records/19087420/preview/CSUR_Design_Function_%E6%97%A5%E6%9C%AC%E8%AA%9E%E5%85%A8%E8%A8%B3.md?include_deleted=0#4
+- The performance of the theory of constraints methodology: analysis and discussion of successful TOC applications — https://scholar.google.fr/citations?citation_for_view=1L7yccQAAAAJ:u-x6o8ySG0sC&hl=fr&user=1L7yccQAAAAJ&view_op=view_citation
+- εύρεση βέλτιστης λύσης στα σχετικά προβλήματα προγραμματισμού — http://ikee.lib.auth.gr/record/271278/files/GRI-2015-15049.pdf#29#118#29
+- TOC suggests (e — https://epub.lib.aalto.fi/en/ethesis/pdf/13489/hse_ethesis_13489.pdf#3#8#3
+- The performance of the theory of constraints methodology: analysis and discussion of successful TOC applications - Cite — https://scholar.google.com/scholar_lookup?hl=en&volume=23&publication_year=2003&pages=568-595&journal=International+Journal+of+Operations+%26+Production+Management&issue=6&author=Victoria+J.+Mabin&author=Steven+J.+Balderstone&title=The+Performance+of+the+Theory+of+Constraints+Methodology%3A+analysis+and+Discussion+of+Successful+TOC+Applications&doi=10.1108%2F01443570310476636#1
+- The performance of the theory of constraints methodology: Analysis and discussion of successful TOC applications — https://www.iaorifors.com/paper/42216
+- Steven J. Balderstone | Semantic Scholar - The performance of the theory of constraints methodology: Analysis and discussion of successful TOC applications — https://www.semanticscholar.org/author/Steven-J.-Balderstone/52380415#1
+- V. Mabin | Semantic Scholar - The performance of the theory of constraints methodology: Analysis and discussion of successful TOC applications — https://www.semanticscholar.org/author/V.-Mabin/2416537#1
+- The performance of the theory of constraints methodology: Analysis and discussion of successful TOC applications - Article navigation — https://www.emerald.com/ijopm/article-abstract/23/6/568/139893/The-performance-of-the-theory-of-constraints?redirectedFrom=PDF#1
+- Search Peer-Reviewed Articles & Academic Journals | DeepDyve - Search Results — https://www.deepdyve.com/search?author=Victoria+J.+Mabin#1
+
+== Розмова: 20261028-144241 | вх 48361 (з кешу 61184) | вих 10394 | пошуків 6
+== Ціна ≈$0.0137 (не пік; без вартості пошуків)

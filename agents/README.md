@@ -27,6 +27,7 @@
   agents/claude-code/     нотатки, чернетки
   agents/dsh/             нотатки, чернетки, журнал
   agents/deepseek-search/ (уже існує)
+  agents/claude-code/README.md — опис приватної теки claude-code — [claude-code, 2026-10-28; сесія 5c61c9ea, питання «що давно не оновлювалось і без звязків»]
 ```
 
 ## Теги авторства

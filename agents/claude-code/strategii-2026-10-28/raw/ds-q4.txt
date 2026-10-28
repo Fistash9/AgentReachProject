@@ -1,0 +1,255 @@
+deepseek-search: перший шматок 3.6 с, усе 69.0 с
+УВАГА: пошуків 6 при --uses 5 — сервер ліміт не тримає.
+# Коротка відповідь
+
+**Так, але лише три з п'яти принципів реально переносяться — і один із них перенесли буквально, назвою.**
+
+Що підтверджується першоджерелами:
+- **make-ready (LPS)** → перенісся майже дослівно: під-агент запускається лише з повним «пакетом готовності» (мета, формат виходу, інструменти, межі), а MetaGPT формалізує це як «агент активує дію лише після отримання всіх передумов».
+- **обмеження вузького місця (TOC)** → перенісся і став центральним: вузьке місце переїхало зі станції на **контекстне вікно й бюджет токенів**. Anthropic прямо міряє це числом: 80% дисперсії продуктивності.
+- **poka-yoke (TPS)** → Anthropic у власному тексті посилається на цей принцип Toyota при проєктуванні інструментів агента.
+- **pull/kanban** → **не перенісся**. Оркестратор штовхає, ніхто не «забирає».
+- **jidoka/andon** → **не перенісся, а інвертувався**. Під-агент не має права зупинити лінію; навпаки, дослідження показують, що агенти схильні «впевнено завершити не ту задачу».
+
+Окремо: **OpenAI і Google я не встиг відкрити** — ліміт пошуку. По них у мене нуль цитат.
+
+---
+
+# 1. Anthropic, «Building effective agents» (19 грудня 2024, оновлено пізніше)
+
+**Коли делегувати, а коли робити самому**
+· [першоджерело] · https://www.anthropic.com/engineering/building-effective-agents
+> «When to use agents: Agents can be used for open-ended problems where it's difficult or impossible to predict the required number of steps, and where you can't hardcode a fixed path. The LLM will potentially operate for many turns, and you must have some level of trust in its decision-making.»
+
+**Дефолт — НЕ делегувати**
+> «To repeat: you should consider adding complexity only when it demonstrably improves outcomes.»
+> «Success in the LLM space isn't about building the most sophisticated system. It's about building the right system for your needs. Start with simple prompts, optimize them with comprehensive evaluation, and add multi-step agentic systems only when simpler solutions fall short.»
+
+**Як перевіряють результат**
+> «The autonomous nature of agents means higher costs, and the potential for compounding errors. We recommend extensive testing in sandboxed environments, along with the appropriate guardrails.»
+> «Maintain simplicity in your agent's design. Prioritize transparency by explicitly showing the agent's planning steps. Carefully craft your agent-computer interface (ACI) through thorough tool documentation and testing.»
+
+**Пряме посилання на Toyota (знахідка)**
+· [третя сторона, переказ Appendix 2 Anthropic] · https://raw.githubusercontent.com/berdyshevol/anthropic-research-wiki/f44537de91a342c98995e33fe3250ff52aa291da/raw/2024-12-19-building-effective-agents.md
+> «Apply "poka-yoke" principle: change arguments to make mistakes harder»
+> «Team "spent more time optimizing tools than the overall prompt," discovering that requiring absolute filepaths rather than relative paths eliminated common model errors.»
+
+Тобто Anthropic **самі** описують свій підхід до інструментів агента мовою TPS — poka-yoke, захист від помилки на рівні інтерфейсу, а не інструкції.
+
+---
+
+# 2. Anthropic, «How we built our multi-agent research system» (13 червня 2025)
+
+**Коли роздавати під-агенту: коли задача паралелізується і не влазить у контекст**
+
+Цитати нижче — з прямої репродукції тексту Anthropic у Simon Willison (він цитує дослівно, блок за блоком):
+· [третя сторона, що цитує першоджерело] · 14 червня 2025 · https://simonwillison.net/2025/Jun/14/multi-agent-research-system/
+> «We've found that multi-agent systems excel at valuable tasks that involve heavy parallelization, information that exceeds single context windows, and interfacing with numerous complex tools.»
+> «Our internal evaluations show that multi-agent research systems excel especially for breadth-first queries that involve pursuing multiple independent directions simultaneously. We found that a multi-agent system with Claude Opus 4 as the lead agent and Claude Sonnet 4 subagents outperformed single-agent Claude Opus 4 by 90.2% on our internal research eval.»
+
+**Скільки паралельно — конкретні числа**
+> «For speed, we introduced two kinds of parallelization: (1) the lead agent spins up 3-5 subagents in parallel rather than serially; (2) the subagents use 3+ tools in parallel. These changes cut research time by up to 90% for complex queries»
+
+**Make-ready, дослівно** (це найближчий аналог LPS у всьому корпусі)
+> «In our system, the lead agent decomposes queries into subtasks and describes them to subagents. Each subagent needs an objective, an output format, guidance on the tools and sources to use, and clear task boundaries.»
+
+**Відомий провал — саме відсутність ліміту WIP**
+> «Early agents made errors like spawning 50 subagents for simple queries, scouring the web endlessly for nonexistent sources, and distracting each other with excessive updates. Since each agent is steered by a prompt, prompt engineering was our primary lever for improving these behaviors.»
+
+**Ціна делегування**
+> «There is a downside: in practice, these architectures burn through tokens fast. In our data, agents typically use about 4× more tokens than chat interactions, and multi-agent systems use about 15× more tokens than chats. For economic viability, multi-agent systems require tasks where the value of the task is high enough to pay for the increased performance.»
+
+**Вузьке місце = контекст** (це прямий переклад TOC-логіки на новий ресурс)
+> «The key benefit is all about managing that 200,000 token context limit. Each sub-task has its own separate context…»
+> «The LeadResearcher begins by thinking through the approach and saving its plan to Memory to persist the context, since if the context window exceeds 200,000 tokens it will be truncated and it is important to retain the plan.»
+
+**Числовий доказ, що обмеження — токени, а не «розумність»**
+· [третя сторона, розбір] · https://www.beri.net/learning/anthropic-multi-agent-research-system
+> «token usage alone explains 80% of performance variance on BrowseComp»
+
+**Верифікація: спочатку людина, потім LLM-суддя**
+> «In our case, human testers noticed that our early agents consistently chose SEO-optimized content farms over authoritative but less highly-ranked sources like academic PDFs or personal blogs. Adding source quality heuristics to our prompts helped resolve this issue.»
+
+---
+
+# 3. Cognition (Devin) — контр-джерело: «Don't Build Multi-Agents» і оновлення 2026
+
+**Коли НЕ делегувати: коли під-задача щось записує в спільний артефакт**
+· [третя сторона, репродукція тези Walden Yan] · червень 2025 · https://agentic-ai.readthedocs.io/en/latest/ContextEngineering/devin/
+> «Context engineering… is effectively the #1 job of engineers building AI agents.»
+Принцип, що з нього виріс висновок (у переказі): дія агента несе неявні рішення (стиль, патерни, крайові випадки), і паралельні агенти, що **пишуть**, продукують конфліктні неявні рішення → [третя сторона, переклад].
+
+**Оновлення 2026: що таки працює**
+· [першоджерело — блог Cognition] · https://cognition.com/blog/multi-agents-working
+> «Context Rot is a well-documented phenomenon that is a result of models making less intelligent decisions at longer and longer context lengths.»
+> «The review agent having a completely clean context also helps it go deeper into areas the original coding agent may not.»
+> «These agents are ultimately systems that perform based on their context. They don't have egos, and any shared bias that might exist ultimately comes from their training process…»
+
+**Найточніша знахідка про делегування — хто вирішує делегувати**
+> «The core trickiness of this setup comes from the problem of "how does a dumber model know it's at its limits?" Unlike the more popular inverted setup with a smart primary model delegating tasks to smaller subagents, the model deciding when to delegate isn't the smarter one.»
+
+Це прямий удар по TPS-аналогії: в Toyota **оператор** (найближчий до роботи) має право й обов'язок зупинити лінію. В агентній оркестрації рішення «кликати допомогу» ухвалює **слабша** ланка, і вона не калібрована на це рішення.
+
+---
+
+# 4. Рецензоване: MAST / «Why Do Multi-Agent LLM Systems Fail?» (NeurIPS 2025)
+
+· [першоджерело — arXiv 2503.13657v3, 26 жовтня 2025] · https://arxiv.org/abs/2503.13657
+> «Despite enthusiasm for Multi-Agent LLM Systems (MAS), their performance gains on popular benchmarks are often minimal.»
+> «Our empirical analysis reveals 41% to 86.7% failure rate on 7 state-of-the-art (SOTA) open-source MAS»
+
+**Верифікація — найслабша ланка**
+> «many existing verifiers perform only superficial checks, despite being prompted to perform thorough verification, such as checking if the code compiles or if there are leftover TODO comments.»
+> «a ChatDev-generated chess program passes superficial checks (e.g., code compilation) but contains runtime bugs because it fails to validate against actual game rules, rendering the output unusable despite review phases.»
+> «the presence of a verifier is not a silver bullet, as overall MAS success rates can still be low.»
+
+**«Потрібне організаційне розуміння» — це майже цитата з лекції про TPS**
+> «we argue that good MAS design requires organizational understanding – even organizations of sophisticated individuals can fail catastrophically if the organization structure is flawed.»
+
+**Що допомогло (і наскільки мало)**
+> «improving agent role specifications alone yields a +9.4% success rate increase for ChatDev with the same user prompt and LLM (GPT-4o).»
+> «adding a high-level task objective verification step to ChatDev yields a +15.6% improvement in task success on ProgramDev»
+> «not all failure modes are resolved, and task completion rates still remain low»
+
+**Топ-провали за частотою** (сторінка з розбивкою, [третя сторона] · https://www.taskade.com/wiki/ai-agents/agent-failure-modes)
+> «step repetition was the largest single mode at 15.7% of failures, followed by reasoning-action mismatch at 13.2% and being unaware of termination conditions at 12.4%. By group, system design issues were the largest, at 44.2% of failures.»
+
+---
+
+# 5. Рецензоване: MetaGPT (ICLR) — єдина система, що прямо кодує SOP
+
+· [першоджерело — arXiv 2308.00352] · https://arxiv.org/abs/2308.00352
+> «In our work, we follow SOP in software development, which enables all agents to work in a sequential manner.»
+> «Unambiguous role specialization enables the breakdown of complex work into smaller and more specific tasks.»
+> «In practical implementations, an agent activates its action only after receiving all its prerequisite dependencies.»
+> «Sharing all information with every agent can lead to information overload. During task execution, an agent typically prefers to receive only task-related information and avoid distractions through irrelevant details.»
+> «Inspired by human social structures, we propose using structured communication to formulate the communication of agents.»
+
+**Ефект зворотного зв'язку через виконання** ([третя сторона, розбір Table 1] · https://github.com/curiositech/windags-skills/blob/main/skills/hong-et-al-2024-metagpt/_raw_response.md)
+> «the paper's results show that executable feedback reduces human revisions from 2.25 to 0.83»
+> «Token Usage 24,613 → 31,255 (+27%)»
+
+---
+
+# Що з TPS/LPS/TOC/GitLab реально перенеслося
+
+| Принцип | Чи є в агентній оркестрації | Доказ |
+|---|---|---|
+| **make-ready (LPS)** — задача в план лише коли все готово | **Так, дослівно** | Anthropic: «objective, an output format, guidance on the tools… clear task boundaries»; MetaGPT: «activates its action only after receiving all its prerequisite dependencies» |
+| **Вузьке місце (TOC)** — працювати на обмеженні, підпорядкувати решту | **Так, і це головна рамка** | Anthropic: обмеження = 200k контексту; «token usage alone explains 80% of variance» |
+| **poka-yoke (TPS)** | **Так, названо прямо** | Anthropic Appendix 2: «Apply "poka-yoke" principle» |
+| **Стандартна робота (TPS)** | **Так** | MetaGPT SOP; структуровані схеми виходу замість вільного тексту |
+| **Обмеження WIP (kanban)** | **Частково, і не як механізм** | Anthropic: «3-5 subagents in parallel» — але це prompt-евристика, а не жорсткий ліміт; провал «spawning 50 subagents» стався саме через відсутність ліміту |
+| **Pull (kanban)** | **Ні** | Оркестратор штовхає задачі під-агентам; ніхто не «забирає» |
+| **Jidoka / andon (TPS)** — зупинка на першому дефекті | **Ні, інвертовано** | MAST: FM-3.2 «no or incomplete verification» 8.2%, FM-3.3 «incorrect verification» 9.1%; агенти не мають права зупинити потік |
+| **PPC / зобов'язання (LPS)** | **Ні** | Під-агент не дає обіцянки й не може її порушити; Cognition: слабша ланка не знає своїх меж |
+
+**Найглибша відмінність:** LPS і GitLab працюють тому, що **виконавець дає зобов'язання і сам сигналізує про зрив**. В агентній системі виконавець не має ні зобов'язання, ні сигналу — він або повертає результат, або «впевнено завершує не ту задачу». Тому всі механізми надійності доводиться будувати **зовні** агента: верифікатори, схеми, ліміти, люди. Це принципово інша архітектура довіри, ніж у Toyota чи на будмайданчику.
+
+**Друга відмінність:** у TPS/LPS/TOC **вузьке місце — фізичний ресурс**, і його можна побачити (черга, WIP, buffer). В агентній системі вузьке місце — **контекстне вікно**, і воно невидиме: «Context Rot» робить модель гіршою поступово, без чіткого порогу. Anthropic це визнає: «a gradient of performance, not a hard cliff» (за переказом, [не перевірено]).
+
+**Третя:** poka-yoke перенесли, а його джерело — ні. Anthropic роблять інструменти «дурними на помилку», але **не будують andon** — немає механізму, за яким під-агент зупиняє весь ланцюг при першому сумніві. Саме тому MAST дає 41–86.7% відмов: система не має права зупинитися там, де Toyota зупинила б конвеєр.
+
+---
+
+# Суперечності
+
+1. **Anthropic (90.2% приріст) vs Cognition (не будуйте) vs MAST (41–86.7% відмов)** — три першоджерела, що суперечать одне одному. Розв'язка, яку дають самі автори: Anthropic міряв **read-only дослідження**, Cognition будує **write-heavy кодинг**. Обидва праві для свого домену, і жоден не є загальним правилом.
+2. **Anthropic каже «80% дисперсії — це токени», і водночас «не ускладнюйте»**. Якщо більше токенів = краще, то аргумент за простоту слабшає. Самі автори це не коментують; зовнішній розбір вказує, що кореляція не дорівнює причинності ([третя сторона] · https://raw.githubusercontent.com/EndogenAI/dogma/b3f4a32461f4e6d95569426b7637e8d5df310f6f/docs/research/sources/anthropic-com-engineering-multi-agent-research-system.md).
+3. **MetaGPT заявляє «100% task completion rate»** (за переказом у REF-013), а MAST через рік міряє на MetaGPT десятки відмов на 100 трейсів. Різні бенчмарки й різні визначення «успіху» — але цифри несумісні.
+4. **Cognition 2025 «не будуйте» → Cognition 2026 «ось що працює»**. Це не помилка, а розворот за 10 місяців, який варто цитувати з датою.
+
+# Висновок (висновок)
+
+Агентна оркестрація **перевинайшла LPS і TOC, не посилаючись на них**: make-ready стала «task brief з межами й форматом виходу», а TOC-обмеження стало «контекстним вікном і бюджетом токенів». А от найнimportantіша частина TPS — **право й обов'язок зупинити лінію** — не переїхала, і саме в цьому місці сконцентровані всі виміряні провали (верифікація 8–9%, передчасне завершення 6%, повтор кроків 15.7%). Тобто галузь узяла з lean усе, крім найважливішого.
+
+Практично це означає: **оркестратор — це не Last Planner, а директор, що роздає наряди**. Різниця в тому, що Last Planner може сказати «я не готовий» і це нормальна частина процесу, а під-агент не має такого стану. Тому єдиний спосіб наблизитися до LPS-надійності — будувати **зовнішній верифікатор з правом вето**, а не сподіватися на самосвідомість агента.
+
+# Рекомендація (якщо проєктуєте оркестрацію)
+
+1. **Робіть make-ready явним артефактом**: для кожної під-задачі — мета, формат виходу, дозволені інструменти, межі (як у Anthropic). Це дешево й дає найбільший ефект.
+2. **Ставте жорсткий ліміт паралелізму з коду, а не з промпту.** «3–5 паралельно» в промпті не працює — Anthropic отримали «50 під-агентів на простий запит». Ліміт має бути в оркестраторі.
+3. **Не давайте під-агентам права запису в спільний артефакт паралельно.** Read-only під-агенти (пошук, читання коду) — безпечні; паралельні письменники — джерело конфліктів (Cognition).
+4. **Верифікатор має бути зовнішнім і з правом вето**, і перевіряти проти реальних правил домену, а не «чи компілюється». MAST: верифікатори перевіряють «поверхнево» навіть коли їх просять перевіряти глибоко.
+5. **Бюджетуйте токени як обмежений ресурс, а не як витрату.** Якщо 80% якості — це токени, то рішення «скільки агентів» = рішення TOC про буфер, і його треба ухвалювати явно.
+
+# Чого не знайшов
+
+- **OpenAI** («A practical guide to building agents», Agents SDK docs) — жодної цитати, ліміт пошуку.
+- **Google** (Kaggle Agents whitepaper, «Choosing a design pattern for your agentic AI system») — нуль.
+- **Agentless (arXiv 2407.01489)** — згадана в MAST як контраргумент, але я не відкривав; це, ймовірно, найсильніше доказове джерело проти делегування взагалі.
+- **Дослівна цитата Anthropic про те, що multi-agent погано працює для задач зі спільним контекстом (кодинг)** — є лише переказ.
+- **Chain of Agents (NeurIPS 2024)** і **Magentic-One** — не відкривав.
+
+# Червоні прапорці
+
+- **aiwiki.ai** знову з'являється як «енциклопедія» — не використовувати.
+- **Taskade wiki** — вендорська база знань, числа з MAST там переказані, а не первинні; звіряв із arXiv.
+- **Переклади Cognition** (weixin, китайські перекази) — формулювання змінені; англійські цитати взяв лише з cognition.com.
+- **beri.net, 90.2% і 80% дисперсії** — це навчальний сайт, не Anthropic; цифри збігаються з іншими переказами, але первинний текст я бачив лише частинами.
+- **LinkedIn-коментарі** («30% вища латентність», «два під-агенти зробили той самий пошук») — не джерела.
+
+# [не перевірено]
+
+- OpenAI і Google — повністю.
+- «80% дисперсії пояснюється токенами» — дослівна цитата Anthropic не отримана, лише перекази.
+- Твердження, що Anthropic прямо кажуть «не використовуйте multi-agent для кодингу» — це переказ.
+- Скорочення людських правок 2.25 → 0.83 у MetaGPT — з таблиці, відтвореної третьою стороною.
+- «Gradient of performance, not a hard cliff» — цитата з переказу.
+
+> Тема теж повторювана (оркестрація агентів) — варто завести окрему таблицю «патерн / коли / ліміт паралелізму / верифікація / джерело-цитата», бо корпус змінюється щомісяця.
+
+== Джерела (50):
+- --- — https://raw.githubusercontent.com/tim-kaa-py/ai-wiki/5ef2aa465c8aa7bc5a888e504bb3772ffeb9b0c8/summaries/2025-06-13_anthropic_multi-agent-research-system.md#1
+- ai-wiki/summaries/2025-06-13_anthropic_multi-agent-research-system.md at 3e152ecf71189e97ec5fe8b01c59960c3f798951 · tim-kaa-py/ai-wiki - Skip to content — https://github.com/tim-kaa-py/ai-wiki/blob/3e152ecf71189e97ec5fe8b01c59960c3f798951/summaries/2025-06-13_anthropic_multi-agent-research-system.md#1
+- Anthropic: How we built our multi-agent research system — https://simonwillison.net/2025/Jun/14/multi-agent-research-system/?trk=article-ssr-frontend-pulse_little-text-block#1
+- Simon Willison’s Weblog — https://simonwillison.net/search/?q=LLM+as+a+Judge&tag=paper-review#1
+- source_url: "https://www — https://raw.githubusercontent.com/EndogenAI/dogma/b3f4a32461f4e6d95569426b7637e8d5df310f6f/docs/research/sources/anthropic-com-engineering-multi-agent-research-system.md#1
+- Simon Willison’s Weblog - Posts tagged anthropic, ai-assisted-search — https://simonwillison.net/search/?amp%3Btag=science&tag=anthropic&tag=ai-assisted-search#1
+-  — https://raw.githubusercontent.com/jerrylususu/bookmark-summary/0e15d92c4ccdbdeb300fc7738c2b20e0138782c6/202506/2025-06-15-how-we-built-our-multi-agent-research-system.md
+- How we built our multi-agent research system — https://www.beri.net/learning/anthropic-multi-agent-research-system
+- Anthropic's multi-agent AI tool: lessons learned | Kevin Buehler 发布的此话题相关的动态 | 领英 - Anthropic's multi-agent AI tool: lessons learned — https://www.linkedin.com/posts/kevinbuehler_what-did-anthropics-engineering-team-learn-activity-7339994842220883968-SUoM#1
+- Anthropic 的多智能体系统到底怎么做的？90% 性能提升背后的工程真相 — https://cloud.tencent.com.cn/developer/article/2649387?from=15425&frompage=seopage#1
+- Multi-Agents: What's Actually Working — https://cognition.com/blog/multi-agents-working?trk=article-ssr-frontend-pulse_x-social-details_comments-action_comment-text
+- Context Engineering - MCP for Beginners — https://mintlify.wiki/microsoft/mcp-for-beginners/advanced/context-engineering
+- X 上的 Walden (@walden_yan) — https://x.com/walden_yan/status/2047054401341370639?rw_tt_thread=True&ref=antoinebuteau.com
+- The Multi-Agent Debate Nobody Is Winning (And Why Your Computer Use Agent Is Probably Doing It Wrong) — https://coasty.ai/blog/multi-agent-orchestration-patterns-computer-use-20260328
+- Cognition / Devin: Context Engineering Principles — https://agentic-ai.readthedocs.io/en/latest/ContextEngineering/devin/
+- Multi-Agents：到底什么在真正奏效 — http://mp.weixin.qq.com/s?__biz=MzY5NjIxMjEwNw==&mid=2247483874&idx=1&sn=ce34c3a2b997a455df011af0bf8752b8
+- Should I build one agent or a team of agents working together? · How Founders Use AI · eChai — https://echai.ventures/how-founders-use-ai/ai-agents/should-i-build-one-agent-or-a-team-of-agents-working-together
+- Person: clefourrier | AINews - All tags — https://news.smol.ai/tags/clefourrier/#1
+- Parallelising Subagents: Context-Windows and Token Efficiency | Toqeer Ahmed 发布的此话题相关的动态 | 领英 - 跳到主要内容 — https://www.linkedin.com/posts/itoqeerahmed_read-only-subagents-parallelise-writing-activity-7493288823829860352-ZPWB#1
+- Did Context Engineering Replace Prompt Engineering — What's Measured and What Isn't — TT Lab Blog — https://ttlab.hopto.org/blog/2026-07-17-context-engineering-vs-prompt-engineering-measured?lang=en
+- Why Do Multi-Agent LLM Systems Fail? — https://proceedings.neurips.cc/paper_files/paper/2025/hash/b1041e52d3be19f0a9bc491657488e4a-Abstract-Datasets_and_Benchmarks_Track.html
+- Why do multi-agent LLM systems fail? | Proceedings of the 39th International Conference on Neural Information Processing Systems - Several features on this page require Premium Access — https://dl.acm.org/doi/10.52202/085713-4082#1
+- NeurIPS Poster Why Do Multi-Agent LLM Systems Fail? — https://neurips.cc/virtual/2025/loc/san-diego/poster/121528
+- Why Do Multi-Agent LLM Systems Fail? — https://export.arxiv.org/abs/2503.13657
+- Why do multi-agent llm systems fail? - Ver artículo — https://scholar.google.de/citations?view_op=view_citation&hl=es&user=sMEFwf8AAAAJ&sortby=pubdate&citation_for_view=sMEFwf8AAAAJ:_FxGoFyzp5QC#1
+- Why Do Multi-Agent LLM Systems Fail? — https://scixplorer.org/abs/2025arXiv250313657C/abstract
+- arXiv Query: search_query=&id_list=2606.20683,2503.13657,2605.14892&start=0&max_results=10 — https://export.arxiv.org/api/query?id_list=2606.20683,2503.13657,2605.14892&max_results=10
+- Os sistemas multiagente introduzem modos de falha que não existem em sistemas com um único agente — https://github.com/bojieli/ai-agent-book/releases/download/latest/AI-Agents-in-Depth-ptbr.pdf#91#100#91
+- Why AI Agents Fail: 14 Failure Modes From 1,642 Agent Traces - AI Agents — https://www.taskade.com/wiki/ai-agents/agent-failure-modes#1
+- Why Do Multi-Agent LLM Systems Fail? — https://arxiv-org.ezproxy.obspm.fr/html/2503.13657v3#2
+- REF-013: MetaGPT - Meta Programming for Multi-Agent Collaborative Framework — https://raw.githubusercontent.com/jmagly/aiwg/refs/heads/main/docs/references/REF-013-metagpt-multi-agent-framework.md#1
+- aiwg/docs/references/REF-013-metagpt-multi-agent-framework.md at main · jmagly/aiwg — https://github.com/jmagly/aiwg/blob/main/docs/references/REF-013-metagpt-multi-agent-framework.md#1
+-  — https://cdn.jsdelivr.net/npm/aiwg@2026.9.20/docs/references/REF-013-metagpt-multi-agent-framework.md#1
+- 2308/2308.00352.md · huggingchat/papers-content — https://huggingface.co/buckets/huggingchat/papers-content/tree/2308/2308.00352.md?code=true#1
+-  — https://cas-bridge.xethub.hf.co/xet-bridge-us/69b2f2a85697a8235c22c8c6/ea8a7f7d85761f4cc783482ea37799b37e32f1131fb581025a27a228da5d7862?Expires=1784311434&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9jYXMtYnJpZGdlLnhldGh1Yi5oZi5jby94ZXQtYnJpZGdlLXVzLzY5YjJmMmE4NTY5N2E4MjM1YzIyYzhjNi9lYThhN2Y3ZDg1NzYxZjRjYzc4MzQ4MmVhMzc3OTliMzdlMzJmMTEzMWZiNTgxMDI1YTI3YTIyOGRhNWQ3ODYyKiIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc4NDMxMTQzNH19fV19&Signature=MEUCIFS21KXsHHa3t1F82u8dVx8V0oIusM7pbcp2j%7EuFR8lvAiEAxMnhmQHMQ6xDE%7Ek2j6ky7nVb5dWOyAFKulyq8bQoGfY_&Key-Pair-Id=K3EPXBYC3CKDRZ&response-content-type=text%2Fmarkdown&response-content-disposition=inline%3B+filename*%3DUTF-8%27%272308.00352.md%3B+filename%3D%222308.00352.md%22%3B&X-Xet-Cas-Uid=public&X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=cas%2F20260717%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260717T170354Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=e06a9384c377577a0d89fac1e1849ffea777cd6afb28a9c790a16e319e1bb16f
+- MetaGPT: Meta Programming for a Multi-Agent Collaborative Framework - License: CC BY 4.0 — https://arxiv-org.ezproxy.obspm.fr/html/2308.00352v6#1
+- windags-skills/skills/hong-et-al-2024-metagpt/_raw_response.md at main · curiositech/windags-skills — https://github.com/curiositech/windags-skills/blob/main/skills/hong-et-al-2024-metagpt/_raw_response.md#2
+- MetaGPT | AI Wiki - MetaGPT — https://aiwiki.ai/wiki/metagpt#1
+- MetaGPT — https://aiwiki.ai/wiki/metagpt/raw#1
+-  — https://us.aws.cdn.hf.co/xet-bridge-us/69b2f2a85697a8235c22c8c6/ea8a7f7d85761f4cc783482ea37799b37e32f1131fb581025a27a228da5d7862?response-content-type=text%2Fmarkdown&user_id=public&response-content-disposition=inline%3B+filename*%3DUTF-8%27%272308.00352.md%3B+filename%3D%222308.00352.md%22%3B&X-Xet-Cas-Uid=public&Expires=1789067235&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly91cy5hd3MuY2RuLmhmLmNvL3hldC1icmlkZ2UtdXMvNjliMmYyYTg1Njk3YTgyMzVjMjJjOGM2L2VhOGE3ZjdkODU3NjFmNGNjNzgzNDgyZWEzNzc5OWIzN2UzMmYxMTMxZmI1ODEwMjVhMjdhMjI4ZGE1ZDc4NjJcXD9yZXNwb25zZS1jb250ZW50LXR5cGU9dGV4dCUyRm1hcmtkb3duJnVzZXJfaWQ9cHVibGljJnJlc3BvbnNlLWNvbnRlbnQtZGlzcG9zaXRpb249aW5saW5lJTNCK2ZpbGVuYW1lJTJBJTNEVVRGLTglMjclMjcyMzA4LjAwMzUyLm1kJTNCK2ZpbGVuYW1lJTNEJTIyMjMwOC4wMDM1Mi5tZCUyMiUzQiZYLVhldC1DYXMtVWlkPXB1YmxpYyIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiRXBvY2hUaW1lIjoxNzg5MDY3MjM1fX19XX0_&Signature=MEYCIQCfok79%7E%7EDvLBpOAV0HBnf-4cjP6bYNgs24dxIHMkQaGgIhAPu8Pko7tnmAF7l%7EiZ8VRzlRhL0eP2EOZ2zr3THDxrDW&Key-Pair-Id=01KXEF4KZ1B6FV465MAWR4M21F
+- Building Effective AI Agents — https://www.anthropic.com/engineering/building-effective-agents?query=MTA?883cf5d2_page=8&c00c3596_page=8&80e1de48_page=5
+- Anthropic's Building Effective Agents Summary — https://raw.githubusercontent.com/alirezadir/Agentic-AI-Systems/refs/heads/main/03_system_design/cookbooks/anthropic-build_effective_agents.md#1
+- ai-engineer-guide/docs/references/anthropic/building-effective-agents.md at main · harimkang/ai-engineer-guide - Skip to content — https://github.com/harimkang/ai-engineer-guide/blob/main/docs/references/anthropic/building-effective-agents.md#1
+- Anthropic Research Bridge — https://rss-bridge.github.io/rss-bridge-tests/prs/4398/Anthropic_1_pr.html?action=display&bridge=AnthropicBridge&limit=10&format=Sfeed
+- Building Effective AI Agents \ Anthropic — http://www.360doc.com/content/25/0802/12/21539921_1158629284.shtml
+- Anthropic官方教你构建高效AI智能体 — https://www.xiaohongshu.com/discovery/item/69f1d250000000002202b8d9
+- Building effective agents — https://skyao.io/learning-ai-agent/definition/reference/anthropic-building-effective-agents/
+- url: https://www — https://raw.githubusercontent.com/berdyshevol/anthropic-research-wiki/f44537de91a342c98995e33fe3250ff52aa291da/raw/2024-12-19-building-effective-agents.md#1
+- anthropic-research-wiki/raw/2024-12-19-building-effective-agents.md at 23b106288226664e35ced2b2d473a1a9d9c4ed3a · berdyshevol/anthropic-research-wiki - Skip to content — https://github.com/berdyshevol/anthropic-research-wiki/blob/23b106288226664e35ced2b2d473a1a9d9c4ed3a/raw/2024-12-19-building-effective-agents.md#1
+- Building Effective AI Agents with Simple Patterns | Simon Taylor 发布的此话题相关的动态 | 领英 - 跳到主要内容 — https://www.linkedin.com/posts/sytaylor_this-breakdown-of-building-ai-agents-is-a-activity-7462089606201593856-T0m-#1
+
+== Розмова: 20261028-144241 | вх 87568 (з кешу 190592) | вих 10477 | пошуків 6
+== Ціна ≈$0.0200 (не пік; без вартості пошуків)
