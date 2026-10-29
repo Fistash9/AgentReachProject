@@ -435,3 +435,6 @@ agents/claude-code/gate-v2-2026-10-27/live-2026-10-28-pm.md (11 зупинок �
 рішення «у проєкт НЕ ставити» (BACKLOG.md:391). Посилань у коді (tools/, .claude/hooks, settings) — 0 (grep перед mv).
 Закриває «Далі» №18 і частину №22 естафети #99. ~/sandbox-graphify (страховка autosave.py) НЕ чіпали.
 Відкат — mv назад у /root/tmp/. — [claude-code (під-агент за брифом координатора), 2026-10-29; сесія 86fab127]
+
+## 2026-10-29 — старі знімки естафети pass-99.json, pass-100.json → .trash/baton-history-2026-10-29/
+Після baton_pick_up (#102) і baton-diff: 5 випалих пунктів мають носіїв (BACKLOG:17 Full access — відкладено; рецензія ed862f3d — розібрано, коміти 7341d3a/8c29bcb; backtest-out — BACKLOG:27; пісочниці DSH — TRASH.md, /root/.trash; ~/dsh-app — BACKLOG:13, вирішено). pass-101.json лишається як останній. Відкат — mv назад у .baton/history/. — [claude-code, 2026-10-29]
