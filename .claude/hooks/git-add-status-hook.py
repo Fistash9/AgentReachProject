@@ -364,6 +364,19 @@ def copy_risk(command, cwd, shvars=None):
     return None
 
 
+def is_l2s_link(full):
+    """2026-10-29 (крок 1.3 плану кола диспетчера): ярлик, ціль якого — .l2s proot
+    (тека «/.l2s/» або ім'я «.l2s.…»). os.readlink — як записано, realpath — кінцева ціль."""
+    if not os.path.islink(full):
+        return False
+    try:
+        targets = [os.readlink(full), os.path.realpath(full)]
+    except OSError:
+        return False
+    return any("/.l2s/" in t or os.path.basename(t).startswith(".l2s.") or "/.l2s." in t
+               for t in targets)
+
+
 def l2s_links(args, status_lines, cwd):
     """Ярлики серед шляхів, які додасть git add (2026-10-20, рішення користувача «Так, зробити»): у cf52c36
     звіт DSH пішов у git як symlink на rootfs/.l2s. Шляхи — з git status (тип «T» і нові), що підпадають під
@@ -383,7 +396,13 @@ def l2s_links(args, status_lines, cwd):
         r = os.path.normpath(os.path.relpath(os.path.join(cwd, a), REPO))
         rels.append("" if r == "." else r)
     out = []
+    for a in specs:  # 2026-10-29: явний аргумент-ярлик — навіть якщо git status його не показав
+        full = os.path.normpath(a if os.path.isabs(a) else os.path.join(cwd, a))
+        if is_l2s_link(full):
+            out.append(os.path.relpath(full, REPO))
     for p in paths:
+        if p in out:
+            continue
         if not (every or any(r == "" or p == r or p.startswith(r.rstrip("/") + "/") for r in rels)):
             continue
         full = os.path.join(REPO, p)
@@ -455,6 +474,20 @@ def main():
         return
 
     links = l2s_links(args, lines, data.get("cwd") or REPO)
+    l2s = [p for p in links if is_l2s_link(os.path.join(REPO, p))]
+    if l2s:
+        p0 = l2s[0]
+        print(json.dumps({
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "deny",
+                "permissionDecisionReason": (
+                    f"Ярлик l2s замість файлу: {', '.join(l2s[:5])}. Лікування: "
+                    f"cp --remove-destination \"$(readlink -f {p0})\" {p0} (TROUBLES 20.10)"
+                ),
+            }
+        }))
+        return
     if links:
         print(json.dumps({
             "hookSpecificOutput": {

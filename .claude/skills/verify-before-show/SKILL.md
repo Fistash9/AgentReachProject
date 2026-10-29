@@ -49,7 +49,7 @@ description: Independent check of the orchestrator's own load-bearing claims aga
 
 ## Крок 2 — верифікатор (DeepSeek flash)
 
-На кожне твердження — окремий виклик, усі паралельно:
+На кожне твердження — окремий виклик; на безкоштовному провайдері (BazaarLink) — не більше 2 одночасно, наступний — після відповіді (429 «Too many concurrent» — TROUBLES 15.10, 28.10, 29.10):
 - `mcp__delegate__delegate`, `task: "reason"`, `temperature: 0.3`;
 - `files`: не більше 2 джерел (правило RULES.md про ліміт deepseek);
 - `prompt`: дослівно блок із `verifier-prompt.md` цієї теки, де

@@ -438,3 +438,6 @@ agents/claude-code/gate-v2-2026-10-27/live-2026-10-28-pm.md (11 зупинок �
 
 ## 2026-10-29 — старі знімки естафети pass-99.json, pass-100.json → .trash/baton-history-2026-10-29/
 Після baton_pick_up (#102) і baton-diff: 5 випалих пунктів мають носіїв (BACKLOG:17 Full access — відкладено; рецензія ed862f3d — розібрано, коміти 7341d3a/8c29bcb; backtest-out — BACKLOG:27; пісочниці DSH — TRASH.md, /root/.trash; ~/dsh-app — BACKLOG:13, вирішено). pass-101.json лишається як останній. Відкат — mv назад у .baton/history/. — [claude-code, 2026-10-29]
+
+## 2026-10-29 — битий тестовий ярлик agents/claude-code/dispatcher-circle-2026-10-29/step1/test/link.md (rm) і порожня тека test/ (rmdir)
+Створив під-агент для тесту замку l2s (крок 1); ціль у тимчасовій теці вже прибрано — ярлик битий, у коміт не йде; читачів нема (лише STEP1.md описує тест, відтворюється за ним). — [claude-code, 2026-10-29; сесія a62774d0]

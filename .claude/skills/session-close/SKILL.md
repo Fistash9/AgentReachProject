@@ -19,8 +19,7 @@ description: Closes out an Agent Reach work session in Claude Code (Termux) — 
 1. Вікно є? `tmux list-windows -t work` має вікно dsh; нема — крок пропустити й написати це у звіті.
 2. Екран: `tmux capture-pane -p -t work:3` — зайнятий (`● Question` / `Queue as follow-up` / `working…` /
    `thinking ·`) чи вільний; його список задач звірити з git (`git log --grep='Agent: dsh'`).
-3. Лист з межами за рецептом TROUBLES «Листи у вікно DSH» (текст з файлу → `tmux send-keys -t work:3 -l` →
-   окремо Enter; перед тим — не зайнятий і поле вводу порожнє, копія в полі — Ctrl+K): «Межі: ≤10 кроків, без
+3. Лист з межами за рецептом TROUBLES «Листи у вікно DSH» (текст з файлу → `tools/dsh-send.sh <файл листа>` (вставка → перевірка поля з повтором → Enter → доставка за id у журналі DSH; рецепт — TROUBLES «Листи у вікно DSH»); перед тим — не зайнятий і поле вводу порожнє, копія в полі — Ctrl+K): «Межі: ≤10 кроків, без
    subagent/subagent_fork і llm-council. 1) що лишилось незавершеним — ≤8 рядків у agents/dsh/JOURNAL.md + коміт
    з Agent: dsh; 2) закрий сесію: естафети в tui немає — пункти @dsh для моєї передачі допиши в той самий запис
    JOURNAL.md; наприкінці рядок «BATON PASSED»». Окремого питання не треба — це рішення користувача 2026-10-19.
