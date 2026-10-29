@@ -1,0 +1,38 @@
+392c392
+< RE_WL_CHECK = re.compile(r"(?:перевір|звір)\w*[^,;)]{0,30}(?:звіт|чис|під-?агент|делегат)", re.I)
+---
+> RE_WL_CHECK = re.compile(r"(?:перевір|звір)\w*[^,;)]{0,30}(?:звіт|чис|під-?агент|делегат|цитат|верифікатор)|verify-before-show", re.I)
+397c397
+< RE_GIT_OWN = re.compile(r"\s*(?:cd \S+ && )?git (?:status|add|commit|log|diff|show)\b")
+---
+> RE_GIT_OWN = re.compile(r"\s*(?::\s*(?:\"[^\"]*\"|'[^']*')\s*&&\s*)?(?:cd \S+ && )?git (?:status|add|commit|log|diff|show)\b")
+461a462,471
+> def v2_reason_text(inp):
+>     m = re.match(r"\s*:\s*[\"']([^\"']*без агента:[^\"']*)[\"']", str(inp.get("command", "")))
+>     return str(inp.get("description", "")) + (" " + m.group(1) if m else "")
+> 
+> 
+> def v2_wl_of(nm, i):
+>     d = v2_reason_text(i)
+>     return v2_whitelisted(d.split("без агента:", 1)[1], nm, i) if "без агента:" in d else None
+> 
+> 
+467c477,479
+<     if name in ("Edit", "Write", "MultiEdit") and RE_WL_EDIT.search(reason):
+---
+>     if name == "Bash" and RE_WL_EDIT.search(reason) and str(inp.get("command", "")).count("\n") + 1 <= V2_EDIT_LINES:
+>         return "edit"
+>     if name in ("Edit", "Write", "MultiEdit") and (RE_WL_EDIT.search(reason) or reason == "<auto>"):
+500c512
+<     desc = str(inp.get("description", ""))
+---
+>     desc = v2_reason_text(inp)
+501a514,515
+>     if name in ("Edit", "Write", "MultiEdit") and v2_whitelisted("<auto>", name, inp) == "edit":
+>         return None
+511c525,527
+<     units = [i for i, e in enumerate(ev) if e[0] == "tool" and is_unit(e[2], e[3])]
+---
+>     if wl == "check":
+>         return None
+>     units = [i for i, e in enumerate(ev) if e[0] == "tool" and is_unit(e[2], e[3]) and v2_wl_of(e[2], e[3]) is None]
