@@ -439,10 +439,11 @@ def main():
             if owner != me:  # чужий вузол — окремим рядком
                 others.setdefault(owner, []).append(path[-1]["id"])
                 continue
-            # кожне повідомлення — лише ID (бюджет M4: ≤3–4 тис. ток./сесію);
+            # кожне повідомлення — ID батьків + коротка назва листка (бюджет M4: ≤3–4 тис. ток./сесію;
+            # 2026-10-29, план кола 3.1: самі коди переходили в мої питання — TROUBLES.md:4746);
             # повні назви — на SessionStart
             line = f"{title} › " + " › ".join(
-                label(n) if start else n["id"]
+                label(n) if start else (short(f"{n['id']} {n['name']}", 45) if n is path[-1] else n["id"])
                 for n in path)
             if start:
                 nxt = next_node(nodes, i)
