@@ -29,13 +29,13 @@ done
 SESS="${PREFIX:-/data/data/com.termux/files/usr}/var/lib/proot-distro/containers/ubuntu/rootfs/root/.dsh/sessions"
 delivered() {  # $1 — id; друкує кількість збігів у найновішому журналі DSH
   local newest real
-  newest=$(ls -t "$SESS"/*/*/session.v4.jsonl.zstd 2>/dev/null | head -1)
+  newest=$(ls -tL "$SESS"/*/*/session.v4.jsonl.zstd 2>/dev/null | head -1)  # -L: час цілі ярлика, не самого ярлика (29.10: брав не той журнал)
   [ -n "$newest" ] || { echo 0; return; }
   real=$(readlink -f "$newest")   # ярлик l2s: zstd ярлики пропускає (TROUBLES:5533)
   zstd -dc "$real" 2>/dev/null | grep -c -F -- "$1"
 }
 # Лише читання журналу DSH, нічого не шле: dsh-send.sh --check-delivery <id>
-[ -n "$CHECK_ID" ] && { delivered "$CHECK_ID"; exit 0; }
+[ -n "$CHECK_ID" ] && { n=$(delivered "$CHECK_ID"); echo "$n"; [ "${n:-0}" -ge 1 ] && exit 0 || exit 3; }
 
 [ -n "$FILE" ] && [ -f "$FILE" ] || { echo "Нема файлу листа: ${FILE:-<не задано>}" >&2; exit 1; }
 
@@ -73,7 +73,8 @@ tmux send-keys -t "$TARGET" -l "$TEXT" || { echo "send-keys не вдалося"
 FOUND=0
 for _ in 1 2 3; do
   sleep 1
-  if screen | grep -q -F -- "$TAIL"; then FOUND=1; break; fi
+  # Без пробілів і переносів: поле DSH саме переносить рядки, хвіст рвався («BATON» / «PASSED», 29.10).
+  if screen | tr -d '[:space:]' | grep -q -F -- "$(printf '%s' "$TAIL" | tr -d '[:space:]')"; then FOUND=1; break; fi
 done
 if [ "$FOUND" != 1 ]; then
   echo "НЕ В ПОЛІ — не відправляю (хвіст «$TAIL» не знайдено за 3 спроби; текст лишився в полі — Ctrl+K)" >&2
