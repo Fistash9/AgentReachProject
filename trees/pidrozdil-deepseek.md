@@ -125,6 +125,7 @@ KILL: якщо режим не зменшує вхід нижче ~21,6 тис. 
   — [claude-code, 2026-10-08]
   черга (2026-10-20, G2.6): (2) втрата щотижня: форк DSH ≈$0,07, лист із 6 форками ≈$0,49 off-peak — щоразу, коли DSH працює · опора: цей вузол «ЧОМУ» — [claude-code, 2026-10-20]
 - [ ] T6 Пошук агента → власний пошук DeepSeek @claude-code
+  ІНСТРУМЕНТИ (2026-10-29, agents/claude-code/tools-branch-2026-10-29/DRAFT.md; вузла «браузер» нема — найближчий цей): agent-browser + Lightpanda → працює з пісочниці ~/sandbox-browser (обгортка $PREFIX/bin/agent-browser; TROUBLES біля 6690); OmniRoute → розібрано, не запускали (agents/claude-code/omniroute-2026-10-28/REPORT.md). — [claude-code, 2026-10-29]
   (вказівка користувача
   2026-09-29: «навіщо давати клодкоду задачу пошуку через діпсік, якщо можна
   дати напряму діпсіку»; BACKLOG «Пошук через DeepSeek API»)
