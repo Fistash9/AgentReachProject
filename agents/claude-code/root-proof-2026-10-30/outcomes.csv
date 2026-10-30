@@ -1,0 +1,39 @@
+mechanism,branch,fires_27_29,false_or_repeat,source_file_line,cure_class,repeats_after_cure,cure_works
+edit-gate-hook.py,agents-c,19,невідомо з логу (лог без команди; ідентичних повторів <180с 0),.claude/logs/edit-gate.log (тестова сесія 1111... виключена: 2 рядки),Р9,4,ні
+edit-gate-hook.py,agents-a,12,невідомо з логу,.claude/logs/edit-gate.log,Р9,4,ні
+edit-gate-hook.py,movers,11,невідомо з логу,.claude/logs/edit-gate.log,Р1,8,ні
+edit-gate-hook.py,read,10,невідомо з логу,.claude/logs/edit-gate.log,Р1,8,ні
+edit-gate-hook.py,ask-history,9,невідомо з логу,.claude/logs/edit-gate.log,,,невідомо
+edit-gate-hook.py,siblings,4,невідомо з логу,.claude/logs/edit-gate.log,,,невідомо
+ворота «агенти» (розмітка live pm),A+C,11,хибна 8 з 11 (A 4/5; C 4/6),gate-v2-2026-10-27/live-2026-10-28-pm.md:42-44,Р9,4,ні
+ворота «агенти» (розмітка live eve),A+C,3,хибна 3 з 3; разом з pm 11 з 14,gate-v2-2026-10-27/live-2026-10-28-eve.md:26-27,Р9,4,ні
+ворота «агенти» бектест orig→fixk3→fix,v2,41 / 23 / 17,fix: хибних 12/17=71%,gate-v2-2026-10-27/diag-2026-10-29/BACKTEST.md:16; BACKTEST-A.md:37,Р9,4,ні
+ворота «агенти» бектест fixA,v2,42 orig / 27 fixA,хибних 20/27=74% (діапазон 67-85%); влучні 3; межові 4,gate-v2-2026-10-27/diag-2026-10-29/BACKTEST-A.md:16;36-37,Р9,4,ні
+ask-gate (jsonl misses),verify,20,,.claude/logs/ask-gate.jsonl,Р1,8,ні
+ask-gate (jsonl misses),queue,6,,.claude/logs/ask-gate.jsonl,Р5,3,ні
+ask-gate (jsonl misses),records,5,,.claude/logs/ask-gate.jsonl,Р1,8,ні
+ask-gate (jsonl усього),усі,27 рядків з misses зі 147,наступний запис тієї ж сесії <180с з тими ж misses: 4; змінено: 23 (розмітки влучна/хибна в лозі немає),.claude/logs/ask-gate.jsonl,Р1/Р5,8/3,ні
+answer-gate-shadow (тінь),усі,79 рядків з misses зі 179,наступний той самий <180с: 12; змінено: 64; без наступного: 3,.claude/logs/answer-gate-shadow.jsonl,,,невідомо
+answer-gate-shadow,codes,35 (елементів),,.claude/logs/answer-gate-shadow.jsonl,Р6,0,так
+answer-gate-shadow,nudge,31 (елементів),,.claude/logs/answer-gate-shadow.jsonl,,,невідомо
+answer-gate-shadow,ask-req,19 (елементів),,.claude/logs/answer-gate-shadow.jsonl,,,невідомо
+answer-gate-shadow,queue,14 (елементів),,.claude/logs/answer-gate-shadow.jsonl,Р5,3,ні
+answer-gate-shadow,unverified/agents/ask/verify,4/4/3/2 (елементів),,.claude/logs/answer-gate-shadow.jsonl,,,невідомо
+plain-ask (plain-codes),codes,10 рядків зі 147,частка питань з кодами 7.3% до / 7.4% після,.claude/logs/plain-ask.jsonl; dispatcher-circle-2026-10-29/CURES-CHECK.md:25,Р6,0,так (реєстр) / лише ловить (CURES-CHECK)
+commit-consent-hook,deny (коміт),2,після deny наступний запис ok: 2 з 2,.claude/logs/commit-consent.log:163-164;175-176,Р2,0,так
+commit-consent-hook,paid:deny,1,наступний paid:ok 1 з 1 (текст: «Замок не впізнав вашу відповідь (дефект хука)»),.claude/logs/commit-consent.log:161-162,Р2,0,так
+commit-consent-hook,ok/paid:ok/push:ok,30/3/2,,.claude/logs/commit-consent.log,Р2,0,так
+verify-nudge,правка захищеного файлу,9,невідомо,.claude/logs/verify-nudge.log,Р1,8,ні
+free-answer,free,26,невідомо,.claude/logs/free-answer.log,Р1,8,ні
+install-check,skill/pkg-card,4,невідомо,.claude/logs/install-check.log,Р1,8,ні
+proc-guard,selfmatch/install,2,невідомо,.claude/logs/proc-guard.log,Р1,8,ні
+personal-guard-hook.py,hits,2 рядки з 42,невідомо,.claude/logs/personal-guard.jsonl,,,невідомо
+node-label-shadow,hits,1 рядок зі 140,невідомо,.claude/logs/node-label-shadow.jsonl,,,невідомо
+number-claim-shadow,claims,73 рядки з 205 (232 твердження),невідомо,.claude/logs/number-claim-shadow.jsonl,,,невідомо
+dsh-line,flags,0 з 4,,.claude/logs/dsh-line.jsonl,,,невідомо
+delegate-outcome-logger,429 concurrent,28.10: 2; 29.10: 2,повтор після запису 15.10,dispatcher-circle-2026-10-29/CURES-CHECK.md:26,Р9,4,ні
+git-add-status-hook.py (замок l2s),ярлики,0 нових після 2f105d2,,dispatcher-circle-2026-10-29/CURES-CHECK.md:24,,,так
+(клас без механізму),Р3/Р8,,,error-registry --loop,Р3/Р8,поправок 3/2,невідомо (ліків немає)
+(реєстр) Р4 baton-guard,зникнення пункту,,,error-registry --loop,Р4,3 (CURES-CHECK: 1),ні
+(реєстр) Р10 baton-diff/baton-guard,втрата пунктів,,,error-registry --loop,Р10,1,ні
+(реєстр) Р5 tree-focus/check-links,черга,,,error-registry --loop,Р5,3,ні

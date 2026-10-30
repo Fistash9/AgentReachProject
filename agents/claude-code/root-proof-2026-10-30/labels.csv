@@ -1,0 +1,60 @@
+hook,branch,trigger,decisive,evidence_file_line,log_name_if_any
+answer-gate-shadow,queue,СЛОВА,немає «черг» у тексті відповіді агента (RE_QUEUE),.claude/hooks/answer-gate-shadow-hook.py:319-320,answer-gate-shadow.jsonl misses=queue; voice=queue
+answer-gate-shadow,codes,СЛОВА,код вузла без назви в тексті відповіді (plain_codes.undecoded),.claude/hooks/answer-gate-shadow-hook.py:321-326,answer-gate-shadow.jsonl misses=codes:<ids>; voice=codes
+answer-gate-shadow,ask,ЗМІШАНЕ,СЛОВА: відповідь закінчується «?»; СТАН: у ході нема виклику AskUserQuestion,.claude/hooks/answer-gate-shadow-hook.py:333-335,answer-gate-shadow.jsonl misses=ask; voice=ask
+answer-gate-shadow,ask-req,ЗМІШАНЕ,СЛОВА: RE_REQ без RE_LATER у останній відповіді; СТАН: нема AskUserQuestion,.claude/hooks/answer-gate-shadow-hook.py:338-339,answer-gate-shadow.jsonl misses=ask-req (тінь)
+answer-gate-shadow,verify,ЗМІШАНЕ,тригер СЛОВА (RE_CHANGE/RE_PLAN_Q + «?»); зняття СТАН (verify_in: виклик скіла/delegate без is_error або Haiku+VERDICT),.claude/hooks/answer-gate-shadow-hook.py:340-343;129-158,answer-gate-shadow.jsonl misses=verify (тінь)
+answer-gate-shadow,unverified,СЛОВА,RE_UNV у абзаці без RE_UNV_SKIP/RE_TRIED,.claude/hooks/answer-gate-shadow-hook.py:344-347,answer-gate-shadow.jsonl misses=unverified
+answer-gate-shadow,single,СЛОВА,RE_EFFECT_NUM (ефект у %/разах) без RE_SAMPLE в абзаці,.claude/hooks/answer-gate-shadow-hook.py:348-351,answer-gate-shadow.jsonl misses=single; voice=single
+answer-gate-shadow,nudge:delegate,ЗМІШАНЕ,СТАН: була підказка хука (RE_DELEG_HINT); вирішує СЛОВА: нема RE_DELEG_ANS у відповіді,.claude/hooks/answer-gate-shadow-hook.py:352-354,answer-gate-shadow.jsonl misses=nudge:delegate (тінь)
+answer-gate-shadow,nudge:brief,ЗМІШАНЕ,СТАН: підказка request-brief; вирішує СЛОВА: нема RE_BRIEF_ANS,.claude/hooks/answer-gate-shadow-hook.py:355-356,answer-gate-shadow.jsonl misses=nudge:brief; voice=nudge
+answer-gate-shadow,nudge:verify,ЗМІШАНЕ,СТАН: підказка verify-nudge; вирішує СЛОВА: нема RE_VERIFY_ANS,.claude/hooks/answer-gate-shadow-hook.py:357-358,answer-gate-shadow.jsonl misses=nudge:verify; voice=nudge
+answer-gate-shadow,nudge:read (egate),ЗМІШАНЕ,вирішує СТАН: нема повного Read/cat файлу в 10 викликах після підказки; лазівка СЛОВА: абзац з назвою файлу + RE_EG_WHY,.claude/hooks/answer-gate-shadow-hook.py:172-189,answer-gate-shadow.jsonl misses=nudge:read:<файл>; voice=nudge
+answer-gate-shadow,nudge:movers (egate),ЗМІШАНЕ,вирішує СТАН: нема grep за назвою файлу в 10 викликах; лазівка СЛОВА: причина в абзаці,.claude/hooks/answer-gate-shadow-hook.py:173-189,answer-gate-shadow.jsonl misses=nudge:movers:<файл>; voice=nudge
+answer-gate-shadow,agents,ЗМІШАНЕ,вирішує СТАН: ≥15 викликів читання (is_read) без Agent/Task; лазівка СЛОВА «Агентів не запускаю:»,.claude/hooks/answer-gate-shadow-hook.py:360-362;196-217,answer-gate-shadow.jsonl misses=agents:<n>; voice=agents
+ask-gate,queue,СЛОВА,немає «черг» у тексті віконця (питання+варіанти),.claude/hooks/ask-gate-hook.py:105-107,ask-gate.jsonl misses=queue
+ask-gate,verify,ЗМІШАНЕ,тригер СЛОВА питання (RE_CHANGE/RE_CHANGE_LOCAL/RE_PLAN_Q/mech); зняття СТАН verify_in АБО СЛОВА «Звірено перед показом|Звірка не потрібна:»,.claude/hooks/ask-gate-hook.py:112-118;29,ask-gate.jsonl misses=verify
+ask-gate,records,ЗМІШАНЕ,тригер СЛОВА (RE_BRIEF/RE_PLAN_WORD); зняття СТАН (Bash kb-map/grep TROUBLES… або Read цих файлів) АБО СЛОВА «Записи не потрібні:»,.claude/hooks/ask-gate-hook.py:119-130;33,ask-gate.jsonl misses=records
+edit-gate,агенти v2 (A),ЗМІШАНЕ,вирішує СТАН: лічба власних кроків від останньої роздачі n>=V2_N=12; лазівка СЛОВА «без агента:» + білий список причин (close/edit),.claude/hooks/edit-gate-hook.py:502-506;523-526;462-470,edit-gate.log ключ agents-a\t<anchor>\t<n//12>
+edit-gate,"агенти v2 (C, після звіту)",СТАН,кроків після звіту під-агента m>V2_K=2,.claude/hooks/edit-gate-hook.py:512-519,edit-gate.log ключ agents-c\t<anchor>\t<звіт>
+edit-gate,"агенти v2 (Z, винятки)",ЗМІШАНЕ,пропуск: слова КОРИСТУВАЧА про закриття (RE_CLOSE_H) або виклик Skill session-close (СТАН) або git/tmux-команда,.claude/hooks/edit-gate-hook.py:489-498,—
+edit-gate,"агенти v1 (відкат, EDIT_GATE_V2=0)",ЗМІШАНЕ,СТАН: n читань >=15 без Agent; лазівка СЛОВА «без агента:» у description,.claude/hooks/edit-gate-hook.py:336-361,edit-gate.log ключ agents\t<хід>\t<n//15>
+edit-gate,ворота 3 read,СТАН,нема повного Read/cat (ev.full_read) або grep залежних (ev.grepped) у журналі викликів,.claude/hooks/edit-gate-hook.py:237-246;251-262,edit-gate.log ключ read\t<файл>
+edit-gate,ворота 3 movers,СТАН,mv/rm файлу без попереднього grep за назвою,.claude/hooks/edit-gate-hook.py:288-296,edit-gate.log ключ movers\t<файл>
+edit-gate,ворота 3 ask-history,СТАН,ціль mv/rm у .baton/history (ask щоразу),.claude/hooks/edit-gate-hook.py:281-286;580-584,edit-gate.log ключ ask-history\t<файл>
+edit-gate,siblings,СТАН,"правка хука, у якого є сусіди на ту саму подію (конфіг хуків)",.claude/hooks/edit-gate-hook.py:232-236;188-212,edit-gate.log ключ siblings\t<файл>\t<день>
+edit-gate,паспорт,СЛОВА,новий вузол «- [ ] X1» у trees/*.md без «ціль:/звідки:/зв'язки:/UP:» у тексті правки,.claude/hooks/edit-gate-hook.py:263-273,edit-gate.log ключ passport\t<файл>\t<довжина>
+commit-consent,коміт,ЗГОДА,останнє рішення користувача містить «коміт» без заперечення (або віконце про коміт + відповідь зі словом),.claude/hooks/commit-consent-hook.py:203-207;104-126,commit-consent.log status ok|deny
+commit-consent,push,ЗГОДА,«пуш/push» у рішенні користувача,.claude/hooks/commit-consent-hook.py:203-207;47-49,commit-consent.log status push:ok|push:deny
+commit-consent,платне,ЗГОДА,«платн» у рішенні користувача або питання з «платн»/«$N» + вибрана відповідь,.claude/hooks/commit-consent-hook.py:203-207;50-52,commit-consent.log status paid:ok|paid:deny
+commit-consent,bypass --no-verify,ЗГОДА,git commit з --no-verify/-n/core.hooksPath (команда) і нема «no-verify» у словах користувача,.claude/hooks/commit-consent-hook.py:199-202;86-98,commit-consent.log status bypass-deny
+baton-guard,@власник у next,СЛОВА,кожен переданий пункт next починається з «@агент» (OWNER),.claude/hooks/baton-guard-hook.py:148-158;53,—
+baton-guard,подвійний pick_up,СТАН,ledger.jsonl: >=2 агенти підхопили той самий pass за WINDOW_H,.claude/hooks/baton-guard-hook.py:71-83;197,—
+baton-guard,втрата next/openQuestions (deny),ЗМІШАНЕ,СТАН: пункти поточного baton.json; вирішує СЛОВА: чи є схожий текст (same()) у новому next/done/handoffNote,.claude/hooks/baton-guard-hook.py:116-123;160-178,—
+baton-guard,втрата речень handoffNote (підказка),ЗМІШАНЕ,"як вище, підказка; вирішує СЛОВА нового тексту",.claude/hooks/baton-guard-hook.py:125-135;181-185,—
+baton-guard,HANDOFF-view,СТАН,після pick_up будує .baton/HANDOFF-view.md; FAIL — підказка «НЕПОВНИЙ»,.claude/hooks/baton-guard-hook.py:200-230,—
+baton-reminder,—,СТАН,команда git push і комітів від останнього pass >= THRESHOLD,.claude/hooks/baton-reminder-hook.py:55-64,—
+cost-nudge,—,СТАН,ціна сесії з session-cost.jsonl перетнула поріг уперше,.claude/hooks/cost-nudge-hook.py:52-63,cost-nudge-state.json (показані пороги)
+delegate-outcome-logger,—,СТАН,подія PostToolUseFailure / текст відповіді інструмента (BACKGROUND_RE/ERROR_RE),.claude/hooks/delegate-outcome-logger-hook.py:67-71;92-96,delegate-calls.jsonl outcome
+delegate-prompt-improver,—,СЛОВА,промпт агента: маркер NO_IMPROVE або is_structured (>=MIN слів і структурні підказки),.claude/hooks/delegate-prompt-improver-hook.py:87-91;179;193,improver.log
+free-answer,—,ЗГОДА,відповідь КОРИСТУВАЧА у віконці не збігається з жодним варіантом (власний текст; не згода),.claude/hooks/free-answer-hook.py:48-50,"free-answer.log (raw\t<sid>, рядок free)"
+git-add-status,agent.py у git add,СТАН,аргумент команди-дії містить agent.py (KEYGUARD),.claude/hooks/git-add-status-hook.py:437-441,—
+git-add-status,copy_risk,СТАН,cp/rsync/tar/zip/mv копіює agent.py або корінь проєкту (команда-дія),.claude/hooks/git-add-status-hook.py:452-456,—
+git-add-status,l2s-посилання,СТАН,is_l2s_link на файловій системі для доданих шляхів → deny,.claude/hooks/git-add-status-hook.py:477-483,—
+git-add-status,посилання (ask),СТАН,є посилання серед доданих шляхів → ask,.claude/hooks/git-add-status-hook.py:491-495,—
+git-add-status,git status контекст,СТАН,вивід git status --porcelain,.claude/hooks/git-add-status-hook.py:387;515,—
+install-check,Bash установка,СТАН,сегмент команди-дії починається з менеджера (cp/mv/npm/pip…) і ціль ще не в логу,.claude/hooks/install-check-hook.py:150-160,install-check.log ключ\t
+install-check,Write нової теки скіла/плагіна,СТАН,ціль під .claude/skills|plugins ще не існує (os.path.exists),.claude/hooks/install-check-hook.py:143;165-184,install-check.log ключ\t
+node-label-shadow,—,ЗМІШАНЕ,СЛОВА опису поруч з ID у відповіді проти СТАН назви з trees-index; вирішує СЛОВА (>=2 змістовні слова без збігу),.claude/hooks/node-label-shadow-hook.py:50-62,node-label-shadow.jsonl
+number-claim-shadow,—,ЗМІШАНЕ,СЛОВА: число-твердження у відповіді; вирішує СТАН: числа/пари нема у виводі інструментів (ev),.claude/hooks/number-claim-shadow-hook.py:208-218,number-claim-shadow.jsonl claims[].cls
+personal-guard,—,ЗМІШАНЕ,фрагменти особистого (personal-scan) у промпті агента (СЛОВА) або у вмісті files[] (СТАН),.claude/hooks/personal-guard-hook.py:51-68,personal-guard.jsonl
+plain-ask,—,СЛОВА,код вузла без назви в тексті віконця (plain_codes.undecoded),.claude/hooks/plain-ask-hook.py:42-49,plain-ask.jsonl
+proc-guard,самозбіг pgrep/pkill,СТАН,команда-дія pgrep/pkill -f без -A і без [x],.claude/hooks/proc-guard-hook.py:86-90;55-58,proc-guard.log selfmatch
+proc-guard,установка при ліміті,СТАН,ps: власних процесів > LIMIT або працює Obsidian,.claude/hooks/proc-guard-hook.py:94-99;61-67,proc-guard.log install
+request-brief-reminder,Bash ризик перевірки,СТАН,команда-дія (bash_verification_risk),.claude/hooks/request-brief-reminder-hook.py:267-282,—
+request-brief-reminder,Edit/Write короткий запит,ЗМІШАНЕ,"СТАН розмір правки >= порогів; вирішують слова КОРИСТУВАЧА (<=WORD_LIMIT слів, не підтвердження) — тип ЗГОДА-подібний",.claude/hooks/request-brief-reminder-hook.py:291-314,—
+rules-why-guard,—,СТАН,mtime RULES-WHY.md старший за 300 с при правці RULES.md,.claude/hooks/rules-why-guard-hook.py:163-171,—
+trash-md-guard,—,СТАН,mtime TRASH.md старший за 300 с при rm/rmdir поза tmp,.claude/hooks/trash-md-guard-hook.py:141-156,—
+tree-focus,—,СТАН,"позначки [>] у trees/*.md, GOALS.md (інформує)",.claude/hooks/tree-focus-hook.py:415-416;540,—
+troubles-grep,—,СТАН,слова команди-дії проти TAGS: у TROUBLES.md (інформує),.claude/hooks/troubles-grep-hook.py:113-133;178,—
+verify-nudge,—,СТАН,ціль у PROTECTED і нема звірки (is_verify_call [+VERDICT]) після останнього повідомлення користувача → ask,.claude/hooks/verify-nudge-hook.py:140-171;72-114,verify-nudge.log <sid>\t<файл>\task:<ts>|ok

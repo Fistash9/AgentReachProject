@@ -1,0 +1,29 @@
+НЕ_ОБІЙТИ commit-consent.log deny 7 0.143
+НЕ_ОБІЙТИ commit-consent.log paid:deny 5 0.6
+НЕ_ОБІЙТИ commit-consent.log push:deny 2 0.5
+НЕ_ОБІЙТИ personal-guard.jsonl hits 8 0.75
+НЕ_ОБІЙТИ plain-ask.jsonl codes 50 0.58
+НЕ_ОБІЙТИ proc-guard.log selfmatch 5 нема сесій
+ФРАЗА answer-gate-shadow.jsonl voice:queue 34 0.235
+ФРАЗА answer-gate-shadow.jsonl voice:codes 51 0.588
+ФРАЗА answer-gate-shadow.jsonl voice:ask 5 0.0
+ФРАЗА answer-gate-shadow.jsonl voice:agents 3 0.0
+ФРАЗА answer-gate-shadow.jsonl voice:nudge 40 0.45
+ФРАЗА ask-gate.jsonl queue 21 0.0
+ФРАЗА ask-gate.jsonl verify 64 0.625
+ФРАЗА ask-gate.jsonl records 15 0.4
+ФРАЗА edit-gate.log agents-a 12 0.5
+ФРАЗА edit-gate.log agents-c 19 0.737
+ПІДКАЗКА edit-gate.log read 70 0.657
+ПІДКАЗКА edit-gate.log movers 55 0.727
+ПІДКАЗКА edit-gate.log siblings 43 0.535
+ПІДКАЗКА free-answer.log free 43 0.698
+ПІДКАЗКА install-check.log check 13 0.308
+ASK edit-gate.log ask-history 28 0.536
+ASK verify-nudge.log nudge 108 0.759
+---
+НЕ_ОБІЙТИ n= 5 медіана= 0.58
+ФРАЗА n= 10 медіана= 0.425
+ПІДКАЗКА n= 5 медіана= 0.657
+ASK n= 2 медіана= 0.647
+критерій (НЕ_ОБІЙТИ ≤ половини обох): False

@@ -1,0 +1,18 @@
+class,cure,what_it_is,type,evidence
+Р1,verify-nudge d9081e7,"хук PreToolUse: підказка звірки перед правкою захищеного файлу, раз на файл",НАГАДУВАННЯ,.claude/hooks/verify-nudge-hook.py:183 additionalContext; коміт d9081e7
+Р1,install-check 8b846bb,"хук PreToolUse, «НЕ блокує», 4 кроки перед установкою",НАГАДУВАННЯ,".claude/hooks/install-check-hook.py:2-3,184 additionalContext; коміт 8b846bb"
+Р1,edit-gate 133d08e,"хук: «НЕ блокує», нагадування перед правкою/mv/rm/новим вузлом",НАГАДУВАННЯ,".claude/hooks/edit-gate-hook.py:1,598 additionalContext; коміт 133d08e"
+Р1,edit-gate Bash 678da7c,той самий хук бачить Bash-правки + тінь «не перевірено»,НАГАДУВАННЯ,.claude/hooks/edit-gate-hook.py:598; коміт 678da7c
+Р1,verify-nudge ask 059f8c3,хук: правка без звірки в ході -> ask (дозвіл); знімається звіркою або «так» користувача,ВОРОТА_З_ОБХОДОМ,.claude/hooks/verify-nudge-hook.py:157-172; коміт 059f8c3
+Р1,verify-nudge валідність 1868413,той самий ask; звірка дійсна до наступного віконця,ВОРОТА_З_ОБХОДОМ,.claude/hooks/verify-nudge-hook.py:150-172; коміт 1868413
+Р1,сповіщення не ховає звірку 89d33cf,правка детектора в verify-nudge/ask-gate/shadow (фонові сповіщення),ВОРОТА_З_ОБХОДОМ,".claude/hooks/ask-gate-hook.py (Звірка не потрібна: рядок-обхід :29,61); коміт 89d33cf; мітка непевна: це правка детектора"
+Р1,голос edit-gate 7d558d5,"Stop-хук block-голос на проігноровані підказки, повторно не блокує (stop_hook_active)",НАГАДУВАННЯ,".claude/hooks/answer-gate-shadow-hook.py:13-14,525; коміт 7d558d5"
+Р1,ask-gate records 61393ef,"хук AskUserQuestion: deny, знімається рядком «Записи не потрібні: <чому>»",ВОРОТА_З_ОБХОДОМ,".claude/hooks/ask-gate-hook.py:31,165; коміт 61393ef"
+Р1,proc-guard e175cdc,"хук Bash deny: pgrep/pkill -f без -A, установка при >21 процесів/Obsidian; без фрази-обходу",ПРОЦЕС,.claude/hooks/proc-guard-hook.py:76-99; коміт e175cdc
+Р1,free-answer e175cdc,"хук PostToolUse: підказка назвати, як зрозумів вільну відповідь",НАГАДУВАННЯ,".claude/hooks/free-answer-hook.py:2,58; коміт e175cdc"
+Р1,ask-gate механізми 2c4ed22,ask-gate: для змін механізмів «Звірка не потрібна» не приймається; лишається обхід — реально звірити/питання без маркерів,ВОРОТА_З_ОБХОДОМ,".claude/hooks/ask-gate-hook.py:34-37,61-72; коміт 2c4ed22; мітка непевна"
+Р2,commit-consent be2cd2e,хук Bash: коміт/пуш/платний DeepSeek без слова користувача -> deny; слово може дати лише користувач,ПРОЦЕС,.claude/hooks/commit-consent-hook.py:174-207; коміт be2cd2e; fail-open на помилку
+Р6,plain-codes d24aebf,хук AskUserQuestion deny на код без назви (+ Stop-голос на текст ходу),ПРОЦЕС,".claude/hooks/plain-ask-hook.py:8-9,49; коміт d24aebf; мітка непевна: текст ходу лише голос"
+Р6,plain-ask strict 61b2f29,"той самий deny, строгіший детектор",ПРОЦЕС,.claude/hooks/plain-ask-hook.py:49; tools/plain-codes.py; коміт 61b2f29
+Р6,plain-codes хеші 09a792c,"розширення детектора plain-codes (хеші, кирилична М)",ПРОЦЕС,.claude/hooks/plain-ask-hook.py:49; tools/plain-codes.py; коміт 09a792c; мітка непевна
+Р6,plain-codes літера+цифра e175cdc,розширення детектора plain-codes (будь-яка Літера+цифра),ПРОЦЕС,.claude/hooks/plain-ask-hook.py:49; tools/plain-codes.py; коміт e175cdc; мітка непевна
