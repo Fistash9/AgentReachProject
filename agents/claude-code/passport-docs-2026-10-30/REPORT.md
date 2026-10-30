@@ -1,0 +1,183 @@
+# Паспорти документів: пробний замір сиріт
+
+- Запит: користувач 30.10 — кожен файл має знати «де використовується, як і навіщо, чим допомагає цілі».
+- Служить: Q6 «Ціль і зв'язки для кожної частини проєкту» (trees/yakist-roboty-agentiv.md:207)
+- Дата: 2026-10-30
+- Скрипт: `python3 agents/claude-code/passport-docs-2026-10-30/count.py` (поруч, лише читання)
+- Метод: документи = посилання `[X](./X.md)` з README.md + верхній рівень *.md у agents/claude-code/*/ і agents/dsh/. «служить» = у перших 15 рядках «Служить:»/«Навіщо»/«Мета:». Читачі = згадка на ім'я (для вкладених — шлях або ім'я файлу); механізми = tools/*.py, .claude/hooks/*, skills SKILL.md; записи = trees/*.md, RULES.md, RULES-WHY.md, BACKLOG.md, README.md, .baton/HANDOFF-view.md; самозгадка не рахується. Застереження: збіг за іменем, короткі імена можуть давати хибні збіги.
+- Перевірка: GAPS.md → (служить так, механізмів 0, записів 3, вузлів 1) — збіг з очікуванням.
+
+| документ | джерело | служить | механізми | записи | вузол |
+|---|---|---|---|---|---|
+| BACKLOG.md | README | ні | 8 | 9 | так |
+| CONTEXT.md | README | ні | 4 | 7 | так |
+| ECOSYSTEM.md | README | ні | 2 | 6 | так |
+| GAPS.md | README | так | 0 | 3 | так |
+| GOALS.md | README | ні | 6 | 7 | так |
+| HANDOFF.md | README | ні | 3 | 7 | так |
+| RULES-WHY.md | README | ні | 8 | 5 | так |
+| RULES.md | README | ні | 17 | 10 | так |
+| SERVER.md | README | ні | 0 | 3 | так |
+| TRASH.md | README | ні | 5 | 9 | так |
+| TROUBLES.md | README | ні | 14 | 11 | так |
+| USER_PROFILE.md | README | ні | 1 | 4 | так |
+| WEEKLY.md | README | ні | 1 | 3 | так |
+| agents/claude-code/agents-map-2026-10-28/MAP.md | agents | ні | 0 | 2 | ні |
+| agents/claude-code/audit-2026-10-25/dsh-povnota.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/audit-2026-10-25/dsh-zavazhav.md | agents | так | 0 | 0 | ні |
+| agents/claude-code/audit-2026-10-25/idei.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/audit-2026-10-25/mekhanizmy.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/audit-2026-10-25/nevzhyte.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/audit-2026-10-25/pravyla.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/chains-2026-10-25/agent-nudge-backtest.md | agents | ні | 0 | 1 | так |
+| agents/claude-code/chains-2026-10-25/check-sample.md | agents | так | 0 | 1 | ні |
+| agents/claude-code/chains-2026-10-25/dsh-check-cc-2610b-1.md | agents | так | 0 | 1 | ні |
+| agents/claude-code/chains-2026-10-25/dsh-check-cc-2810-1.md | agents | ні | 0 | 1 | ні |
+| agents/claude-code/chains-2026-10-25/scout-instrumenty-git.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/chains-2026-10-25/scout-povidomlennya-stop.md | agents | ні | 0 | 1 | ні |
+| agents/claude-code/chains-2026-10-25/scout-sesiya.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/chains-2026-10-25/scout-vid-kintsya.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/chains-2026-10-25/synthesis.md | agents | так | 0 | 2 | так |
+| agents/claude-code/close-sim-2026-10-27/REPORT.md | agents | ні | 1 | 6 | так |
+| agents/claude-code/dispatcher-circle-2026-10-29/CURES-CHECK.md | agents | так | 0 | 1 | ні |
+| agents/claude-code/dispatcher-circle-2026-10-29/FACTS-2.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/dispatcher-circle-2026-10-29/FACTS.md | agents | так | 0 | 1 | ні |
+| agents/claude-code/dispatcher-circle-2026-10-29/PLAN-COMBINED.md | agents | так | 0 | 1 | ні |
+| agents/claude-code/dispatcher-circle-2026-10-29/PLAN.md | agents | так | 2 | 4 | так |
+| agents/claude-code/doshka-2026-10-28/BOARD.md | agents | так | 0 | 2 | так |
+| agents/claude-code/dsh-full-access-2026-10-28/PLAN.md | agents | так | 2 | 4 | так |
+| agents/claude-code/dsh-mode-2026-10-28/FACTS.md | agents | ні | 0 | 1 | ні |
+| agents/claude-code/focus-v2-2026-10-27/REPORT.md | agents | ні | 1 | 6 | так |
+| agents/claude-code/gate-v2-2026-10-27/REPORT.md | agents | ні | 1 | 6 | так |
+| agents/claude-code/gate-v2-2026-10-27/live-2026-10-28-eve.md | agents | так | 0 | 2 | так |
+| agents/claude-code/gate-v2-2026-10-27/live-2026-10-28-pm.md | agents | так | 0 | 1 | ні |
+| agents/claude-code/handoff-criteria-2026-10-28/CRITERIA.md | agents | так | 0 | 0 | ні |
+| agents/claude-code/lessons-2026-10-25/agent-nudge-plan.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/lessons-2026-10-25/chuzhyi-dosvid.md | agents | так | 0 | 2 | так |
+| agents/claude-code/lessons-2026-10-25/commit-lock-diag.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/lessons-2026-10-25/context-update-draft.md | agents | ні | 0 | 1 | ні |
+| agents/claude-code/lessons-2026-10-25/dsh-check-verify.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/lessons-2026-10-25/m3-diag.md | agents | так | 0 | 0 | ні |
+| agents/claude-code/lessons-2026-10-25/nashi-sproby.md | agents | ні | 0 | 1 | так |
+| agents/claude-code/lessons-2026-10-25/no-transcript-diag.md | agents | так | 0 | 1 | ні |
+| agents/claude-code/lessons-2026-10-25/registry-fix-report.md | agents | так | 0 | 0 | ні |
+| agents/claude-code/lessons-2026-10-25/review-4cab3538-backlog-draft.md | agents | ні | 0 | 1 | ні |
+| agents/claude-code/lessons-2026-10-25/search-skills.md | agents | ні | 0 | 1 | ні |
+| agents/claude-code/lessons-2026-10-25/work-scheme.md | agents | ні | 0 | 3 | так |
+| agents/claude-code/letters-dsh/cc-2810-1.md | agents | так | 0 | 0 | ні |
+| agents/claude-code/letters-dsh/cc-2810-2.md | agents | так | 0 | 1 | ні |
+| agents/claude-code/letters-dsh/cc-2910-1.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/letters-dsh/cc-2910-2.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/letters-dsh/cc-2910-3.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/letters-dsh/cc-2910-4.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/letters-dsh/cc-3010-1.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/letters-dsh/cc-3010-1b.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/letters-dsh/cc-3010-2.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/letters-dsh/cc-3010-3.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/m3-view-2026-10-26/REPORT.md | agents | ні | 1 | 6 | так |
+| agents/claude-code/noise-2026-10-29/CLUSTERS.md | agents | так | 0 | 0 | ні |
+| agents/claude-code/obhid-2026-10-28/PLAN.md | agents | ні | 2 | 4 | так |
+| agents/claude-code/omniroute-2026-10-28/REPORT.md | agents | ні | 1 | 6 | так |
+| agents/claude-code/passport-docs-2026-10-30/REPORT.md | agents | так | 1 | 6 | так |
+| agents/claude-code/pdf-top10-skills-2026-10-28/browser-plan.md | agents | так | 0 | 0 | ні |
+| agents/claude-code/pdf-top10-skills-2026-10-28/extract.md | agents | ні | 0 | 1 | ні |
+| agents/claude-code/pdf-top10-skills-2026-10-28/find-skills-check.md | agents | так | 0 | 0 | ні |
+| agents/claude-code/pdf-top10-skills-2026-10-28/fix-plan.md | agents | так | 0 | 0 | ні |
+| agents/claude-code/pdf-top10-skills-2026-10-28/grilling-verify.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/pdf-top10-skills-2026-10-28/handoff-trial.md | agents | ні | 0 | 1 | ні |
+| agents/claude-code/pdf-top10-skills-2026-10-28/install-log.md | agents | так | 0 | 2 | так |
+| agents/claude-code/pdf-top10-skills-2026-10-28/primary.md | agents | ні | 0 | 1 | ні |
+| agents/claude-code/pdf-top10-skills-2026-10-28/skills-for-errors-v2.md | agents | ні | 0 | 1 | ні |
+| agents/claude-code/pdf-top10-skills-2026-10-28/skills-for-errors.md | agents | так | 0 | 0 | ні |
+| agents/claude-code/pdf-top10-skills-2026-10-28/watch-plan.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/prep-2026-10-27/context-update-2026-10-27.md | agents | ні | 0 | 2 | так |
+| agents/claude-code/q12-ad-2026-10-26/REPORT.md | agents | так | 1 | 6 | так |
+| agents/claude-code/q12-classes-2026-10-16/README.md | agents | так | 3 | 6 | так |
+| agents/claude-code/q12-classes-2026-10-16/backtest-results.md | agents | так | 0 | 1 | так |
+| agents/claude-code/q12-classes-2026-10-16/draft-memory.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/q12-classes-2026-10-16/draft-troubles.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/q12-classes-2026-10-16/registry-v0.md | agents | так | 0 | 1 | так |
+| agents/claude-code/q12-classes-2026-10-16/registry-v1.md | agents | так | 2 | 2 | так |
+| agents/claude-code/q12-classes-2026-10-16/search-others-experience.md | agents | ні | 0 | 1 | так |
+| agents/claude-code/q12-r9-origin-2026-10-26/REPORT.md | agents | ні | 1 | 6 | так |
+| agents/claude-code/review-2487d837/triage.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/review-2910/export-86fab127.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/root-proof-2026-10-30/BACKTEST-B.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/root-proof-2026-10-30/CANDIDATES.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/root-proof-2026-10-30/CRITERION.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/root-proof-2026-10-30/DS-SEARCH.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/root-proof-2026-10-30/EXTERNAL.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/root-proof-2026-10-30/REVIEW-CHECK.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/session-tree-idea-2026-10-27/COMPARE.md | agents | ні | 0 | 2 | так |
+| agents/claude-code/session-tree-idea-2026-10-27/HOLOGRAM.md | agents | ні | 0 | 2 | так |
+| agents/claude-code/session-tree-idea-2026-10-27/REPORT.md | agents | ні | 1 | 6 | так |
+| agents/claude-code/session-tree-idea-2026-10-27/collector-sonnet.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/start-sim-2026-10-27/FIX-PLANS.md | agents | ні | 0 | 1 | ні |
+| agents/claude-code/start-sim-2026-10-27/REPORT.md | agents | ні | 1 | 6 | так |
+| agents/claude-code/status-mech-2026-10-30/ADVISOR-1-CHECK.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/status-mech-2026-10-30/ADVISOR-2-CHECK.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/status-mech-2026-10-30/ADVISOR-3.md | agents | ні | 1 | 0 | ні |
+| agents/claude-code/status-mech-2026-10-30/COMPARE.md | agents | ні | 0 | 2 | так |
+| agents/claude-code/status-mech-2026-10-30/DS1.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/status-mech-2026-10-30/DS2.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/status-mech-2026-10-30/FOUND.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/status-mech-2026-10-30/PLAN.md | agents | так | 2 | 4 | так |
+| agents/claude-code/strategii-2026-10-28/SYNTHESIS.md | agents | так | 0 | 2 | ні |
+| agents/claude-code/sys-split-2026-10-29/HOOKS-MAP.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/sys-split-2026-10-29/PRACTICE.md | agents | ні | 0 | 0 | ні |
+| agents/claude-code/tmux-menu-2026-10-28/PLAN.md | agents | так | 2 | 4 | так |
+| agents/claude-code/tools-branch-2026-10-29/DRAFT.md | agents | так | 0 | 5 | так |
+| agents/claude-code/user-questions-2026-10-30/REPORT.md | agents | так | 1 | 6 | так |
+| agents/claude-code/user-questions-2026-10-30/examples.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/JOURNAL.md | agents | ні | 1 | 2 | так |
+| agents/dsh/README.md | agents | ні | 3 | 6 | так |
+| agents/dsh/a-check-2026-10-03.md | agents | ні | 0 | 1 | так |
+| agents/dsh/a-mech-2026-10-03.md | agents | ні | 0 | 1 | так |
+| agents/dsh/agents-md-refs-2910.md | agents | ні | 0 | 1 | ні |
+| agents/dsh/audit-2026-10-03.md | agents | ні | 0 | 1 | так |
+| agents/dsh/audit-memory-2026-10-09.md | agents | ні | 0 | 1 | так |
+| agents/dsh/baton-design-2026-10-20.md | agents | ні | 0 | 2 | так |
+| agents/dsh/baton-diff-triage-2026-10-19.md | agents | ні | 0 | 1 | ні |
+| agents/dsh/bazaarlink-limit-2026-10-19.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/chains-2026-10-25.md | agents | ні | 0 | 2 | так |
+| agents/dsh/check-processes-2026-10-25.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/check-skills-kpd-2026-10-25.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/check-start-2026-10-25.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/close-3010.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/cost-2026-10-07.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/cost-zero-2026-10-20.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/criteria-2026-10-07.md | agents | ні | 0 | 2 | так |
+| agents/dsh/criteria-done-2026-10-07.md | agents | ні | 0 | 1 | так |
+| agents/dsh/decisions-2026-10-07.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/delta-2026-10-20.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/dsh-anatomy-2026-10-07.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/dsh-waste-2026-10-07.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/five-whys-2026-10-25.md | agents | ні | 1 | 1 | так |
+| agents/dsh/graphify-proot-2026-10-20.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/links-2026-10-03.md | agents | ні | 0 | 1 | так |
+| agents/dsh/lystuvannya-2026-09-30.md | agents | ні | 0 | 1 | ні |
+| agents/dsh/memory-audit-2026-10-12.md | agents | ні | 0 | 1 | так |
+| agents/dsh/memory-review-2026-10-03.md | agents | так | 0 | 1 | так |
+| agents/dsh/mistakes-2026-10-07.md | agents | ні | 0 | 1 | так |
+| agents/dsh/plan-2026-10-07.md | agents | ні | 0 | 1 | так |
+| agents/dsh/q9-numbers-2026-10-07.md | agents | ні | 0 | 1 | так |
+| agents/dsh/review-ed862f3d-2910.md | agents | ні | 0 | 1 | ні |
+| agents/dsh/review-memplan-2026-10-08.md | agents | ні | 0 | 1 | так |
+| agents/dsh/review-rea-obsidian-apk-3010.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/review-status-mech-3010.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/roundcount-and-solutions-2026-10-03.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/roundcount-proof-2026-10-03.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/secret-scan-proot-2026-10-19.md | agents | ні | 0 | 1 | ні |
+| agents/dsh/start-load-2-2026-10-03.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/start-load-2026-10-03.md | agents | ні | 0 | 1 | так |
+| agents/dsh/subagent-fail-2026-10-03.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/subagent-fail-evidence-2026-10-03.md | agents | ні | 0 | 0 | ні |
+| agents/dsh/value-rea-3010.md | agents | ні | 0 | 2 | так |
+| trees/derevo-i-golograma.md | README | ні | 1 | 7 | так |
+
+Всього документів: 165 (з карти README: 14 )
+Без «служить»: 127
+0 механізмів-читачів: 131
+Повні сироти (0 механізмів і 0 записів): 70
+Без вузла (жоден trees/*.md не згадує): 97
+Повні сироти з карти README:

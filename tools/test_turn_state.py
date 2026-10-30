@@ -106,5 +106,20 @@ hs = [x.split()[0] for x in c5] if isinstance(c5, list) else []
 need = ["4108c83", "008a27e", "332373f", "f7b8a6e"]
 check("5 реальний журнал", rc5 == 0 and all(h in hs for h in need), f"commits={hs}; {dt:.1f} с; вивід:\n{o5.strip()}")
 
+# (6) GAPS.md: 2 відкритих (+ закрита й рядок-зразок у лапках — не рахуються) / файлу нема (репо з тесту 3)
+repo6 = os.path.join(ART, f"repo-{STAMP}-gaps")
+os.makedirs(repo6)
+sh(repo6, "git", "init", "-q")
+sh(repo6, "git", "-c", "user.name=t", "-c", "user.email=t@t", "commit", "-q", "--allow-empty", "-m", "base")
+with open(os.path.join(repo6, "GAPS.md"), "w", encoding="utf-8") as f:
+    f.write("# GAPS\n- Рядок: `- [ ] <дата> | …`\n\n- [ ] 2026-10-30 | перша\n- [x] 2026-10-30 | закрита\n"
+            "- [ ] 2026-10-30 | друга\n")
+out6 = os.path.join(WORK, "t6-out.jsonl")
+rc6, o6 = run("--replay", tj, "--cwd", repo6, "--out", out6, "--at", "2026-10-30T00:00:00+00:00")
+g6 = lines(out6)[-1]["fields"]["gaps_open"]["value"]
+g3 = lines(out3)[-1]["fields"]["gaps_open"]["value"]
+check("6 GAPS.md", rc6 == 0 and g6 == 2 and g3 == "GAPS.md нема" and "Відкритих прогалин (GAPS.md): 2" in o6
+      and "Відкритих прогалин: GAPS.md нема" in o3, f"є файл: {g6!r}; нема файлу: {g3!r}")
+
 print(f"\nПідсумок: {sum(results)}/{len(results)} зелених; файли — {WORK}")
 sys.exit(0 if all(results) else 1)

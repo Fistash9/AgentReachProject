@@ -389,12 +389,18 @@ V2_DELEG_G = V2_DELEG | {"mcp__delegate__delegate", "mcp__delegate__deepseek", "
                          "mcp__deepseek__deepseek-reply", "SendMessage"}
 RE_WL_CLOSE = re.compile(r"закрит|закрива|session-close|baton|естафет|handoff|коміт|commit|git status|"
                          r"крок\w*\s*\d*\s*скіл", re.I)
-RE_WL_CHECK = re.compile(r"(?:перевір|звір)\w*[^,;)]{0,30}(?:звіт|чис|під-?агент|делегат)", re.I)
-RE_WL_EDIT = re.compile(r"правк|рядк|рядок|запис", re.I)
+RE_WL_CHECK = re.compile(r"(?:перевір|звір)\w*[^,;)]{0,30}(?:звіт|чис|під-?агент|делегат|цитат|верифікатор)|verify-before-show", re.I)
+RE_WL_EDIT = re.compile(r"правк|рядк|рядок|запис(?!ах|ів|ами)", re.I)
 RE_CLOSE_H = re.compile(r"закр\w* сесі|завершуєм|закриваєм|на сьогодні все|згортаєм|checkpoint|wrap up|close the session", re.I)
 # нагляд за іншим агентом (DSH у tmux, очікування фонового) — це роздача, а не «роблю сам» (бектест 27.10: 3 хибні deny)
 RE_COORD = re.compile(r"tmux\s+(?:capture-pane|list-windows|send-keys)|^\s*(?:end=|until\s|while\s)[^\n]*\n?[^\n]*sleep", re.M)
-RE_GIT_OWN = re.compile(r"\s*(?:cd \S+ && )?git (?:status|add|commit|log|diff|show)\b")
+RE_GIT_OWN = re.compile(r"\s*(?::\s*(?:\"[^\"]*\"|'[^']*')\s*&&\s*)?(?:cd \S+ && )?git (?:status|add|commit|log|diff|show)\b")
+# Б3 (30.10, копія): роздача через Bash — лист DSH (send-keys з Enter у вікно work), tools/dsh-send.sh, DeepSeek-радник, claude -p
+RE_BASH_DELEG = re.compile(r"tmux\s+send-keys\s+-t\s+work:\S+[^\n]*\bEnter\b|tools/dsh-send\.sh|tools/deepseek-search\.py|\bclaude\s+-p\b")
+# Б2 (30.10, копія): пошук по записах одразу після AskUserQuestion (його вимагають ворота питань, ask-gate RE_RECORDS_CMD) — не зупиняти
+RE_RECORDS_OWN = re.compile(r"^\s*(?:cd \S+ && )?python3?\s+(?:\S*/)?tools/(?:kb-map|trees-index)\.py\b")
+# Б4 (30.10, копія): запис ≤10 рядків у *.md через Bash (>> / heredoc) — як Edit ≤10, без мітки
+RE_MD_APPEND = re.compile(r"(?:cat\s*)?>>\s*['\"]?[\w./$-]+\.md\b")
 RE_REPORT = re.compile(r"<summary>(?:Agent \"|MCP task \S+ \((?:delegate|deepseek))|Subagent hand-back", re.I)
 V2_A_REASON = ("Ворота «агенти» v2: {n} власних кроків (команди, читання, правки) від останньої роздачі задачі. "
                "Віддай наступну обмежену частину під-агенту (Agent) або повтори виклик з «без агента: <причина>», "
@@ -435,6 +441,10 @@ def v2_line_events(d):
     return []
 
 
+def v2_is_deleg(nm, i, deleg=V2_DELEG):
+    return nm in deleg or (nm == "Bash" and bool(RE_BASH_DELEG.search(str((i or {}).get("command", "")))))
+
+
 def v2_window(path, flags=None):
     """Події від останньої роздачі задачі (без неї) до кінця журналу, у прямому порядку; (події, якір = ts роздачі)."""
     flags = flags or V2_FLAGS
@@ -450,7 +460,7 @@ def v2_window(path, flags=None):
         except ValueError:
             continue
         evs = v2_line_events(d)
-        hit = next((e for e in reversed(evs) if e[0] == "tool" and e[2] in deleg), None)
+        hit = next((e for e in reversed(evs) if e[0] == "tool" and v2_is_deleg(e[2], e[3], deleg)), None)
         if hit:
             out += [e for e in reversed(evs[evs.index(hit) + 1:])]
             anchor = hit[1]
@@ -459,12 +469,55 @@ def v2_window(path, flags=None):
     return list(reversed(out)), anchor
 
 
+def v2_reason_text(inp):
+    m = re.match(r"\s*:\s*[\"']([^\"']*без агента:[^\"']*)[\"']", str(inp.get("command", "")))
+    return str(inp.get("description", "")) + (" " + m.group(1) if m else "")
+
+
+def v2_wl_of(nm, i):
+    d = v2_reason_text(i)
+    return v2_whitelisted(d.split("без агента:", 1)[1], nm, i) if "без агента:" in d else None
+
+
+# К4 (29.10, копія): старт сесії (HANDOFF, baton-diff, черга (0) — лише до першої роздачі й до 2-го повідомлення
+# користувача) і дії лише в $PREFIX/tmp (усі шляхи в команді) не рахуються в ліміт.
+RE_START = re.compile(r"\.baton/HANDOFF|tools/baton-diff\.py|черг\w*\s*\(0\)")
+RE_TMP = re.compile(r"^(?:\$\{?PREFIX\}?/tmp|/data/data/com\.termux/files/usr/tmp|\$\{?TMPDIR\}?|/tmp)(?:/|$)")
+RE_PATHTOK = re.compile(r"(?<![\w/.$~{}-])[~$\w.{}-]*/[\w./${}*~-]*")
+
+
+def v2_k4_free(nm, i, start=False):
+    if nm == "Bash":
+        c = str(i.get("command", ""))
+        if RE_BASH_DELEG.search(c) or (RE_MD_APPEND.search(c) and c.count("\n") + 1 <= V2_EDIT_LINES + 2):
+            return True
+    if start and RE_START.search(str(i.get("file_path", "")) + " " + str(i.get("command", ""))):
+        return True
+    if nm in ("Read", "Edit", "Write", "MultiEdit", "NotebookEdit"):
+        return bool(RE_TMP.match(str(i.get("file_path", "") or i.get("notebook_path", ""))))
+    if nm != "Bash":
+        return False
+    cmd = str(i.get("command", ""))
+    tv = {m.group(1) for m in re.finditer(r"\b(\w+)=(\S+)", cmd) if RE_TMP.match(m.group(2).strip("\"'"))}
+    toks = [t for t in RE_PATHTOK.findall(cmd) if t not in ("/dev/null",) and not t.startswith("/dev/")]
+    def tmp(t):
+        m = re.match(r"\$\{?(\w+)\}?(?:/|$)", t)
+        return bool(RE_TMP.match(t)) or bool(m and m.group(1) in tv)
+    cds = re.findall(r"(?:^|[;&|(]\s*)cd\s+(\S+)", cmd)
+    in_tmp = bool(cds) and all(tmp(c.strip("\"'")) for c in cds)
+    bare = re.findall(r"(?<![\w/.$~{}-])[\w-]+\.(?:md|py|json|jsonl|sh|txt|ya?ml|toml|js|csv|log)\b", cmd)
+    return bool(toks) and all(tmp(t) for t in toks) and (in_tmp or not bare)
+
+
 def v2_whitelisted(reason, name, inp):
     if RE_WL_CLOSE.search(reason):
         return "close"
     if RE_WL_CHECK.search(reason):
         return "check"
-    if name in ("Edit", "Write", "MultiEdit") and RE_WL_EDIT.search(reason):
+    if name == "Bash" and RE_WL_EDIT.search(reason) and str(inp.get("command", "")).count("\n") + 1 <= V2_EDIT_LINES \
+            and re.search(r">>?\s*\S|sed\s+-i|\btee\b|\.write\(|\bmv\b|\bcp\b", str(inp.get("command", ""))):
+        return "edit"
+    if name in ("Edit", "Write", "MultiEdit") and (RE_WL_EDIT.search(reason) or reason == "<auto>"):
         body = str(inp.get("new_string", "") or inp.get("content", "")) + "".join(
             str(e.get("new_string", "")) for e in inp.get("edits", []) or [] if isinstance(e, dict))
         if body.count("\n") + 1 <= V2_EDIT_LINES:
@@ -497,8 +550,17 @@ def v2_decide(ev, name, inp, anchor, flags=None, agv=None, n_lim=None, k_lim=Non
             return None
         base_unit = is_unit
         is_unit = lambda nm, i: base_unit(nm, i) and not own(nm, i)
-    desc = str(inp.get("description", ""))
+    hs_u = [k for k, e in enumerate(ev) if e[0] == "human" and e[3] == "user"]
+    zone = (hs_u[1] if len(hs_u) > 1 else len(ev) + 1) if anchor == "start" else -1  # індекси < zone — старт сесії
+    if v2_k4_free(name, inp, start=len(ev) < zone):
+        return None
+    last_t = [e for e in ev if e[0] == "tool"][-1:]  # Б2: пошук по записах одразу після AskUserQuestion — вимога воріт питань
+    if name == "Bash" and RE_RECORDS_OWN.match(str(inp.get("command", ""))) and last_t and last_t[0][2] == "AskUserQuestion":
+        return None
+    desc = v2_reason_text(inp)
     wl = None
+    if name in ("Edit", "Write", "MultiEdit") and v2_whitelisted("<auto>", name, inp) == "edit":
+        return None
     if "без агента:" in desc:
         if not flags.get("B"):
             return None
@@ -508,9 +570,14 @@ def v2_decide(ev, name, inp, anchor, flags=None, agv=None, n_lim=None, k_lim=Non
     if not flags.get("S"):  # ключ дедупу — у межах ходу, як у v1
         hs = [i for i, e in enumerate(ev) if e[0] == "human" and e[3] == "user"]
         anchor = f"{anchor}|{ev[hs[-1]][1] if hs else 'turn'}"
-    units = [i for i, e in enumerate(ev) if e[0] == "tool" and is_unit(e[2], e[3])]
+    if wl == "check" and any(e[0] == "report" for e in ev):  # експеримент: «перевірка звіту» вільна лише коли звіт є у вікні
+        return None
+    # Правило А (29.10, копія): мітка «без агента:» звільняє лише поточний крок; у ліку крок лишається.
+    units = [i for i, e in enumerate(ev) if e[0] == "tool" and is_unit(e[2], e[3])
+             and not v2_k4_free(e[2], e[3], start=i < zone)]
     if flags.get("C"):
         last_u = max([i for i, e in enumerate(ev) if e[0] == "human" and e[3] == "user"], default=-1)
+        last_u = max([last_u] + [i for i, e in enumerate(ev) if e[0] == "tool" and e[2] == "AskUserQuestion"])  # Б1
         reps = [i for i, e in enumerate(ev) if e[0] == "report" and i > last_u]  # репліка посеред ходу вікно не закриває
         if reps:
             m = sum(1 for i in units if i > reps[-1]) + 1

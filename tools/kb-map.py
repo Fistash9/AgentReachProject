@@ -81,6 +81,7 @@ def build():
     e += entries_md(os.path.join(ROOT, "RULES-WHY.md"), "##")
     e += entries_md(os.path.join(ROOT, "README.md"), "##")
     e += entries_md(os.path.join(ROOT, "GOALS.md"), "##")
+    e += entries_md(os.path.join(ROOT, "GAPS.md"), "##")  # журнал прогалин (паспорт GAPS.md:12, читач 5)
     for p in sorted(glob.glob(os.path.join(ROOT, "agents", "*", "*.md"))):
         e += entries_md(p, "#")
     for p in sorted(glob.glob(os.path.join(ROOT, "trees", "*.md"))):

@@ -24,6 +24,7 @@ RE_TMP_RUN = re.compile(re.escape(TMP) + r"[^\"'`\\\n\r<>|]*")
 RE_MD_END = re.compile(r"\.md(?![\w.-])")
 CANON = dict(ensure_ascii=False, sort_keys=True, separators=(",", ":"))
 NM = "не виміряно"
+GAPS_MISSING = "GAPS.md нема"
 
 
 def git(cwd, *args):
@@ -187,6 +188,16 @@ def measure(cwd, recs):
     fields["tmp_not_saved"] = field(
         tmp_saved, "шляхи $PREFIX/tmp/*.md з журналу; unsaved = файл є, але sha256 вмісту нема серед файлів репо "
                    "(git ls-files -z + untracked зі status -z)")
+
+    def gaps_open():
+        # GAPS.md — журнал прогалин «обіцяно, але не записано/не зроблено» (паспорт GAPS.md:9–12, читач 3);
+        # файлу нема — окреме значення, а не падіння і не «0» (нема журналу ≠ нема прогалин)
+        p = os.path.join(cwd, "GAPS.md")
+        if not os.path.isfile(p):
+            return GAPS_MISSING
+        with open(p, encoding="utf-8", errors="replace") as f:
+            return sum(1 for l in f if l.startswith("- [ ] "))
+    fields["gaps_open"] = field(gaps_open, "рядки, що починаються з «- [ ] », у GAPS.md кореня репо")
     return t1, fields
 
 
@@ -248,6 +259,8 @@ def summary(fields):
     lines = [f"Не закомічено файлів: {v('changed')}",
              f"Комітів сесії: {v('commits')}; чий хеш не згаданий у trees/: {v('commits_without_node')}",
              tmp_line]
+    g = fields["gaps_open"]["value"] if "gaps_open" in fields else NM
+    lines.append(f"Відкритих прогалин (GAPS.md): {g}" if isinstance(g, int) else f"Відкритих прогалин: {g}")
     if unm:
         lines.append("Не виміряно: " + ", ".join(f"{k} ({fields[k].get('error', '')[:60]})" for k in unm))
     return "\n".join(lines)
