@@ -140,17 +140,40 @@ def ask_gate_rows(tmp):
             "Черга: ремонт → закриття. Записи не потрібні: це вибір теми.", [("Так", "Ремонт"), ("Ні", "Закрити")]),
          "allow"),
     ]
-    out = []
-    for name, tp, inp, want in cases:
+    def ask(tp, inp, why_log):
+        """Один виклик воріт. Обидва журнали — у тимчасову теку: робочі логи й дані проби тіні не чіпаються."""
         payload = {"session_id": SID, "cwd": ROOT, "transcript_path": tps[tp], "hook_event_name": "PreToolUse",
                    "tool_name": "AskUserQuestion", "tool_input": inp}
+        return run(f"{sys.executable} {hook}", payload,
+                   env={"ASK_GATE_LOG": os.path.join(tmp, "ask-gate.jsonl"), "WHY_ASK_LOG": why_log})
+
+    out = []
+    for name, tp, inp, want in cases:
         try:
-            rc, o, e, dt = run(f"{sys.executable} {hook}", payload, env={"ASK_GATE_LOG": os.path.join(tmp, "ask-gate.jsonl")})
+            rc, o, e, dt = ask(tp, inp, os.path.join(tmp, "why-ask.jsonl"))
             got = "deny" if ctx(o)[1] == "deny" else "allow"
             good, note = rc == 0 and got == want, f"{got}, код {rc}, {dt:.1f} с"
         except Exception as ex:  # noqa — перевірка не має падати сама
             good, note = False, f"{type(ex).__name__}: {ex}"
         out.append(("✅" if good else "❌", f"ворота питань: {name}", want, note))
+
+    # Тінь «Чому питаю» (2026-10-30): без рядка — один запис у журнал тіні, з рядком — жодного; на deny не впливає
+    why_cases = [  # (назва, текст питання, очікувана кількість записів)
+        ("без «Чому питаю» → запис", "Робити чи зняти задачу? Черга: задачі → закриття.", 1),
+        ("з «Чому питаю: коміт» → без запису", "Закомітити? Чому питаю: коміт. Черга: коміт → закриття.", 0),
+    ]
+    for i, (name, q, want_rows) in enumerate(why_cases):
+        why_log = os.path.join(tmp, f"why-case-{i}.jsonl")
+        try:
+            rc, o, e, dt = ask("none", box(q, [("Так", "так"), ("Ні", "ні")]), why_log)
+            rows = 0
+            if os.path.exists(why_log):
+                with open(why_log, encoding="utf-8") as f:
+                    rows = sum(1 for line in f if line.strip())
+            good, note = rc == 0 and rows == want_rows, f"записів {rows}, код {rc}, {dt:.1f} с"
+        except Exception as ex:  # noqa — перевірка не має падати сама
+            good, note = False, f"{type(ex).__name__}: {ex}"
+        out.append(("✅" if good else "❌", f"тінь «Чому питаю»: {name}", f"записів {want_rows}", note))
     return out
 
 

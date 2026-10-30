@@ -10,6 +10,9 @@ answer-gate бачили сесію з 10 віконцями як один хі�
   queue  — у відрізку немає «черг» → deny: дописати рядок «Черга: …» і спитати знову.
   verify — питання пропонує зміну (RE_CHANGE / «план», як answer-gate check), а у відрізку немає ні
            verify-before-show / delegate, ні рядка «Звірено перед показом» / «Звірка не потрібна: <чому>».
+  why    — (2026-10-30, ТІНЬ, крок 3.2 PLAN-COMBINED) у тексті віконця нема рядка «Чому питаю: <гроші|платне|правило|хук|
+           механізм|втрати|видалення|коміт|пуш|вибір/ідея користувача>» → рядок «моє рішення?» у why-ask-shadow.jsonl;
+           нічого не блокує і в deny не йде (пам'ять autonomy-means-no-asking-for-appends: рутину агент вирішує сам).
   records — (2026-10-20) питання показує бриф чи план («бриф», «план»), а у відрізку немає пошуку в моїх записах
            (kb-map.py / trees-index.py / grep по TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT / Read цих файлів) і рядка
            «Записи не потрібні: <чому>». Причина: клас Р1 «дія до перевірки» — ⚠ ліки не діють (error-registry --loop
@@ -135,6 +138,34 @@ def change_blocks(inp):
     return "\n".join(out)
 
 
+# 2026-10-30 (тінь «Чому питаю», крок 3.2): користувачу належать лише гроші/платне, правила й хуки/механізми, втрата чи
+# видалення вмісту, коміт/пуш, вибір користувача (його ідея/смак); решту («робити чи зняти», порядок, технічний вибір у tools/)
+# агент вирішує сам. Корені слів — щоб «правила», «грошей», «видалення» теж підходили.
+WHY_LOG = os.environ.get("WHY_ASK_LOG") or os.path.join(ROOT, ".claude", "logs", "why-ask-shadow.jsonl")
+RE_WHY_ASK = re.compile(r"Чому\s+питаю:[^\n]*?(?:грош|платн|правил|хук|механізм|втрат|видал|коміт|пуш|"
+                        r"(?:вибір|вибору|ідея|ідеї)\s+користувач)", re.I)
+
+
+def why_missing(inp):
+    """True — у віконці нема рядка «Чому питаю: <причина користувача>» (тобто, схоже, моє рішення)."""
+    return RE_WHY_ASK.search(question_text(inp)) is None
+
+
+def log_why(data):
+    """Тінь: лише рядок у WHY_LOG, жодного виводу в stdout; будь-яка помилка — мовчки."""
+    try:
+        inp = data.get("tool_input")
+        if not why_missing(inp):
+            return
+        qs = [str(q.get("question", ""))[:200] for q in (inp or {}).get("questions") or [] if isinstance(q, dict)]
+        os.makedirs(os.path.dirname(WHY_LOG), exist_ok=True)
+        with open(WHY_LOG, "a", encoding="utf-8") as f:
+            f.write(json.dumps({"t": datetime.datetime.now().isoformat(timespec="seconds"), "session": data.get("session_id"),
+                                "flag": "моє рішення?", "questions": qs}, ensure_ascii=False) + "\n")
+    except Exception:
+        pass
+
+
 RE_RECORDS_CMD =re.compile(r"kb-map\.py|trees-index\.py|\b(grep|rg)\b[^\n]*\b(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md")
 RE_RECORDS_FILE = re.compile(r"(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md$")
 
@@ -215,6 +246,7 @@ def main():
     tp = data.get("transcript_path")
     if not (isinstance(tp, str) and os.path.isfile(tp)):
         return
+    log_why(data)  # 2026-10-30: тінь, на deny не впливає
     ag = load_ag()
     with open(tp, encoding="utf-8", errors="ignore") as f:  # 30.10: уся сесія — для звірки з ранішої частини
         full = f.read().splitlines()
