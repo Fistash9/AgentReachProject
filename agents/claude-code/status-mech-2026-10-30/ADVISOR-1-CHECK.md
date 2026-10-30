@@ -1,0 +1,4 @@
+# Розбір ADVISOR-1 (суб-агент, 2026-10-30)
+Розмова 20261030-090850; Ціна ≈$0.0214 (пік; без вартості пошуків). Радник зробив 4 пошуки при --uses 3.
+Перевірено curl+grep -F: dev.to (дослівно: ls-files --others, "Stop takes no matcher", "Crude on purpose", "no shell in between", "Same loop protections", "resets every time"); issue 59583 (дослівно: "after 8 consecutive blocks", CLAUDE_CODE_STOP_HOOK_BLOCK_CAP); issue 83365 (дослівно: "stop_hook_active: true", "re-invokes the subagent"); code.claude.com/docs/ja/hooks (дослівно: PostToolUse на Agent для інжекту в батька; matcher не збігається з порожнім agent_type; agent_transcript_path). medium: HTTP 403, сторінка недоступна (твердження 3 з 7 / 7 з 7 не перевірено).
+Не перевірено: cc-audit, моди/ui.render/$.process, Termux, deny vs Bash-запис.
