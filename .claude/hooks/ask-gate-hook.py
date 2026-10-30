@@ -64,13 +64,75 @@ RE_BYPASS_LINE = re.compile(r"Звірка не потрібна:.*?(?:\.(?=\s|$
 # решта слів (хук, правка) лишається у перевірці зміни механізму.
 RE_NEG_IN_BYPASS = re.compile(r"\bне\s+змін\w*|\bбез\s+змін\b", re.I)
 RE_NOUN_REGISTRY = re.compile(r"реєстру\b", re.I)
+# 2026-10-30 (ремонт хибних зупинок; користувач 4 рази пересилав помилку воріт): бектест deny 29–30.10 — 15, з них хибних
+# більшість. Класи: (1) питання вибору часу/порядку («робити зараз чи в новій сесії?», «…чи чекати до завтра?») —
+# зміна не погоджується, її погодять окремим питанням; (3) питання про факт («Чи бачив ти…?»); такі блоки питань з
+# перевірки зміни виключаються. Посилання-докази «файл.py:83» прибираються з тексту (не об'єкт зміни). Заперечення
+# «без змін» поза рядком-обходом НЕ прибираємо: бектест 30.10 — так зникали справжні (3451e000 «примітка в RULES»). (2) звірку зараховано з ранішої частини сесії, якщо в
+# питанні написано «Звірено…» і після тієї звірки не було жодного запису файлів (Edit/Write/Bash-запис) — тобто
+# показують саме звірене. Справжні зупинки (план зміни механізму без звірки або з правкою після звірки) лишаються.
+RE_WHEN_Q = re.compile(r"зараз\s+чи|чи\s+зараз|\b[ву]\s+нові[йі]\s+сесі\w*\s*\?|чи\s+чекати|до\s+завтра\s*\?|"
+                       r"\bперш\w*\s*\?|з\s+чого\s+почат", re.I)
+RE_FACT_Q = re.compile(r"^\s*Чи\s+(?:бачив|бачила|помітив|помітила|пам'ятаєш|пам’ятаєш|чув|отримав)\w*\b", re.I)
+RE_CITE = re.compile(r"[\w./~-]+\.(?:py|sh|md|json|jsonl):\d+")
+RE_CLAIM_VERIFY = re.compile(r"Звірено", re.I)
+RE_WRITE_BASH = re.compile(r"(?<![0-9&>])>{1,2}\s*(?!&|/dev/null)\S|\btee\b|\bsed\s+-i|\b(?:cp|mv|rm|git\s+(?:checkout|restore|apply))\s")
+WRITE_TOOLS = ("Edit", "Write", "NotebookEdit", "MultiEdit")
+# 2026-10-30, другий прохід (бектест deny 29–30.10, №1 №3 №10 №11): (4) «Нічого не змінюємо» — заперечення всієї дії
+# (опис варіанта «лишити як є»), прибирається; вужче за «без змін», яке лишається (3451e000 «промпт без змін» — справжня).
+# (5) слово «план» не рахується там, де план ще не показано: «потім план…» (опис порядку, №3), «план … піде на звірку /
+# звірю» (майбутній, №11), «частиною / обсягу плану» (склад чернетки, №10, №11), у дужках-ремарках («(План ворота
+# заборонили…)», №10; лише дужки-речення: з великої літери й з крапкою — «(…до свого плану) у «Межі» скіла?» 6feb1596 лишається). Ширше «лише речення-питання» відкинуто: бектест 30.10 — зникали справжні «записи» (1fe9acd7
+# «Як рухаємось?» після плану; 60aeb63a «…? План звірено»). Зміни механізмів (RE_MECH+RE_MECH_VERB) і RE_CHANGE не чіпаємо.
+RE_NOTHING_CHANGES = re.compile(r"\bнічого\s+не\s+(?:змін|міня)\w*", re.I)
+RE_PLAN_NOT_SHOWN = re.compile(r"\(\s*[А-ЯҐЄІЇA-Z][^()]*[.!…]\s*\)|\bпотім\s+(?:[^\s.?!]+\s+){0,2}?план\w*|"
+                               r"план\w*(?:\s+[^\s.?!]+){0,3}?\s+(?:піде|пройде|звірю)\b|(?:частин|обсяг)\w*\s+план\w*", re.I)
+
+
+def plan_scope(t):
+    """Текст для пошуку слова «план» (RE_PLAN_Q, RE_PLAN_WORD) без згадок плану, якого ще не показано (30.10, (5))."""
+    return RE_PLAN_NOT_SHOWN.sub("", t)
 
 
 def scrub(t):
     """Текст без того, що само не пропонує змін: рядок черги, рядок-обхід, іменник «реєстру»."""
     t = RE_QUEUE_LINE_M.sub("", t)
     t = RE_BYPASS_LINE.sub(lambda m: "Звірка не потрібна: " + RE_NEG_IN_BYPASS.sub("", m.group(0)[len("Звірка не потрібна:"):]), t)
+    t = RE_CITE.sub("", t)  # 2026-10-30: посилання-докази «файл.py:83» — не об'єкт зміни
+    t = RE_NOTHING_CHANGES.sub("", t)  # 2026-10-30 (4): «Нічого не змінюємо» — не пропозиція зміни
     return RE_NOUN_REGISTRY.sub("", t)
+
+
+def is_write(ev):
+    if ev[0] != "tool" or len(ev) < 3:
+        return False
+    if ev[1] in WRITE_TOOLS:
+        return True
+    return ev[1] == "Bash" and RE_WRITE_BASH.search(str((ev[2] or {}).get("command", ""))) is not None
+
+
+def verified_unchanged(ag, full_lines):
+    """2026-10-30, клас (2): чи є в сесії успішна звірка ПІСЛЯ останнього запису файлів (звірка не застаріла)."""
+    evs = [e for t in ag.iter_turns(full_lines, merge_notifications=True) for e in t.get("events", [])]
+    last_w = max([i for i, e in enumerate(evs) if is_write(e) and not ag.is_verify_call(e[1], e[2])], default=-1)
+    return bool(ag.verify_in(evs[last_w + 1:]))
+
+
+def change_blocks(inp):
+    """Блоки «питання + варіанти» без питань вибору часу/порядку і питань про факт (класи 1, 3 від 30.10)."""
+    out = []
+    for q in (inp or {}).get("questions") or []:
+        if not isinstance(q, dict):
+            continue
+        qq = str(q.get("question", ""))
+        if RE_WHEN_Q.search(scrub(qq)) or RE_FACT_Q.search(qq):
+            continue
+        part = [qq]
+        for o in q.get("options") or []:
+            if isinstance(o, dict):
+                part += [str(o.get("label", "")), str(o.get("description", ""))]
+        out.append("\n".join(part))
+    return "\n".join(out)
 
 
 RE_RECORDS_CMD =re.compile(r"kb-map\.py|trees-index\.py|\b(grep|rg)\b[^\n]*\b(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md")
@@ -78,8 +140,8 @@ RE_RECORDS_FILE = re.compile(r"(TROUBLES|BACKLOG|ECOSYSTEM|CONTEXT)\.md$")
 
 
 def load_ag():
-    spec = importlib.util.spec_from_file_location(
-        "answer_gate", os.path.join(ROOT, ".claude", "hooks", "answer-gate-shadow-hook.py"))
+    spec = importlib.util.spec_from_file_location(  # 30.10: із теки самого хука (= ROOT/.claude/hooks; копія — поруч)
+        "answer_gate", os.path.join(os.path.dirname(os.path.abspath(__file__)), "answer-gate-shadow-hook.py"))
     m = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(m)
     return m
@@ -98,25 +160,27 @@ def question_text(inp):
     return "\n".join(out)
 
 
-def misses_for(ag, lines, question):
+def misses_for(ag, lines, question, inp=None, full=None):
     turns = list(ag.iter_turns(ag.after_last_answer(lines), merge_notifications=True))
     seg = turns[-1] if turns else {"texts": [], "tools": []}
     text = question  # seg["texts"] у журналі неповні — див. question_text
     out = []
     if not ag.RE_QUEUE.search(text):
         out.append("queue")
-    q0 = question.split("\n", 1)[0]  # лише саме питання, не описи варіантів
+    chg = change_blocks(inp) if inp is not None else question  # 30.10: без питань часу/порядку й факту
+    q0 = chg.split("\n", 1)[0]  # лише саме питання, не описи варіантів
     q0c = scrub(q0)  # питання без рядка черги, рядка-обходу й іменника «реєстру»
     # «коміт» шукаємо в СИРОМУ q0, як і до звуження: так «коміт» у рядку черги, як і раніше, знімає вимогу (звуження не додає зупинок)
     commit_q = RE_COMMIT_Q.search(q0)
-    scope = q0c if commit_q else scrub(text)
+    scope = q0c if commit_q else scrub(chg)
     mech = bool(RE_MECH.search(scope) and RE_MECH_VERB.search(scope)) and not (commit_q and not RE_COMMIT_COMPOUND.search(q0))
-    if ag.RE_CHANGE.search(q0c) or RE_CHANGE_LOCAL.search(q0c) or ag.RE_PLAN_Q.search(q0c) or mech:
+    if ag.RE_CHANGE.search(q0c) or RE_CHANGE_LOCAL.search(q0c) or ag.RE_PLAN_Q.search(plan_scope(q0c)) or mech:
         # 2026-10-25: спільна перевірка з answer-gate (визнає й ланку Haiku через Bash)
-        ok = ag.verify_in(seg.get("events")) or (RE_SKIP_VERIFY.search(text) and not mech)
+        ok = ag.verify_in(seg.get("events")) or (RE_SKIP_VERIFY.search(text) and not mech) or (
+            full is not None and RE_CLAIM_VERIFY.search(text) and verified_unchanged(ag, full))
         if not ok:
             out.append("verify")
-    brief = RE_BRIEF.search(q0c) or (RE_PLAN_WORD.search(q0c) and not RE_COMMIT_Q.search(q0))
+    brief = RE_BRIEF.search(q0c) or (RE_PLAN_WORD.search(plan_scope(q0c)) and not RE_COMMIT_Q.search(q0))
     if brief and not RE_SKIP_RECORDS.search(text):
         found = False
         for ev in seg.get("events", []):
@@ -152,7 +216,10 @@ def main():
     if not (isinstance(tp, str) and os.path.isfile(tp)):
         return
     ag = load_ag()
-    misses = misses_for(ag, ag.current_turn_lines(tp, merge_notifications=True), question_text(data.get("tool_input")))
+    with open(tp, encoding="utf-8", errors="ignore") as f:  # 30.10: уся сесія — для звірки з ранішої частини
+        full = f.read().splitlines()
+    misses = misses_for(ag, ag.current_turn_lines(tp, merge_notifications=True), question_text(data.get("tool_input")),
+                        inp=data.get("tool_input"), full=full)
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     with open(LOG, "a", encoding="utf-8") as f:
         f.write(json.dumps({"t": datetime.datetime.now().isoformat(timespec="seconds"),

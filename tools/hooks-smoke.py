@@ -25,7 +25,9 @@ import sys
 import tempfile
 import time
 
-ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# HOOKS_SMOKE_ROOT — корінь проєкту, якщо файл запущено не з tools/ (пісочниця); ASK_GATE_HOOK — інший файл воріт
+# питань (копія в пісочниці): так той самий випадок ганяється проти копії й оригіналу (2026-10-30).
+ROOT = os.environ.get("HOOKS_SMOKE_ROOT") or os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SID = "hooks-smoke-" + time.strftime("%Y%m%d%H%M%S")
 SKIP = {
     "delegate-prompt-improver-hook.py": "може викликати платну модель",
@@ -77,6 +79,79 @@ def ctx(out):
         return d.get("additionalContext", ""), d.get("permissionDecision")
     except ValueError:
         return out, None
+
+
+def ask_gate_rows(tmp):
+    """Ворота питань (ask-gate) через stdin, як інші випадки (2026-10-30, ремонт хибних зупинок 29–30.10).
+    Справжні зупинки мають лишатися deny, хибні класи — allow. Проти старої версії воріт хибні класи дають deny —
+    так випадок ловить регресію. Журнал воріт — у тимчасову теку (ASK_GATE_LOG), робочий не чіпається."""
+    hook = os.environ.get("ASK_GATE_HOOK") or os.path.join(ROOT, ".claude", "hooks", "ask-gate-hook.py")
+    human = {"type": "user", "origin": {"kind": "human"}, "message": {"content": "далі"}}
+
+    def tu(name, inp, i):
+        return {"type": "assistant", "message": {"content": [{"type": "tool_use", "id": i, "name": name, "input": inp}]}}
+
+    def tr(i, text):
+        return {"type": "user", "message": {"content": [{"type": "tool_result", "tool_use_id": i, "content": text}]}}
+    verified = [human, tu("mcp__delegate__delegate", {"task": "reason"}, "v1"), tr("v1", "так"),
+                tu("AskUserQuestion", {}, "a1"), tr("a1", "User has answered your questions: \"x\"=\"так\""),
+                tu("Bash", {"command": "ls tools"}, "b1")]
+    stale = verified[:5] + [tu("Edit", {"file_path": "/x/.claude/hooks/x-hook.py"}, "e1")]
+    tps = {}
+    for n, rows_ in (("none", [human]), ("verified", verified), ("stale", stale)):
+        tps[n] = os.path.join(tmp, f"ag-{n}.jsonl")
+        with open(tps[n], "w", encoding="utf-8") as f:
+            f.write("\n".join(json.dumps(r, ensure_ascii=False) for r in rows_) + "\n")
+
+    def box(q, opts):
+        return {"questions": [{"question": q, "header": "т", "multiSelect": False,
+                               "options": [{"label": a, "description": b} for a, b in opts]}]}
+    cases = [  # (назва, журнал, вхід віконця, очікую)
+        ("план зміни хука без звірки", "none", box(
+            "План: правлю ask-gate-hook.py — виняток для питань часу. Робимо за цим планом? Черга: ворота → тест.",
+            [("Так", "Правлю хук і ганяю тести"), ("Ні", "Лишаю як є")]), "deny"),
+        ("погодження зміни скрипта без звірки", "none", box(
+            "Внести правку в скрипт tools/turn-state.py (фільтр кешу скілів)? Черга: стан → тест.",
+            [("Так, вносити", "Правка одного рядка"), ("Не зараз", "Лишаю")]), "deny"),
+        ("примітка в RULES, «промпт без змін» (03.10)", "none", box(
+            "Записувати пробу (файл правила з промптом автора + примітка в RULES + RULES-WHY)? Черга: проба → запис.",
+            [("Так, дослівно", "Усі три кроки, промпт без змін")]), "deny"),
+        ("звірка застаріла: правка хука після неї + «Звірено»", "stale", box(
+            "Вмикати правку хука x-hook.py? Звірено перед показом: 2 твердження. Черга: хук → тест.",
+            [("Так", "Вмикаю зміни"), ("Ні", "Лишаю")]), "deny"),
+        ("вибір часу «зараз чи в новій сесії?»", "none", box(
+            "Підключення скрипта стану як хук — робити зараз чи в новій сесії? Черга: стан → хук.",
+            [("Зараз", "Підключаю хук у налаштуваннях"), ("У новій сесії", "Записую в чергу")]), "allow"),
+        ("питання про факт «Чи бачив…»", "none", box(
+            "Чи бачив ти в терміналі повідомлення від хука про ціну сесії? Черга: ціна → хук.",
+            [("Так, бачив", "Хук працює"), ("Ні", "Тоді правлю хук cost-nudge окремим питанням")]), "allow"),
+        ("посилання-доказ «file.py:83»", "none", box(
+            "Зупинку дає рядок ask-gate-hook.py:83 — розібрати його далі? Черга: ворота → розбір.",
+            [("Так, розібрати", "Читаю й пояснюю, що там змінюється в тексті"), ("Ні", "Досить")]), "allow"),
+        ("звірка раніше в сесії, файлів не змінено + «Звірено»", "verified", box(
+            "Вмикати правку хука x-hook.py? Звірено перед показом: 2 твердження — обидва «так». Черга: хук → тест.",
+            [("Так", "Вмикаю зміни"), ("Ні", "Лишаю")]), "allow"),
+        ("«Нічого не змінюємо» в описі варіанта", "none", box(
+            "Звідки запускати DSH? Черга: запуск DSH → лист. Звірка не потрібна: питання, чи лишати як є.",
+            [("Лишити", "Нічого не змінюємо; правила — у листах"), ("Проба", "Наступної сесії — копія run-dsh.sh")]),
+         "allow"),
+        ("«потім план» — опис порядку робіт", "none", box(
+            "Беремося за ремонт воріт? Спершу під-агент збере дані, потім план у копії, звірка і твоє «так». "
+            "Черга: ремонт → закриття. Записи не потрібні: це вибір теми.", [("Так", "Ремонт"), ("Ні", "Закрити")]),
+         "allow"),
+    ]
+    out = []
+    for name, tp, inp, want in cases:
+        payload = {"session_id": SID, "cwd": ROOT, "transcript_path": tps[tp], "hook_event_name": "PreToolUse",
+                   "tool_name": "AskUserQuestion", "tool_input": inp}
+        try:
+            rc, o, e, dt = run(f"{sys.executable} {hook}", payload, env={"ASK_GATE_LOG": os.path.join(tmp, "ask-gate.jsonl")})
+            got = "deny" if ctx(o)[1] == "deny" else "allow"
+            good, note = rc == 0 and got == want, f"{got}, код {rc}, {dt:.1f} с"
+        except Exception as ex:  # noqa — перевірка не має падати сама
+            good, note = False, f"{type(ex).__name__}: {ex}"
+        out.append(("✅" if good else "❌", f"ворота питань: {name}", want, note))
+    return out
 
 
 def main():
@@ -568,6 +643,10 @@ def main():
                  "task-notification цілий; sk-/nvapi- → [ключ]", note))
     bad += not good
 
+    for r in ask_gate_rows(tmp):  # 2026-10-30: ворота питань через stdin
+        rows.append(r)
+        bad += r[0] != "✅"
+
     for r in rows:
         print(f"{r[0]} {r[1]} — очікую: {r[2]} — {r[3]}")
     print(f"\nхуків у налаштуваннях: {len(hs)}; поломок: {bad}")
@@ -575,4 +654,10 @@ def main():
 
 
 if __name__ == "__main__":
+    if "--only-ask-gate" in sys.argv:  # лише ворота питань (без побічних дій інших випадків)
+        rs = ask_gate_rows(tempfile.mkdtemp(prefix="hooks-smoke-ag-"))
+        for r in rs:
+            print(f"{r[0]} {r[1]} — очікую: {r[2]} — {r[3]}")
+        print(f"\nворота питань: {len(rs)} випадків; поломок: {sum(r[0] != '✅' for r in rs)}")
+        sys.exit(1 if any(r[0] != "✅" for r in rs) else 0)
     sys.exit(main())
