@@ -7,6 +7,8 @@ answer-gate бачили сесію з 10 віконцями як один хі�
 
 Перевіряється ТЕКСТ ВІКОНЦЯ (питання + варіанти): текст асистента перед викликом у журнал пишеться не завжди
 (живий тест 16.10). З журналу — лише виклики інструментів від останньої відповіді користувача.
+Наслідок пропуску (з 2026-10-30, ASK_GATE_MODE, див. main): softplus (типово) — віконце НЕ відбивається, на початок
+питання дописується «⚠ Не звірено: …»; hard — deny, як описано нижче (до 30.10 так було завжди).
   queue  — у відрізку немає «черг» → deny: дописати рядок «Черга: …» і спитати знову.
   verify — питання пропонує зміну (RE_CHANGE / «план», як answer-gate check), а у відрізку немає ні
            verify-before-show / delegate, ні рядка «Звірено перед показом» / «Звірка не потрібна: <чому>».
@@ -191,7 +193,9 @@ def question_text(inp):
     return "\n".join(out)
 
 
-def misses_for(ag, lines, question, inp=None, full=None):
+def misses_for(ag, lines, question, inp=None, full=None, info=None):
+    """Чого бракує віконцю: queue / verify / records. info (dict, необов'язково) отримує «mech» — чи питання
+    пропонує зміну механізму (хуків, скриптів, правил, налаштувань); потрібне для винятку ASK_GATE_HARD_MECH."""
     turns = list(ag.iter_turns(ag.after_last_answer(lines), merge_notifications=True))
     seg = turns[-1] if turns else {"texts": [], "tools": []}
     text = question  # seg["texts"] у журналі неповні — див. question_text
@@ -205,6 +209,8 @@ def misses_for(ag, lines, question, inp=None, full=None):
     commit_q = RE_COMMIT_Q.search(q0)
     scope = q0c if commit_q else scrub(chg)
     mech = bool(RE_MECH.search(scope) and RE_MECH_VERB.search(scope)) and not (commit_q and not RE_COMMIT_COMPOUND.search(q0))
+    if info is not None:
+        info["mech"] = mech
     if ag.RE_CHANGE.search(q0c) or RE_CHANGE_LOCAL.search(q0c) or ag.RE_PLAN_Q.search(plan_scope(q0c)) or mech:
         # 2026-10-25: спільна перевірка з answer-gate (визнає й ланку Haiku через Bash)
         ok = ag.verify_in(seg.get("events")) or (RE_SKIP_VERIFY.search(text) and not mech) or (
@@ -238,6 +244,10 @@ REASONS = {
                "знайдене; якщо пошук справді не потрібен — допиши «Записи не потрібні: <чому>»",
 }
 
+# Коротко — для позначки «⚠ Не звірено: …», яку бачить користувач у м'якому режимі (softplus)
+SHORT = {"queue": "рядка черги нема", "verify": "план не звірено (verify-before-show)",
+         "records": "записи (TROUBLES/BACKLOG) не переглянуто"}
+
 
 def main():
     data = json.load(sys.stdin)
@@ -250,20 +260,49 @@ def main():
     ag = load_ag()
     with open(tp, encoding="utf-8", errors="ignore") as f:  # 30.10: уся сесія — для звірки з ранішої частини
         full = f.read().splitlines()
+    info = {}
     misses = misses_for(ag, ag.current_turn_lines(tp, merge_notifications=True), question_text(data.get("tool_input")),
-                        inp=data.get("tool_input"), full=full)
+                        inp=data.get("tool_input"), full=full, info=info)
+    # Режим (2026-10-30, корінь «пропозиція без віконця» — agents/claude-code/no-window-root-2026-10-30/REPORT.md):
+    # відбите віконце агент наперед замінював текстом, якого не перевіряє ніщо. Тепер ворота не відбивають, а
+    # дописують у питання видиму користувачу позначку. ASK_GATE_MODE: softplus (типово) — позначка в тексті питання;
+    # soft — пояснення лише агенту; hard — відбиття, як до 30.10. ASK_GATE_HARD_MECH=1 — план зміни механізму без
+    # звірки відбивається й у м'якому режимі.
+    mode = os.environ.get("ASK_GATE_MODE", "softplus")
+    hard = bool(misses) and (mode == "hard" or (
+        os.environ.get("ASK_GATE_HARD_MECH") == "1" and "verify" in misses and info.get("mech")))
     os.makedirs(os.path.dirname(LOG), exist_ok=True)
     with open(LOG, "a", encoding="utf-8") as f:
         f.write(json.dumps({"t": datetime.datetime.now().isoformat(timespec="seconds"),
-                            "session": data.get("session_id"), "misses": misses},
+                            "session": data.get("session_id"), "misses": misses,
+                            "soft": bool(misses) and not hard, "mode": mode},
                            ensure_ascii=False) + "\n")
-    if misses:
+    if not misses:
+        return
+    if hard:
         reason = ("ask-gate (ворота перед питанням, 2026-10-16): " + "; ".join(REASONS[m] for m in misses)
                   + ". Допиши це в текст питання і задай його знову.")
         print(json.dumps({"hookSpecificOutput": {"hookEventName": "PreToolUse",
                                                  "permissionDecision": "deny",
                                                  "permissionDecisionReason": reason}},
                          ensure_ascii=False))
+        return
+    # Рішення НЕ повертаємо: для AskUserQuestion «allow» разом з updatedInput означає «хук сам відповів» — віконце
+    # не показується (changelog Claude Code: «PreToolUse hooks can now satisfy AskUserQuestion by returning
+    # updatedInput alongside permissionDecision: "allow"»). Без рішення віконце йде звичайним шляхом.
+    out = {"hookEventName": "PreToolUse",
+           "additionalContext": ("ask-gate (м'який режим: віконце пропущено з позначкою, не відбито): "
+                                 + "; ".join(REASONS[m] for m in misses)
+                                 + ". Наступного разу зроби це ДО віконця; зараз чекай відповіді у віконці, "
+                                   "не переписуй пропозицію текстом.")}
+    if mode == "softplus":
+        inp = json.loads(json.dumps(data.get("tool_input") or {}))  # глибока копія вхідних даних
+        qs = inp.get("questions") or []
+        if qs and isinstance(qs[0], dict):
+            # На початку і без переносу: живий тест 30.10 — позначка після «\n» дійшла в input, але на екрані не видна
+            qs[0]["question"] = "⚠ Не звірено: " + ", ".join(SHORT[m] for m in misses) + ". " + str(qs[0].get("question", ""))
+            out["updatedInput"] = inp
+    print(json.dumps({"hookSpecificOutput": out}, ensure_ascii=False))
 
 
 if __name__ == "__main__":

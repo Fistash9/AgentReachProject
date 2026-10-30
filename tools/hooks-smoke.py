@@ -140,12 +140,14 @@ def ask_gate_rows(tmp):
             "Черга: ремонт → закриття. Записи не потрібні: це вибір теми.", [("Так", "Ремонт"), ("Ні", "Закрити")]),
          "allow"),
     ]
-    def ask(tp, inp, why_log):
-        """Один виклик воріт. Обидва журнали — у тимчасову теку: робочі логи й дані проби тіні не чіпаються."""
+    def ask(tp, inp, why_log, mode="hard"):
+        """Один виклик воріт. Обидва журнали — у тимчасову теку: робочі логи й дані проби тіні не чіпаються.
+        mode="hard" — розпізнавання «чого бракує» видно як deny (регресія розпізнавання, як до 30.10)."""
         payload = {"session_id": SID, "cwd": ROOT, "transcript_path": tps[tp], "hook_event_name": "PreToolUse",
                    "tool_name": "AskUserQuestion", "tool_input": inp}
         return run(f"{sys.executable} {hook}", payload,
-                   env={"ASK_GATE_LOG": os.path.join(tmp, "ask-gate.jsonl"), "WHY_ASK_LOG": why_log})
+                   env={"ASK_GATE_LOG": os.path.join(tmp, "ask-gate.jsonl"), "WHY_ASK_LOG": why_log,
+                        "ASK_GATE_MODE": mode})
 
     out = []
     for name, tp, inp, want in cases:
@@ -174,6 +176,20 @@ def ask_gate_rows(tmp):
         except Exception as ex:  # noqa — перевірка не має падати сама
             good, note = False, f"{type(ex).__name__}: {ex}"
         out.append(("✅" if good else "❌", f"тінь «Чому питаю»: {name}", f"записів {want_rows}", note))
+
+    # М'який режим за замовчуванням (2026-10-30): план зміни хука без звірки — віконце НЕ відбито (жодного рішення,
+    # бо «allow» прибрав би віконце), у тексті питання — позначка «⚠ Не звірено»
+    plan = cases[0][2]
+    try:
+        rc, o, e, dt = ask("none", plan, os.path.join(tmp, "why-ask.jsonl"), mode="softplus")
+        hso = json.loads(o).get("hookSpecificOutput", {}) if o.strip() else {}
+        q = ((hso.get("updatedInput") or {}).get("questions") or [{}])[0].get("question", "")
+        good = rc == 0 and "permissionDecision" not in hso and "⚠ Не звірено" in q
+        note = f"рішення {hso.get('permissionDecision', 'нема')}, позначка {'є' if '⚠ Не звірено' in q else 'нема'}, код {rc}"
+    except Exception as ex:  # noqa — перевірка не має падати сама
+        good, note = False, f"{type(ex).__name__}: {ex}"
+    out.append(("✅" if good else "❌", "ворота питань, м'який режим: план без звірки → віконце з позначкою",
+                "без рішення + «⚠ Не звірено»", note))
     return out
 
 
