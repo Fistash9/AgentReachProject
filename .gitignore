@@ -54,3 +54,9 @@ tools/verifier-backtest/sources-v3/claude-*.md
 .obsidian/
 # obhid (2026-10-28): вивід бектесту «пошуку обходу» — у рядку 184 особисте; рішення користувача 28.10 «Лишити, вписати в .gitignore»
 agents/claude-code/obhid-2026-10-28/backtest-out.txt
+
+# 2026-11-03: 62 повідомлення користувача з журналів, перестворюється r1_context.py (зовнішня перевірка 28336505, п.16/28)
+agents/claude-code/pilot-verifier-2026-10-30/r1_context.jsonl
+
+# 2026-11-06: перевірка MiniMax — повідомлення користувача з журналів (витяг 16.09–06.11), дерево роздумів, відповіді; рішення користувача «В проєкт, поза git»
+agents/claude-code/minimax-idea-2026-11-06/
