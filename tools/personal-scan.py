@@ -28,8 +28,16 @@ def load(path=PATTERNS):
         return None
 
 
+# (2026-11-06) Крипто-адреси — будь-які, не лише зі списку: адреса гаманця з повідомлення
+# користувача двічі пішла в DeepSeek, бо списку фрагментів вона не знала (TROUBLES «Зовнішня
+# перевірка сесії 1a543a43», п.31). Біткоїн bc1…, ефір 0x…; старі «1…/3…» і трон «T…» не беремо —
+# ловили шматки посилань (builder.aws.com/content/3Fz…, 5 хибних на експорті 1a543a43).
+CRYPTO = r"\b(?:bc1[a-z0-9]{25,87}|0x[0-9a-fA-F]{40})\b"
+
+
 def regex(frags):
-    return re.compile("|".join(re.escape(p) for p in frags), re.I) if frags else None
+    parts = [re.escape(p) for p in frags or []] + [CRYPTO]
+    return re.compile("|".join(parts), re.I)
 
 
 def hide(s):

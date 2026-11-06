@@ -37,6 +37,12 @@ DSH працює не на хуках Claude — ворота 1 його pass н
    Чому не deny: на краю ліміту deny може не дати передати (#81 — «на 5% ліміту»). Чому не ask: бектест
    155 сусідніх передач ledger — 44 тривоги у 36 передачах (кожна ~4-та), у вибірці 10 (seed 2510) хибних 9;
    ask на 90% хибних погоджують за звичкою (23.10). Відома відповідь: #78→#79 1, #80→#81 1, #76→#77 0.
+7. (2026-11-06, рішення користувача «Обидві частини») Статус змінився для 6: втрачений крок записки — deny разом
+   із пунктами ([Записка]): 06.11 крок записки #108→#109 загубився при підказці. І «у BACKLOG: <текст>»: пункт
+   (next/openQuestions чи крок записки), що живе в новій естафеті ЛИШЕ через рядок «у BACKLOG:», вважається
+   перенесеним, тільки якщо текст після «у BACKLOG:» є в BACKLOG.md — same() з ЦІЛИМ пунктом BACKLOG («- » у
+   стовпці 0 + рядки з відступом до наступного «- »/заголовка); нема — deny «[у BACKLOG — не знайдено]».
+   BACKLOG — BATON_GUARD_BACKLOG або {REPO}/BACKLOG.md; нечитабельний — цю перевірку пропускаємо (не блок).
 Fail-open: будь-яка помилка читання — тиша.
 """
 import json
@@ -93,6 +99,9 @@ def warn_text(dp):
 
 
 DIFF = os.environ.get("BATON_GUARD_DIFF") or f"{REPO}/tools/baton-diff.py"
+BACKLOG = os.environ.get("BATON_GUARD_BACKLOG") or f"{REPO}/BACKLOG.md"
+MARK = re.compile(r"у BACKLOG:", re.I)  # (2026-11-06) статус «перенесено в BACKLOG» — перевіряємо, чи справді там
+NOT_FOUND = "у BACKLOG — не знайдено"
 
 
 def _ctx(new):
@@ -113,23 +122,79 @@ def _ctx(new):
     return bd, old, pool
 
 
+def backlog_entries():
+    """(2026-11-06) Цілі пункти BACKLOG.md: «- » у стовпці 0 + рядки з відступом; None — файл нечитабельний."""
+    try:
+        with open(BACKLOG, encoding="utf-8") as f:
+            lines = f.read().splitlines()
+    except OSError:
+        return None
+    out, cur = [], None
+    for ln in lines:
+        if ln.startswith("- "):
+            cur = [ln]
+            out.append(cur)
+        elif cur is not None and (not ln.strip() or ln[0] in " \t"):
+            cur.append(ln)
+        else:
+            cur = None  # заголовок чи текст у стовпці 0 — кінець пункту
+    return [" ".join(x) for x in out]
+
+
+def _split(bd, pool):
+    """(2026-11-06) Пул → (рядки без «у BACKLOG: …», [текст після «у BACKLOG:»]). Записку (останній
+    елемент пулу) ріжемо на речення, щоб «у BACKLOG: X» у ній не забирав решту записки."""
+    plain, claims = [], []
+    for i, y in enumerate(pool):
+        rest = []
+        for u in (bd.sentences(y) if i == len(pool) - 1 else [y]):
+            m = MARK.search(u)
+            rest.append(u[:m.start()] if m else u)
+            if m:
+                claims.append(u[m.end():])
+        plain.append(" ".join(rest))
+    return plain, claims
+
+
+def _lost(bd, items, pool, label):
+    """[(мітки, пункт)]: пункт ніде не живе — [мітка]; живе лише через «у BACKLOG:», а в BACKLOG.md його
+    нема — [мітка] [у BACKLOG — не знайдено] (7)."""
+    plain, claims = _split(bd, pool)
+    entries = None
+    out = []
+    for item in items:
+        if any(bd.same(item, y) for y in plain if y):
+            continue
+        mine = [c for c in claims if bd.same(item, c)]
+        if not mine:
+            out.append((f"[{label}]", item))
+            continue
+        if entries is None:
+            entries = backlog_entries() or []
+        if not entries:  # нечитабельний (чи порожній) BACKLOG — за цією ознакою не блокуємо
+            continue
+        if not any(bd.same(c, e) for c in mine for e in entries):
+            out.append((f"[{label}] [{NOT_FOUND}]", item))
+    return out
+
+
 def lost_items(new):
-    """[(мітка, пункт)] з поточної естафети, яких нема в переданому pass."""
+    """[(мітки, пункт)] з поточної естафети, яких нема в переданому pass."""
     c = _ctx(new)
     if not c:
         return []
     bd, old, pool = c
-    return [(label, str(item)) for key, label in FIELDS if isinstance(new.get(key), list)
-            for item in old.get(key) or [] if not any(bd.same(item, y) for y in pool)]
+    return [x for key, label in FIELDS if isinstance(new.get(key), list)
+            for x in _lost(bd, [str(i) for i in old.get(key) or []], pool, label)]
 
 
 def lost_note(new):
-    """Пункти поточної записки (речення з ознакою кроку), яких нема в переданому pass (6)."""
+    """Пункти поточної записки (речення з ознакою кроку), яких нема в переданому pass (6, 7)."""
     c = _ctx(new)
     if not c:
         return []
     bd, old, pool = c
-    return bd.note_lost(old.get("handoffNote") or "", pool)
+    return _lost(bd, bd.note_items(old.get("handoffNote") or ""), pool, "Записка")
 
 
 def emit(event, **extra):
@@ -165,24 +230,18 @@ def main():
             note = lost_note(ti)
         except Exception:
             note = []
-        note_txt = " | ".join(f"[Записка] {' '.join(i.split())[:90]}" for i in note)
+        lost += note  # (2026-11-06, 7) крок записки — deny разом із пунктами, не підказка
         if lost:
             emit("PreToolUse", permissionDecision="deny",
                  permissionDecisionReason=(
                      f"baton-guard: передача прибирає {len(lost)} пункт(ів) поточної естафети без статусу — "
                      "вони зникнуть (19.10: 4 відкриті питання #56→#57 жили лише в TROUBLES; 23.10: «ask» "
-                     "погоджують за звичкою — тому deny). Для кожного: лиши в next/openQuestions, або перенеси його "
+                     "погоджують за звичкою — тому deny; 06.11: крок записки #108→#109 загубився при підказці — "
+                     "тому [Записка] теж deny). Для кожного: лиши в next/openQuestions, або перенеси його "
                      "ДОСЛІВНИЙ текст (не скорочений вказівник — він не пройде: рахується частка слів пункту) у "
                      "done («зроблено: <текст>»), watchOut або handoffNote («відкинуто: <текст> — причина» / "
-                     "«у BACKLOG: <текст>») і передай знову: "
-                     + " | ".join(f"[{l}] {' '.join(i.split())[:70]}" for l, i in lost)
-                     + (f". Також із записки (підказка, не блок): {note_txt}" if note else "")))
-        elif note:
-            emit("PreToolUse", additionalContext=(
-                f"baton-guard (підказка): нова записка замінює стару, і {len(note)} крок(и) з неї ніде в новій естафеті "
-                "не видно (у #78→#79 і #80→#81 такі губились). Якщо крок ще відкритий — додай його в next/handoffNote "
-                "наступною передачею або в BACKLOG; якщо зроблено/відкинуто — нічого. Бектест: 9 з 10 таких підказок "
-                "хибні (стан змінився, переформульовано) — перевір, не переписуй навмання: " + note_txt))
+                     f"«у BACKLOG: <текст>» — текст має бути в BACKLOG.md, інакше [{NOT_FOUND}]) і передай знову: "
+                     + " | ".join(f"{l} {' '.join(i.split())[:70]}" for l, i in lost)))
         return
 
     if (event == "PostToolUse" and tool.endswith("baton_pick_up")) or \
