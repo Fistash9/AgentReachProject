@@ -431,6 +431,9 @@ def v2_line_events(d):
         return []
     if t == "user" and not d.get("isMeta"):
         c = (d.get("message") or {}).get("content")
+        tr = d.get("toolUseResult")
+        if isinstance(c, list) and isinstance(tr, dict) and "answers" in tr:
+            return [("answer", ts)]  # 07.11: відповідь у віконці AskUserQuestion — час рішення користувача (Б1)
         if not isinstance(c, str):
             return []
         kind = (d.get("origin") or {}).get("kind") if isinstance(d.get("origin"), dict) else None
@@ -453,8 +456,8 @@ def v2_window(path, flags=None):
         lines = f.read().splitlines()
     out, anchor = [], "start"
     for line in reversed(lines):
-        if '"tool_result"' in line[:600] and '"type":"assistant"' not in line[:200]:
-            continue  # результати інструментів подій не дають — не розбираємо (швидкість)
+        if '"tool_result"' in line[:600] and '"type":"assistant"' not in line[:200] and "answered" not in line[:800]:
+            continue  # 07.11: крім відповіді у віконці («…have been answered» / «The user answered»)  # результати інструментів подій не дають — не розбираємо (швидкість)
         try:
             d = json.loads(line)
         except ValueError:
@@ -579,6 +582,14 @@ def v2_decide(ev, name, inp, anchor, flags=None, agv=None, n_lim=None, k_lim=Non
         last_u = max([i for i, e in enumerate(ev) if e[0] == "human" and e[3] == "user"], default=-1)
         last_u = max([last_u] + [i for i, e in enumerate(ev) if e[0] == "tool" and e[2] == "AskUserQuestion"])  # Б1
         reps = [i for i, e in enumerate(ev) if e[0] == "report" and i > last_u]  # репліка посеред ходу вікно не закриває
+        # 07.11 (а): Б1 за ЧАСОМ відповіді, не за місцем виклику — віконце, задане до звіту й відповідане після нього,
+        # пишеться в журнал раніше за звіт із черги (queued_command), хоча відповідь пізніша. Відповідь новіша — вікно закрите.
+        ans = max([e[1] for e in ev if e[0] == "answer"], default="")
+        reps = [i for i in reps if ev[i][1] > ans]
+        # 07.11 (б): звіт прийшов посеред задачі користувача (повідомлення після роздачі, і я вже робив кроки до звіту) —
+        # дальші кроки — ця задача, а не доробка звіту; вікно C не відкривається, межу тримає правило A.
+        if reps and last_u >= 0 and any(last_u < i < reps[0] for i in units):
+            reps = []
         if reps:
             m = sum(1 for i in units if i > reps[-1]) + 1
             if m > k_lim:

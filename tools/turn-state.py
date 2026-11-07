@@ -275,6 +275,9 @@ def main():
     ap.add_argument("--at", default=None, help="ISO-час вимірювання замість поточного UTC (для відтворюваних тестів)")
     ap.add_argument("--verify", metavar="JSONL")
     a = ap.parse_args()
+    # 2026-11-07: без режиму tpath=None падав у except невиразним «expected str… NoneType»
+    if not (a.verify or a.hook or a.replay):
+        ap.error("потрібен режим: --hook (stdin хука), --replay <transcript.jsonl> --cwd <репо> або --verify <jsonl>")
     if a.verify:
         try:
             return verify(a.verify)
