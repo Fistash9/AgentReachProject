@@ -461,3 +461,5 @@ agents/claude-code/gate-v2-2026-10-27/live-2026-10-28-pm.md (11 зупинок �
 - 2026-11-07 [claude-code, закриття сесії 27c0c551 (курс Media Bazar), доробка кроку «старі знімки» правила «Baton» RULES.md; Baton-розбір цієї сесії не робився — знімки лише за віком]: переміщено .baton/history/pass-111.json, pass-112.json → .trash/baton-history-2026-11-07/ (лишаються pass-113 і pass-114, два останні). Відкат — повернути файли у .baton/history/.
 
 - 2026-11-08 [claude-code під-агент, 2026-11-08]: видалено hxhoEfhcC7Q.mp4, wFbhqyr98Do.mp4 з /data/data/com.termux/files/usr/tmp/konkurenty-0711/ochi-proba/ (по ~65 МБ). Причина: тимчасові відео проби ffmpeg («очі агента»), виміри збережено в REPORT.md; кадри лишено.
+
+- 2026-11-08 [claude-code, старт сесії після #116, крок «старі знімки» правила Baton RULES.md; baton-diff розібрано: 4 випалі пункти мають носії в BACKLOG (рядки 19, 58, 1286, 45)]: переміщено .baton/history/pass-113.json, pass-114.json, pass-115.json → .trash/baton-history-2026-11-08/. Причина: старіші знімки після розбору baton-diff.
